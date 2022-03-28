@@ -1,56 +1,38 @@
-﻿using System;
+using System;
 using System.IO;
-using System.Text;
 using System.Collections.Generic;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 
-namespace Render
-{
-    // A simple class meant to help create shaders.
-    public class Shader
-    {
-        public readonly int Handle;
+//NOTICE: this is a modified version of the shader class from the official OpenTK examples.
 
+namespace Voxelesque.Render.GL33{
+    class GL33Shader: GL33Object, IRenderShader, IDisposable
+    {
         private readonly Dictionary<string, int> _uniformLocations;
-        public readonly string name;
-        public Shader(string vertPath, string fragPath)
+        public readonly string _name;
+        public GL33Shader(string vertPath, string fragPath)
         {
-            name = vertPath + "|" + fragPath;
+            _name = vertPath + "|" + fragPath;
 
             // Load vertex shader and compile
             string shaderSource = File.ReadAllText(vertPath);
-
-            // GL.CreateShader will create an empty shader (obviously). The ShaderType enum denotes which type of shader will be created.
-            int vertexShader = GL.CreateShader(ShaderType.VertexShader);
-
-            // Now, bind the GLSL source code
-            GL.ShaderSource(vertexShader, shaderSource);
-
-            // And then compile
-            CompileShader(vertexShader);
+            int vertexShader = MakeShader(ShaderType.VertexShader, shaderSource);
 
             // We do the same for the fragment shader.
             shaderSource = File.ReadAllText(fragPath);
-            int fragmentShader = GL.CreateShader(ShaderType.FragmentShader);
-            GL.ShaderSource(fragmentShader, shaderSource);
-            CompileShader(fragmentShader);
+            int fragmentShader = MakeShader(ShaderType.FragmentShader, shaderSource);
 
-            // These two shaders must then be merged into a shader program, which can then be used by OpenGL.
-            // To do this, create a program...
-            Handle = GL.CreateProgram();
+            _id = GL.CreateProgram();
 
-            // Attach both shaders...
-            GL.AttachShader(Handle, vertexShader);
-            GL.AttachShader(Handle, fragmentShader);
-
-            // And then link them together.
-            LinkProgram(Handle);
+            GL.AttachShader(_id, vertexShader);
+            GL.AttachShader(_id, fragmentShader);
+            LinkProgram(_id);
 
             // When the shader program is linked, it no longer needs the individual shaders attached to it; the compiled code is copied into the shader program.
             // Detach them, and then delete them.
-            GL.DetachShader(Handle, vertexShader);
-            GL.DetachShader(Handle, fragmentShader);
+            GL.DetachShader(_id, vertexShader);
+            GL.DetachShader(_id, fragmentShader);
             GL.DeleteShader(fragmentShader);
             GL.DeleteShader(vertexShader);
 
@@ -59,7 +41,7 @@ namespace Render
             // later.
 
             // First, we have to get the number of active uniforms in the shader.
-            GL.GetProgram(Handle, GetProgramParameterName.ActiveUniforms, out int numberOfUniforms);
+            GL.GetProgram(_id, GetProgramParameterName.ActiveUniforms, out int numberOfUniforms);
 
             // Next, allocate the dictionary to hold the locations.
             _uniformLocations = new Dictionary<string, int>();
@@ -68,18 +50,22 @@ namespace Render
             for (int i = 0; i < numberOfUniforms; i++)
             {
                 // get the name of this uniform,
-                string key = GL.GetActiveUniform(Handle, i, out _, out _);
+                string key = GL.GetActiveUniform(_id, i, out _, out _);
 
                 // get the location,
-                int location = GL.GetUniformLocation(Handle, key);
+                int location = GL.GetUniformLocation(_id, key);
 
                 // and then add it to the dictionary.
                 _uniformLocations.Add(key, location);
             }
         }
 
-        private static void CompileShader(int shader)
+        private static int MakeShader(ShaderType type, string shaderSource)
         {
+            int shader = GL.CreateShader(type);
+
+            //bind the GLSL source code
+            GL.ShaderSource(shader, shaderSource);
             // Try to compile the shader
             GL.CompileShader(shader);
 
@@ -91,6 +77,8 @@ namespace Render
                 string infoLog = GL.GetShaderInfoLog(shader);
                 throw new Exception($"Error occurred whilst compiling Shader({shader}).\n\n{infoLog}");
             }
+
+            return shader;
         }
 
         private void LinkProgram(int program)
@@ -104,21 +92,21 @@ namespace Render
             {
                 // We can use `GL.GetProgramInfoLog(program)` to get information about the error.
                 string infoLog = GL.GetProgramInfoLog(program);
-                throw new Exception($"ERROR: unable to link Program({program}).\n\n{infoLog}\n\n{this.name}");
+                throw new Exception($"ERROR: unable to link Program({program}).\n\n{infoLog}\n\n{this._name}");
             }
         }
 
         // A wrapper function that enables the shader program.
         public void Use()
         {
-            GL.UseProgram(Handle);
+            GL.UseProgram(_id);
         }
 
         // The shader sources provided with this project use hardcoded layout(location)-s. If you want to do it dynamically,
         // you can omit the layout(location=X) lines in the vertex shader, and use this in VertexAttribPointer instead of the hardcoded values.
         public int GetAttribLocation(string attribName)
         {
-            return GL.GetAttribLocation(Handle, attribName);
+            return GL.GetAttribLocation(_id, attribName);
         }
 
         // Uniform setters
@@ -137,10 +125,10 @@ namespace Render
         /// <param name="data">The data to set</param>
         public void SetInt(string name, int data){
             if(_uniformLocations.TryGetValue(name, out int uniformID)){
-                GL.UseProgram(Handle);
+                GL.UseProgram(_id);
                 GL.Uniform1(uniformID, data);
             } else {
-                Console.WriteLine($"ERROR: shader uniform \"{name}\" doesn't exist in {this.name}");
+                Console.WriteLine($"ERROR: shader uniform \"{name}\" doesn't exist in {this._name}");
             }
         }
 
@@ -152,10 +140,10 @@ namespace Render
         public void SetFloat(string name, float data)
         {
             if(_uniformLocations.TryGetValue(name, out int uniformID)){
-                GL.UseProgram(Handle);
+                GL.UseProgram(_id);
                 GL.Uniform1(uniformID, data);
             } else {
-                Console.WriteLine($"ERROR: shader uniform \"{name}\" doesn't exist in {this.name}");
+                Console.WriteLine($"ERROR: shader uniform \"{name}\" doesn't exist in {this._name}");
             }
         }
 
@@ -172,10 +160,10 @@ namespace Render
         public void SetMatrix4(string name, Matrix4 data)
         {
             if(_uniformLocations.TryGetValue(name, out int uniformID)){
-                GL.UseProgram(Handle);
+                GL.UseProgram(_id);
                 GL.UniformMatrix4(uniformID, true, ref data);
             } else {
-                Console.WriteLine($"ERROR: shader uniform \"{name}\" doesn't exist in {this.name}");
+                Console.WriteLine($"ERROR: shader uniform \"{name}\" doesn't exist in {this._name}");
             }
         }
 
@@ -187,11 +175,15 @@ namespace Render
         public void SetVector3(string name, Vector3 data)
         {
             if(_uniformLocations.TryGetValue(name, out int uniformID)){
-                GL.UseProgram(Handle);
+                GL.UseProgram(_id);
                 GL.Uniform3(uniformID, data);
             } else {
-                Console.WriteLine($"ERROR: shader uniform \"{name}\" doesn't exist in {this.name}");
+                Console.WriteLine($"ERROR: shader uniform \"{name}\" doesn't exist in {this._name}");
             }
+        }
+
+        public void Dispose(){
+            GL.DeleteProgram(this._id);
         }
     }
 }
