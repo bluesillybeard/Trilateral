@@ -1,0 +1,26 @@
+VMF files are literally just a yaml file.
+
+Any path referenced by a vmf file is relative to the folder that contains the file.
+
+For example, if a file path is "vmf/test.vmf", then any path it references will be appended to "vmf/".
+So, if test.vmf has the texture path of "../texture/test.png" then the real path is "vmf/../texture/test.png", or "texture/test.png"
+
+here is an example (StoneBlock.vmf):
+"""
+type: entity
+vertices: ../mesh/StoneBlock.vvertices
+indices: ../mesh/StoneBlock.vindices
+texture: ../texture/Stone.vqoi
+"""
+
+.vvertices files are just a dump of the vertices to be sent to OpenGL, compressed with gzip
+
+.vindices file is similar to vvertices, except it's the indices for OpenGL.
+
+a .qoi image is, well, an image compressed using the QOI format. look it up, it's actually pretty neat.
+.vqoi is a modified version of qoi to fix a couple of issues.
+qoi was designed to be as simple as possible, but with some modifications it can be much better.
+They weren't implemented into the final qoi standard since they made it significantly more complicated.
+The reason I am using QOI is because it's a freaking crap ton faster, and it has comperable compression to png.
+
+Block models will come later.

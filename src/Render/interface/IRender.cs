@@ -5,7 +5,6 @@ using Voxelesque.Render.Common;
 
 using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
-using OpenTK.Windowing.Desktop;
 namespace Voxelesque.Render{
     interface IRender{
 
@@ -16,7 +15,7 @@ namespace Voxelesque.Render{
 
         /**
         <summary>
-        This action is called every update - 10 times each second by default
+        This action is called every update - 15 times each second by default
         </summary>
         */
         Action<double> OnVoxelesqueUpdate {get; set;}
@@ -25,6 +24,15 @@ namespace Voxelesque.Render{
 
         //meshes
         IRenderMesh LoadMesh(float[] vertices, uint[] indices);
+
+        ///**
+        //<summary> 
+        //loads a VMF file as a mesh (.vemf, .vbmf, .vmf)
+        //It can also load an uncompressed vmf (an unzipped one).
+        //More details about how vmf files work in the documentation
+        //</summary>
+        //*/
+        //IRenderMesh LoadMesh(string VMFPath);
 
         void DeleteMesh(IRenderMesh mesh);
 

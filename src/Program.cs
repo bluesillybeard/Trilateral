@@ -52,7 +52,7 @@ namespace Voxelesque
                 }
             );
 
-            texture = render.LoadTexture("Resources/container.png");
+            texture = render.LoadTexture("Resources/container.qoi");
 
             shader = render.LoadShader("Resources/Shaders/");
 
@@ -69,18 +69,16 @@ namespace Voxelesque
         static void update(double d){
             time += d;
 
-            //entity.Position = new EntityPosition(
-            //    new Vector3((float)(random.NextDouble()-0.5), (float)(random.NextDouble()-0.5), (float)(random.NextDouble()-0.5)),
-            //    new Vector3((float)(random.NextDouble()-0.5), (float)(random.NextDouble()-0.5), (float)(random.NextDouble()-0.5)),
-            //    Vector3.One
-            //);
+            entity.Position = new EntityPosition(
+                new Vector3((float)(random.NextDouble()-0.5), (float)(random.NextDouble()-0.5), (float)(random.NextDouble()-0.5)),
+                new Vector3((float)(random.NextDouble()-0.5), (float)(random.NextDouble()-0.5), (float)(random.NextDouble()-0.5)),
+                Vector3.One
+            );
 
-            //todo: fix input
             KeyboardState input = render.Keyboard();
-            if (input.WasKeyDown(Keys.C) && !input.IsKeyDown(Keys.C))
+            if (input.IsKeyReleased(Keys.C))
             {
                 render.CursorLocked  = !render.CursorLocked;
-                System.Console.WriteLine(render.CursorLocked);
             }
 
             Vector3 cameraInc = new Vector3();

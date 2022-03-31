@@ -5,6 +5,10 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Collections.Generic;
 using PixelFormat = OpenTK.Graphics.OpenGL.PixelFormat;
+using System.IO;
+
+using VQoiSharp;
+using VQoiSharp.Codec;
 
 //NOTICE: this is a modified version of the texture class from the official OpenTK examples.
 
@@ -22,8 +26,13 @@ namespace Voxelesque.Render.GL33{
         private bool _deleted;
         public GL33Texture(string path)
         {
-            using(Bitmap image = new Bitmap(path)){
-                LoadTexture(image);
+            if(path.EndsWith(".vqoi") || path.EndsWith(".qoi")){
+                VQoiImage image = VQoiDecoder.Decode(File.ReadAllBytes(path));
+                LoadTexture(image.Data, image.Width, image.Height, image.Channels, image.ColorSpace);
+            } else {
+                using(Bitmap image = new Bitmap(path)){
+                    LoadTexture(image);
+                }
             }
         }
 
@@ -75,9 +84,44 @@ namespace Voxelesque.Render.GL33{
                 PixelFormat.Bgra,
                 PixelType.UnsignedByte,
                 data.Scan0);
-            image.UnlockBits(data);
 
+            SetParametersAndGenerateMipmaps();
+        }
 
+        private void LoadTexture(byte[] data, int width, int height, VQoiChannels channels, VQoiColorSpace ColorSpace){
+            _id = GL.GenTexture();
+
+            GL.ActiveTexture(TextureUnit.Texture0);
+            GL.BindTexture(TextureTarget.Texture2D, _id);
+
+            //determine what format to use.
+            PixelFormat format;
+            switch (channels){
+                case VQoiChannels.Rgb: {
+                    format = PixelFormat.Rgb;
+                    break;
+                }
+                case VQoiChannels.RgbWithAlpha: {
+                    format = PixelFormat.Rgba;
+                    break;
+                }
+                default: throw new Exception("invalid VQOI image type");
+            }
+
+            GL.TexImage2D(TextureTarget.Texture2D,
+                0,
+                PixelInternalFormat.Rgba,
+                width,
+                height,
+                0,
+                format,
+                PixelType.UnsignedByte,
+                data);
+
+            SetParametersAndGenerateMipmaps();          
+        }
+
+        private void SetParametersAndGenerateMipmaps(){
             // Now that our texture is loaded, we can set a few settings to affect how the image appears on rendering.
 
             // First, we set the min and mag filter. These are used for when the texture is scaled down and up, respectively.
@@ -102,6 +146,7 @@ namespace Voxelesque.Render.GL33{
             // Here is an example of mips in action https://en.wikipedia.org/wiki/File:Mipmap_Aliasing_Comparison.png
             GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
         }
+
 
         // Activate texture
         // Multiple textures can be bound, if your shader needs more than just one.

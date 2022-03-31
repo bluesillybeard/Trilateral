@@ -170,7 +170,6 @@ namespace Voxelesque.Render.GL33{
         }
 
         public bool CursorLocked{
-            //OpenTKs window abstraction completely destroyes the cursor locking mechanism - we have to mangle it into functioning
             get => _cursorLocked;
             set{
                 _cursorLocked = value;
