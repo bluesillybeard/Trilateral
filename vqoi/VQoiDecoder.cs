@@ -18,6 +18,7 @@ public static class VQoiDecoder
     /// <exception cref="VQoiDecodingException">Thrown when data is invalid.</exception>
     public static VQoiImage Decode(byte[] data)
     {
+        bool useModified = false;;
         if (data.Length < VQoiCodec.HeaderSize + VQoiCodec.Padding.Length)
         {
             throw new VQoiDecodingException("File too short");
@@ -25,7 +26,10 @@ public static class VQoiDecoder
         
         if (!VQoiCodec.IsValidMagic(data[..4]))
         {
-            throw new VQoiDecodingException("Invalid file magic"); // TODO: add magic value
+            if(!VQoiCodec.IsValidMagicModified(data[..4])){
+                throw new VQoiDecodingException("Invalid file magic"); // TODO: add magic value
+            }
+            useModified = true; //if it's not a normal one, but instead a modified.
         }
 
         int width = data[4] << 24 | data[5] << 16 | data[6] << 8 | data[7];
@@ -49,9 +53,9 @@ public static class VQoiDecoder
         byte[] index = new byte[VQoiCodec.HashTableSize * 4];
         if (channels == 3) // TODO: delete
         {
-            for (int indexPos = 3; indexPos < index.Length; indexPos += 4)
+            for (int indexPos0 = 3; indexPos0 < index.Length; indexPos0 += 4)
             {
-                index[indexPos] = 255;
+                index[indexPos0] = 255;
             }
         }
 
@@ -64,6 +68,7 @@ public static class VQoiDecoder
         
         int run = 0;
         int p = VQoiCodec.HeaderSize;
+        int indexPos = 0; //used in the modified version
 
         for (int pxPos = 0; pxPos < pixels.Length; pxPos += channels)
         {
@@ -80,6 +85,13 @@ public static class VQoiDecoder
                     r = data[p++];
                     g = data[p++];
                     b = data[p++];
+                    if(useModified){
+                        index[indexPos] = r;
+                        index[indexPos+1] = g;
+                        index[indexPos+2] = b;
+                        index[indexPos+3] = a;
+                        indexPos = (indexPos+4)%(VQoiCodec.HashTableSize*4);
+                    }
                 }
                 else if (b1 == VQoiCodec.Rgba)
                 {
@@ -87,20 +99,34 @@ public static class VQoiDecoder
                     g = data[p++];
                     b = data[p++];
                     a = data[p++];
+                    if(useModified){
+                        index[indexPos] = r;
+                        index[indexPos+1] = g;
+                        index[indexPos+2] = b;
+                        index[indexPos+3] = a;
+                        indexPos = (indexPos+4)%(VQoiCodec.HashTableSize*4);
+                    }
                 }
                 else if ((b1 & VQoiCodec.Mask2) == VQoiCodec.Index)
                 {
-                    int indexPos = (b1 & ~VQoiCodec.Mask2) * 4;
-                    r = index[indexPos];
-                    g = index[indexPos + 1];
-                    b = index[indexPos + 2];
-                    a = index[indexPos + 3];
+                    int indexPos0 = (b1 & ~VQoiCodec.Mask2) * 4;
+                    r = index[indexPos0];
+                    g = index[indexPos0 + 1];
+                    b = index[indexPos0 + 2];
+                    a = index[indexPos0 + 3];
                 }
                 else if ((b1 & VQoiCodec.Mask2) == VQoiCodec.Diff)
                 {
                     r += (byte)(((b1 >> 4) & 0x03) - 2);
                     g += (byte)(((b1 >> 2) & 0x03) - 2);
                     b += (byte)((b1 & 0x03) - 2);
+                    if(useModified){
+                        index[indexPos] = r;
+                        index[indexPos+1] = g;
+                        index[indexPos+2] = b;
+                        index[indexPos+3] = a;
+                        indexPos = (indexPos+4)%(VQoiCodec.HashTableSize*4);
+                    }
                 }
                 else if ((b1 & VQoiCodec.Mask2) == VQoiCodec.Luma) 
                 {
@@ -109,17 +135,25 @@ public static class VQoiDecoder
                     r += (byte)(vg - 8 + ((b2 >> 4) & 0x0F));
                     g += (byte)vg;
                     b += (byte)(vg - 8 + (b2 & 0x0F));
+                    if(useModified){
+                        index[indexPos] = r;
+                        index[indexPos+1] = g;
+                        index[indexPos+2] = b;
+                        index[indexPos+3] = a;
+                        indexPos = (indexPos+4)%(VQoiCodec.HashTableSize*4);
+                    }
                 }
                 else if ((b1 & VQoiCodec.Mask2) == VQoiCodec.Run) 
                 {
                     run = b1 & 0x3F;
                 }
-                
-                int indexPos2 = VQoiCodec.CalculateHashTableIndex(r, g, b, a);
-                index[indexPos2] = r;
-                index[indexPos2 + 1] = g;
-                index[indexPos2 + 2] = b;
-                index[indexPos2 + 3] = a;
+                if(!useModified){
+                    int indexPos2 = VQoiCodec.CalculateHashTableIndex(r, g, b, a);
+                    index[indexPos2] = r;
+                    index[indexPos2 + 1] = g;
+                    index[indexPos2 + 2] = b;
+                    index[indexPos2 + 3] = a;
+                }
             }
 
             pixels[pxPos] = r;

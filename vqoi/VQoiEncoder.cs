@@ -16,7 +16,7 @@ public static class VQoiEncoder
     /// <param name="image">QOI image.</param>
     /// <returns>Encoded image.</returns>
     /// <exception cref="QoiEncodingException">Thrown when image information is invalid.</exception>
-    public static byte[] Encode(VQoiImage image)
+    public static byte[] Encode(VQoiImage image, bool useModified)
     {
         if (image.Width == 0)
         {
@@ -36,10 +36,22 @@ public static class VQoiEncoder
 
         byte[] bytes = new byte[VQoiCodec.HeaderSize + VQoiCodec.Padding.Length + (width * height * channels)];
 
-        bytes[0] = (byte)(VQoiCodec.Magic >> 24);
-        bytes[1] = (byte)(VQoiCodec.Magic >> 16);
-        bytes[2] = (byte)(VQoiCodec.Magic >> 8);
-        bytes[3] = (byte)VQoiCodec.Magic;
+        uint[] indexLookup = null; //used by the modified FIFO version that I translated from https://github.com/phoboslab/qoi/blob/fifo/qoi.h
+        if(useModified)indexLookup = new uint[VQoiCodec.LookupHashTableSize];
+        
+        uint indexPos = 0; //used by FIFO (modified)
+        
+        if(useModified){
+            bytes[0] = (byte)(VQoiCodec.MagicModified >> 24);
+            bytes[1] = (byte)(VQoiCodec.MagicModified >> 16);
+            bytes[2] = (byte)(VQoiCodec.MagicModified >> 8);
+            bytes[3] = (byte)VQoiCodec.MagicModified;
+        } else {
+            bytes[0] = (byte)(VQoiCodec.Magic >> 24);
+            bytes[1] = (byte)(VQoiCodec.Magic >> 16);
+            bytes[2] = (byte)(VQoiCodec.Magic >> 8);
+            bytes[3] = (byte)VQoiCodec.Magic;
+        }
 
         bytes[4] = (byte)(width >> 24);
         bytes[5] = (byte)(width >> 16);
@@ -76,17 +88,20 @@ public static class VQoiEncoder
 
         for (int pxPos = 0; pxPos < pixelsLength; pxPos += channels)
         {
+            //load the RGB value into a buffer
             r = pixels[pxPos];
             g = pixels[pxPos + 1];
             b = pixels[pxPos + 2];
+            //account for alpha
             if (hasAlpha)
             {
                 a = pixels[pxPos + 3];
             }
-
+            //run
             if (RgbaEquals(prevR, prevG, prevB, prevA, r, g, b, a))
             {
                 run++;
+                //If we are at the end of a run, write it and reset run before continuing
                 if (run == 62 || pxPos == pixelsEnd)
                 {
                     bytes[p++] = (byte)(VQoiCodec.Run | (run - 1));
@@ -95,24 +110,51 @@ public static class VQoiEncoder
             }
             else
             {
+                //If we are at the end of a run, write it and reset run before continuing
                 if (run > 0)
                 {
                     bytes[p++] = (byte)(VQoiCodec.Run | (run - 1));
                     run = 0;
                 }
 
-                int indexPos = VQoiCodec.CalculateHashTableIndex(r, g, b, a);
-
-                if (RgbaEquals(r, g, b, a, index[indexPos], index[indexPos + 1], index[indexPos + 2], index[indexPos + 3]))
+                //find if the current color is the same as the hash code color.
+                //expect a lot of "if using modified it's this, otherwise that"
+                //since the root algorithm is the same, but how the hash table is used changes.
+                int hash;
+                bool indexEquals;
+                if(useModified){
+                    hash = VQoiCodec.CalculateLookupHashIndex(r, g, b, a);
+                    indexEquals = RgbaEquals(r, g, b, a, index[indexLookup[hash/4]],index[indexLookup[hash/4]+1],index[indexLookup[hash/4]+2],index[indexLookup[hash/4]+3]);
+                }
+                else{
+                    hash = VQoiCodec.CalculateHashTableIndex(r, g, b, a);
+                    indexEquals = RgbaEquals(r, g, b, a, index[hash], index[hash + 1], index[hash + 2], index[hash + 3]);
+                }
+                if (indexEquals)
                 {
-                    bytes[p++] = (byte)(VQoiCodec.Index | (indexPos / 4));
+                    //add the index, if it matches.
+                    if(useModified)             
+                        bytes[p++] = (byte)(VQoiCodec.Index | indexLookup[hash/4]/4);
+                    else bytes[p++] = (byte)(VQoiCodec.Index | (hash / 4));
                 }
                 else
                 {
-                    index[indexPos] = r;
-                    index[indexPos + 1] = g;
-                    index[indexPos + 2] = b;
-                    index[indexPos + 3] = a;
+                    if(useModified){
+                        indexLookup[hash/4] = indexPos/4;
+
+                        index[indexPos] = r;
+                        index[indexPos + 1] = g;
+                        index[indexPos + 2] = b;
+                        index[indexPos + 3] = a;
+                        
+                        indexPos = (indexPos+4)%(VQoiCodec.HashTableSize*4);
+
+                    } else {
+                        index[hash] = r;
+                        index[hash + 1] = g;
+                        index[hash + 2] = b;
+                        index[hash + 3] = a;
+                    }
 
                     if (a == prevA)
                     {

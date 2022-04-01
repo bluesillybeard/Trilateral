@@ -26,9 +26,10 @@ namespace Voxelesque.Render.GL33{
         private bool _deleted;
         public GL33Texture(string path)
         {
-            if(path.EndsWith(".vqoi") || path.EndsWith(".qoi")){
+            string lowerPath = path.ToLower();
+            if(lowerPath.EndsWith(".vqoi") || lowerPath.EndsWith(".qoi")){
                 VQoiImage image = VQoiDecoder.Decode(File.ReadAllBytes(path));
-                LoadTexture(image.Data, image.Width, image.Height, image.Channels, image.ColorSpace);
+                LoadTexture(image);
             } else {
                 using(Bitmap image = new Bitmap(path)){
                     LoadTexture(image);
@@ -88,7 +89,7 @@ namespace Voxelesque.Render.GL33{
             SetParametersAndGenerateMipmaps();
         }
 
-        private void LoadTexture(byte[] data, int width, int height, VQoiChannels channels, VQoiColorSpace ColorSpace){
+        private void LoadTexture(VQoiImage image){
             _id = GL.GenTexture();
 
             GL.ActiveTexture(TextureUnit.Texture0);
@@ -96,7 +97,7 @@ namespace Voxelesque.Render.GL33{
 
             //determine what format to use.
             PixelFormat format;
-            switch (channels){
+            switch (image.Channels){
                 case VQoiChannels.Rgb: {
                     format = PixelFormat.Rgb;
                     break;
@@ -105,18 +106,18 @@ namespace Voxelesque.Render.GL33{
                     format = PixelFormat.Rgba;
                     break;
                 }
-                default: throw new Exception("invalid VQOI image type");
+                default: throw new Exception("invalid QOI image type - only RGB and RGBA are supported.");
             }
 
             GL.TexImage2D(TextureTarget.Texture2D,
                 0,
                 PixelInternalFormat.Rgba,
-                width,
-                height,
+                image.Width,
+                image.Height,
                 0,
                 format,
                 PixelType.UnsignedByte,
-                data);
+                image.Data);
 
             SetParametersAndGenerateMipmaps();          
         }

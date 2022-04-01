@@ -52,7 +52,7 @@ namespace Voxelesque
                 }
             );
 
-            texture = render.LoadTexture("Resources/container.qoi");
+            texture = render.LoadTexture("Resources/container.png.vqoi");
 
             shader = render.LoadShader("Resources/Shaders/");
 
@@ -69,11 +69,11 @@ namespace Voxelesque
         static void update(double d){
             time += d;
 
-            entity.Position = new EntityPosition(
-                new Vector3((float)(random.NextDouble()-0.5), (float)(random.NextDouble()-0.5), (float)(random.NextDouble()-0.5)),
-                new Vector3((float)(random.NextDouble()-0.5), (float)(random.NextDouble()-0.5), (float)(random.NextDouble()-0.5)),
-                Vector3.One
-            );
+            //entity.Position = new EntityPosition(
+            //    new Vector3((float)(random.NextDouble()-0.5), (float)(random.NextDouble()-0.5), (float)(random.NextDouble()-0.5)),
+            //    new Vector3((float)(random.NextDouble()-0.5), (float)(random.NextDouble()-0.5), (float)(random.NextDouble()-0.5)),
+            //    Vector3.One
+            //);
 
             KeyboardState input = render.Keyboard();
             if (input.IsKeyReleased(Keys.C))
