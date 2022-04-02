@@ -28,17 +28,12 @@ namespace Voxelesque.Render{
         ///**
         //<summary> 
         //loads a VMF file as a mesh (.vemf, .vbmf, .vmf)
-        //It can also load an uncompressed vmf (an unzipped one).
         //More details about how vmf files work in the documentation
         //</summary>
         //*/
         //IRenderMesh LoadMesh(string VMFPath);
 
         void DeleteMesh(IRenderMesh mesh);
-
-        //textures
-
-        //todo: vemf and vbmf files
 
         IRenderTexture LoadTexture(string filePath);
 

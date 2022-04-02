@@ -13,14 +13,22 @@ indices: ../mesh/StoneBlock.vindices
 texture: ../texture/Stone.vqoi
 """
 
+Here is another example - this one has the model details in the same folder as the vmf file:
+"""
+type:entity
+vertices: vertices.vvertices
+indices: indices.vindices
+texture: texture.png
+"""
+
 .vvertices files are just a dump of the vertices to be sent to OpenGL, compressed with gzip
 
 .vindices file is similar to vvertices, except it's the indices for OpenGL.
 
 a .qoi image is, well, an image compressed using the QOI format. look it up, it's actually pretty neat.
-.vqoi is a modified version of qoi to fix a couple of issues.
+.vqoi is a modified version of qoi to fix an issue with repeating pixels that have the same hash, causing compression rates to plummit.
 qoi was designed to be as simple as possible, but with some modifications it can be much better.
 They weren't implemented into the final qoi standard since they made it significantly more complicated.
-The reason I am using QOI is because it's a freaking crap ton faster, and it has comperable compression to png.
+The reason I am using QOI is because it's a freaking crap ton faster, and it has comparable (often better) compression to png.
 
 Block models will come later.

@@ -70,7 +70,7 @@ public static class VQoiDecoder
         int p = VQoiCodec.HeaderSize;
         int indexPos = 0; //used in the modified version
 
-        for (int pxPos = 0; pxPos < pixels.Length; pxPos += channels)
+        for (int pxPos = 0; pxPos < pixels.Length && p < data.Length; pxPos += channels)
         {
             if (run > 0)
             {
@@ -78,6 +78,7 @@ public static class VQoiDecoder
             }
             else
             {
+
                 byte b1 = data[p++];
 
                 if (b1 == VQoiCodec.Rgb)
@@ -165,14 +166,14 @@ public static class VQoiDecoder
             }
         }
         
-        int pixelsEnd = data.Length - VQoiCodec.Padding.Length;
-        for (int padIdx = 0; padIdx < VQoiCodec.Padding.Length; padIdx++) 
-        {
-            if (data[pixelsEnd + padIdx] != VQoiCodec.Padding[padIdx]) 
-            {
-                throw new InvalidOperationException("Invalid padding");
-            }
-        }
+        //int pixelsEnd = data.Length - VQoiCodec.Padding.Length;
+        //for (int padIdx = 0; padIdx < VQoiCodec.Padding.Length; padIdx++) 
+        //{
+        //    if (data[pixelsEnd + padIdx] != VQoiCodec.Padding[padIdx]) 
+        //    {
+        //        throw new InvalidOperationException("Invalid padding");
+        //    }
+        //}
 
         return new VQoiImage(pixels, width, height, (VQoiChannels)channels, colorSpace);
     }

@@ -48,9 +48,13 @@ namespace Voxelesque.Render.GL33{
             // Bind the handle
             GL.ActiveTexture(TextureUnit.Texture0);
             GL.BindTexture(TextureTarget.Texture2D, _id);
+
+            //EDIT: this USED to be the case, HOWEVER the fragment shader *should* invert the Y texture coordinate, thus fixing the issue.
             // Our Bitmap loads from the top-left pixel, whereas OpenGL loads from the bottom-left, causing the texture to be flipped vertically.
             // This will correct that, making the texture display properly.
-            image.RotateFlip(RotateFlipType.RotateNoneFlipY);
+            //image.RotateFlip(RotateFlipType.RotateNoneFlipY);
+
+
 
             // First, we get our pixels from the bitmap we loaded.
             // Arguments:

@@ -23,7 +23,7 @@ public static class VQoiCodec
     public static int MaxPixels = 400_000_000;
     
     public const int HashTableSize = 64; 
-    public const int LookupHashTableSize = 1024;
+    public const int LookupHashTableSize = 4096;
     
     public const byte HeaderSize = 14;
     public const string MagicString = "qoif";
