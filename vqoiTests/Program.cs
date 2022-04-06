@@ -8,7 +8,7 @@ public static class Program
     public static void Main(string[] args)
     {
         if(true){
-            string imagePath = "/home/bluesillybeard/VisualStudioCodeProjects/Voxelesque/src/Resources/container.png";
+            string imagePath = "/home/bluesillybeard/VSCodeProjects/Voxelesque/src/Resources/container.png";
 
             var img = ImageResult.FromMemory(File.ReadAllBytes(imagePath), ColorComponents.RedGreenBlueAlpha);
             var qoiImage = new VQoiImage(img.Data, img.Width, img.Height, (VQoiChannels)img.Comp);
