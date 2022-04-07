@@ -5,19 +5,17 @@ Any path referenced by a vmf file is relative to the folder that contains the fi
 For example, if a file path is "vmf/test.vmf", then any path it references will be appended to "vmf/".
 So, if test.vmf has the texture path of "../texture/test.png" then the real path is "vmf/../texture/test.png", or "texture/test.png"
 
-here is an example (StoneBlock.vmf):
+here is an example (GrassCube.vmf):
 """
 type: entity
-vertices: ../mesh/StoneBlock.vvertices
-indices: ../mesh/StoneBlock.vindices
-texture: ../texture/Stone.vqoi
+mesh: ../mesh/GrassCube.vmesh
+texture: ../texture/GrassCube.vqoi
 """
 
 Here is another example - this one has the model details in the same folder as the vmf file:
 """
 type:entity
-vertices: vertices.vvertices
-indices: indices.vindices
+mesh: mesh.vmesh
 texture: texture.png
 """
 
@@ -26,9 +24,50 @@ texture: texture.png
 .vindices file is similar to vvertices, except it's the indices for OpenGL.
 
 a .qoi image is, well, an image compressed using the QOI format. look it up, it's actually pretty neat.
-.vqoi is a modified version of qoi to fix an issue with repeating pixels that have the same hash, causing compression rates to plummit.
+.vqoi is a modified version of qoi to fix an issue with alternating pixels that have the same hash, causing compression rates to plummit.
 qoi was designed to be as simple as possible, but with some modifications it can be much better.
 They weren't implemented into the final qoi standard since they made it significantly more complicated.
 The reason I am using QOI is because it's a freaking crap ton faster, and it has comparable (often better) compression to png.
+Most of qoi's compression comes from RLE, so noise doesn't compress well.
 
-Block models will come later.
+Here is an example for a block model:
+"""
+type: block
+mesh: ../mesh/StoneBlock.vbmesh
+blocks: 31
+texture ../texture/StoneBlock/vqoi
+"""
+
+vmesh and vbmesh files are pretty simple.
+Before reading one, the raw file must be decompressed using gzip compression.
+Once that is done, you may read the uncompressed data:
+
+vmesh:
+4 bytes    : big endian uint with the number of vertices. Variable "V"
+4 bytes    : big endian uint with the number of indices. Should ALWAYS be a multiple of 3.Variable "I"
+1 byte     : the version number. Should be 0, unless it needs more functionality.
+V*4*8 bytes:|the vertex data. Each vertex contains 5 elements that are all 32 bit floats. (thus the v*4*5).
+            |the first 3 floats are the (x y z) components of the spacial coordinate.
+            |The next 2 are the (x y) components of the texture coordinate.
+            |the last 3 are the (x y z) components of the surface normal.
+I*4 bytes  : the indices, in unsigned 32 bit ints.
+
+
+vbmesh:
+NOTE:The format starts off as an entire vmesh containing the basic mesh. In fact, a vbmesh can be read as a vmesh without any issues.
+(I/3)*4 bytes: the removable triangles.
+
+Each removable triangle is a byte that contains which faces have to be blocked in order for that triangle to be culled.
+Every face set as a 1 for a triangle has to be blocked in order for it to be culled; most triangles only have one face set.
+It is worth noting that if every face is blocked, the entire block will be culled skipping any mesh data it contains altogether.
+
+The faces are organized like so:
+bit 1 :top (+y)
+bit 2 :bottom(-y)
+bit 4 :side (-z OR +z; -z if the formula ((x + z) & 1) - 0.5f evaluates to -1)
+The formula "(z + x & 1) * -2 + 1 + z" can be used to get the Z position of the block that touches the z side of a block. I don't know how I figured this out, but I did.
+bit 8 :side (-x)
+bit 16:side (+x)
+bits 32, 64, and 128 are unused and ignored. Theoretically, they could be used to hide a secret message...
+
+the Y and Z scales are 0.5, while the X scale is 0.28867513459481288225
