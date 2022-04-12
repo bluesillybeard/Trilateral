@@ -19,10 +19,6 @@ mesh: mesh.vmesh
 texture: texture.png
 """
 
-.vvertices files are just a dump of the vertices to be sent to OpenGL, compressed with gzip
-
-.vindices file is similar to vvertices, except it's the indices for OpenGL.
-
 a .qoi image is, well, an image compressed using the QOI format. look it up, it's actually pretty neat.
 .vqoi is a modified version of qoi to fix an issue with alternating pixels that have the same hash, causing compression rates to plummit.
 qoi was designed to be as simple as possible, but with some modifications it can be much better.
@@ -35,21 +31,24 @@ Here is an example for a block model:
 type: block
 mesh: ../mesh/StoneBlock.vbmesh
 blocks: 31
-texture ../texture/StoneBlock/vqoi
+texture: ../texture/StoneBlock/vqoi
 """
 
 vmesh and vbmesh files are pretty simple.
 Before reading one, the raw file must be decompressed using gzip compression.
 Once that is done, one may read the uncompressed data:
 
+NOTE: Everything is little endian.
+
 vmesh:
-4 bytes    : big endian uint with the number of vertices. Variable "V"
-4 bytes    : big endian uint with the number of indices. Should ALWAYS be a multiple of 3.Variable "I"
-1 byte     : the version number. Should be 0, unless it needs more functionality.
+4 bytes    : uint with the number of vertices. Variable "V"
+4 bytes    : uint with the number of indices. Should ALWAYS be a multiple of 3.Variable "I"
+4 bytes    : the version number. Should be 0, unless it needs more functionality.
 V*4*8 bytes:|the vertex data. Each vertex contains 8 elements that are all 32 bit floats. (thus the v*4*8).
             |the first 3 floats are the (x y z) components of the spacial coordinate.
-            |The next 2 are the (x y) components of the texture coordinate.
+            |the next 2 are the (x y) components of the texture coordinate.
             |the last 3 are the (x y z) components of the surface normal.
+             If all three normal components are set to 0, backface culling and smooth lighting are disabled for this mesh.
 I*4 bytes  : the indices, in unsigned 32 bit ints.
 
 

@@ -27,8 +27,9 @@ namespace Voxelesque
         static RenderCamera camera;
         private static void Main()
         {
-            System.Threading.Thread.CurrentThread.Name = "Main";
-            System.Console.WriteLine("main thread: " + System.Threading.Thread.CurrentThread.Name);
+            System.Threading.Thread.CurrentThread.Name = "Main Thread";
+
+            
             random = new Random();
 
             render = new GL33Render(); //todo: make a method that creates the most appropiate Render.
@@ -40,11 +41,11 @@ namespace Voxelesque
             //initial loading stuff here - move to update method when loading bar is added
             mesh = render.LoadMesh(
                 new float[]{
-                //|-Position------|  |Texture coordinates
-                   0.5f,  0.5f, 0.0f,  1.0f, 1.0f, // top right
-                   0.5f, -0.5f, 0.0f,  1.0f, 0.0f, // bottom right
-                  -0.5f, -0.5f, 0.0f,  0.0f, 0.0f, // bottom left
-                  -0.5f,  0.5f, 0.0f,  0.0f, 1.0f  // top left
+                //|-Position------|  |Texture coordinates|normals
+                   0.5f,  0.5f, 0.0f,  1.0f, 1.0f,         0, 0, 0,// top right
+                   0.5f, -0.5f, 0.0f,  1.0f, 0.0f,         0, 0, 0,// bottom right
+                  -0.5f, -0.5f, 0.0f,  0.0f, 0.0f,         0, 0, 0,// bottom left
+                  -0.5f,  0.5f, 0.0f,  0.0f, 1.0f,         0, 0, 0,// top left
                 },
                 new uint[]{
                     0, 1, 3,
@@ -125,6 +126,7 @@ namespace Voxelesque
             //send the camera position to Render
             camera.Position = pos;
             camera.Rotation = rot * RenderCamera.radToDeg;
+            
         }
     }
 }

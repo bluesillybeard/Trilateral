@@ -29,6 +29,10 @@ namespace Voxelesque.Render.GL33{
         /**
         <summary>
             Creates a Mesh from an element array
+            Each vertec has 8 elements: X pos, y pos, z pos, x tex coord, y tex coord, x normal, y normal, z normal.
+            the X Y Z coordinates should be obvious.
+            the X Y tex coords are the X and Y texture coordinates, also often refered to as UV
+            the X Y Z normals form a cartesian vector of the surface normal.
         </summary>
         */
         public GL33Mesh(float[] vertices, uint[] indices){
@@ -44,11 +48,17 @@ namespace Voxelesque.Render.GL33{
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, _indexBuffer);
             GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(uint), indices, BufferUsageHint.StaticDraw);
 
+            //coordinates
             GL.EnableVertexAttribArray(0);
-            GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 5 * sizeof(float), 0);
+            GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 8 * sizeof(float), 0);
 
+            //texture coordinates
             GL.EnableVertexAttribArray(1);
-            GL.VertexAttribPointer(1, 2, VertexAttribPointerType.Float, false, 5 * sizeof(float), 3 * sizeof(float));
+            GL.VertexAttribPointer(1, 2, VertexAttribPointerType.Float, false, 8 * sizeof(float), 3 * sizeof(float));
+
+            //surface normals
+            GL.EnableVertexAttribArray(2);
+            GL.VertexAttribPointer(2, 3, VertexAttribPointerType.Float, false, 8 * sizeof(float), 5 * sizeof(float));
         }
 
         public void Bind(){

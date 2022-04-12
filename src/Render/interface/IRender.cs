@@ -31,7 +31,7 @@ namespace Voxelesque.Render{
           More details about how vmf files work in the documentation
          </summary>
         */
-        IRenderMesh LoadMesh(string VMFPath);
+        //IRenderMesh LoadMesh(string VMFPath);
 
         void DeleteMesh(IRenderMesh mesh);
         //textures
@@ -70,9 +70,9 @@ namespace Voxelesque.Render{
         loads the mesh and texture from a vmf, vemf, or vbmf model
         </summary>
         */
-        RenderEntityModel LoadModel(string VMFPath);
+        //RenderEntityModel LoadModel(string VMFPath);
 
-        void DeleteModel(RenderEntityModel model);
+        //void DeleteModel(RenderEntityModel model);
         
 
         //entities
