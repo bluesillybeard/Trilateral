@@ -1,8 +1,6 @@
 using OpenTK.Graphics.OpenGL;
 
 using System;
-using System.Drawing;
-using System.Drawing.Imaging;
 using System.Collections.Generic;
 using PixelFormat = OpenTK.Graphics.OpenGL.PixelFormat;
 using System.IO;
@@ -10,10 +8,12 @@ using System.IO;
 using VQoiSharp;
 using VQoiSharp.Codec;
 
+using StbImageSharp;
 //NOTICE: this is a modified version of the texture class from the official OpenTK examples.
 
 namespace Voxelesque.Render.GL33{
 
+    //This is used to clean up leacked textures from the GPU.
     struct GL33TextureHandle{
         public GL33TextureHandle(int id){
             this.id = id;
@@ -26,22 +26,52 @@ namespace Voxelesque.Render.GL33{
         private bool _deleted;
         public GL33Texture(string path)
         {
-            string lowerPath = path.ToLower();
-            if(lowerPath.EndsWith(".vqoi") || lowerPath.EndsWith(".qoi")){
-                VQoiImage image = VQoiDecoder.Decode(File.ReadAllBytes(path));
-                LoadTexture(image);
-            } else {
-                using(Bitmap image = new Bitmap(path)){
-                    LoadTexture(image);
+            byte[] data = RenderUtils.GetRawImageData(path, out int width, out int height, out VQoiChannels channels);
+            LoadTexture(data, width, height, channels);
+        }
+
+        public GL33Texture(ImageResult image){
+            byte[] data = RenderUtils.GetRawImageData(image, out int width, out int height, out VQoiChannels channels);
+            LoadTexture(data, width, height, channels);        
+        }
+
+        private void LoadTexture(byte[] data, int width, int height, VQoiChannels channels){
+            // Generate handle
+            _id = GL.GenTexture();
+
+            // Bind the handle
+            GL.ActiveTexture(TextureUnit.Texture0);
+            GL.BindTexture(TextureTarget.Texture2D, _id);
+
+            //We don't bother inverting the image for OpenGL because the fragment shader does that for us.
+
+            PixelFormat format;
+            switch (channels){
+                case VQoiChannels.Rgb: {
+                    format = PixelFormat.Rgb;
+                    break;
                 }
+                case VQoiChannels.RgbWithAlpha: {
+                    format = PixelFormat.Rgba;
+                    break;
+                }
+                default: throw new Exception("invalid image type - only RGB and RGBA are supported.");
             }
+
+            GL.TexImage2D(TextureTarget.Texture2D,
+                0,
+                PixelInternalFormat.Rgba,
+                width,
+                height,
+                0,
+                format,
+                PixelType.UnsignedByte,
+                data);
+
+            SetParametersAndGenerateMipmaps();
         }
 
-        public GL33Texture(Bitmap image){
-            LoadTexture(image);
-        }
-
-        private void LoadTexture(Bitmap image){
+        /*private void LoadTexture(Bitmap image){
             // Generate handle
             _id = GL.GenTexture();
 
@@ -123,8 +153,9 @@ namespace Voxelesque.Render.GL33{
                 PixelType.UnsignedByte,
                 image.Data);
 
-            SetParametersAndGenerateMipmaps();          
+            SetParametersAndGenerateMipmaps();
         }
+        */
 
         private void SetParametersAndGenerateMipmaps(){
             // Now that our texture is loaded, we can set a few settings to affect how the image appears on rendering.

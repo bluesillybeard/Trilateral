@@ -21,19 +21,30 @@ namespace Voxelesque.Render.Common{
             byte[] vmesh = File.ReadAllBytes(folder + ts);
 
             //TODO: check endian
-            float[] vertices = new float[8 * BitConverter.ToInt32(vmesh, 0)];
 
+            //copy the vertices one float at a time. The vmesh already has the attributes in the right order, so we don't have to worry about that.
+            float[] vertices = new float[8 * BitConverter.ToInt32(vmesh, 0)];
             for(int i=0; i<vertices.Length; i++){
                 vertices[i] = BitConverter.ToSingle(vmesh, i*4+8);
-                //todo: finis hthis thingy lol
+            }
+
+            //TODO: make sure offsets are correct
+
+            //do with the indices the same as the vertices.
+            uint[] indices = new uint[BitConverter.ToInt32(vmesh, 4)];
+
+            for(int i=0; i<indices.Length; i++){
+                indices[i] = BitConverter.ToUInt32(vmesh, 4*vertices.Length + 4*i + 8);
             }
 
 
-            return new VModel(
-                vertices, indices,
-                image,
-                imgWidth, height
-            );
+
+
+            return null;//new VModel(
+            //    vertices, indices,
+            //    image,
+            //    imgWidth, height
+            //);
         }
     }
 }

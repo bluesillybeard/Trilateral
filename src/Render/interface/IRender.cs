@@ -5,6 +5,8 @@ using Voxelesque.Render.Common;
 
 using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
+
+using StbImageSharp;
 namespace Voxelesque.Render{
     interface IRender{
 
@@ -45,7 +47,7 @@ namespace Voxelesque.Render{
         */
         IRenderTexture LoadTexture(string filePath);
 
-        IRenderTexture LoadTexture(Bitmap image);
+        IRenderTexture LoadTexture(ImageResult image);
 
         void DeleteTexture(IRenderTexture texture);
 

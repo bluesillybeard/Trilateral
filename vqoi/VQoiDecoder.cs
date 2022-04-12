@@ -27,7 +27,7 @@ public static class VQoiDecoder
         if (!VQoiCodec.IsValidMagic(data[..4]))
         {
             if(!VQoiCodec.IsValidMagicModified(data[..4])){
-                throw new VQoiDecodingException("Invalid file magic"); // TODO: add magic value
+                throw new VQoiDecodingException("Invalid file magic");
             }
             useModified = true; //if it's not a normal one, but instead a modified.
         }
@@ -51,13 +51,13 @@ public static class VQoiDecoder
         }
         
         byte[] index = new byte[VQoiCodec.HashTableSize * 4];
-        if (channels == 3) // TODO: delete
-        {
-            for (int indexPos0 = 3; indexPos0 < index.Length; indexPos0 += 4)
-            {
-                index[indexPos0] = 255;
-            }
-        }
+        //if (channels == 3) // TODO: delete
+        //{
+        //    for (int indexPos0 = 3; indexPos0 < index.Length; indexPos0 += 4)
+        //    {
+        //        index[indexPos0] = 255;
+        //    }
+        //}
 
         byte[] pixels = new byte[width * height * channels];
         
@@ -96,6 +96,9 @@ public static class VQoiDecoder
                 }
                 else if (b1 == VQoiCodec.Rgba)
                 {
+                    if(channels == 3){
+                        throw new VQoiDecodingException("Cannot have RGBA block in an RGB image");
+                    }
                     r = data[p++];
                     g = data[p++];
                     b = data[p++];
@@ -165,15 +168,6 @@ public static class VQoiDecoder
                 pixels[pxPos + 3] = a;
             }
         }
-        
-        //int pixelsEnd = data.Length - VQoiCodec.Padding.Length;
-        //for (int padIdx = 0; padIdx < VQoiCodec.Padding.Length; padIdx++) 
-        //{
-        //    if (data[pixelsEnd + padIdx] != VQoiCodec.Padding[padIdx]) 
-        //    {
-        //        throw new InvalidOperationException("Invalid padding");
-        //    }
-        //}
 
         return new VQoiImage(pixels, width, height, (VQoiChannels)channels, colorSpace);
     }

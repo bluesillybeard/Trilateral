@@ -53,7 +53,7 @@ namespace Voxelesque
                 }
             );
 
-            texture = render.LoadTexture("Resources/container.png.vqoi");
+            texture = render.LoadTexture("Resources/container.png");
 
             shader = render.LoadShader("Resources/Shaders/");
 

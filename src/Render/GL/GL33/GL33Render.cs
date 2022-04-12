@@ -6,9 +6,10 @@ using OpenTK.Mathematics;
 
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 
 using Voxelesque.Render.Common;
+
+using StbImageSharp;
 
 namespace Voxelesque.Render.GL33{
     class GL33Render : IRender{
@@ -104,7 +105,7 @@ namespace Voxelesque.Render.GL33{
             return new GL33Texture(path);
         }
 
-        public IRenderTexture LoadTexture(Bitmap image){
+        public IRenderTexture LoadTexture(ImageResult image){
             return new GL33Texture(image);
         }
 
