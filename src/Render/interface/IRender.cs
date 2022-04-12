@@ -41,8 +41,7 @@ namespace Voxelesque.Render{
         /**
         <summary>
         loads a texture.
-        Supports png, jpg, jpeg, qoi, vqoi, vmf, vemf, vbmf
-        NOTICE: vmf, vemf, and vbmf simply contain a reference to a texture, and they temselves are not image formats.
+        Supports png, jpg, jpeg, qoi, vqoi
         </summary>
         */
         IRenderTexture LoadTexture(string filePath);
