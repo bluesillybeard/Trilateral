@@ -46,7 +46,6 @@ namespace Voxelesque.Render{
         public static void printErrLn(object message){
             printErr(message);
             Console.WriteLine();
-        } 
-
+        }
     }
 }

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
-
+using System;
 namespace Voxelesque.Render.Common{
     class VMF{
         public static VModel LoadVEMF(string folder, string file){
@@ -20,14 +20,20 @@ namespace Voxelesque.Render.Common{
             }
             byte[] vmesh = File.ReadAllBytes(folder + ts);
 
-            //float[] vertices
+            //TODO: check endian
+            float[] vertices = new float[8 * BitConverter.ToInt32(vmesh, 0)];
 
-            //return new VModel(
-            //    vertices, indices,
-            //    image,
-            //    imgWidth, height
-            //);
-            return null;
+            for(int i=0; i<vertices.Length; i++){
+                vertices[i] = BitConverter.ToSingle(vmesh, i*4+8);
+                //todo: finis hthis thingy lol
+            }
+
+
+            return new VModel(
+                vertices, indices,
+                image,
+                imgWidth, height
+            );
         }
     }
 }
