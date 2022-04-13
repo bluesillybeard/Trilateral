@@ -3,6 +3,8 @@ using OpenTK.Graphics.OpenGL;
 using System;
 using System.Collections.Generic;
 
+using Voxelesque.Render.Common;
+
 namespace Voxelesque.Render.GL33{
 
     struct GL33MeshHandle{
@@ -25,7 +27,14 @@ namespace Voxelesque.Render.GL33{
         private int _vertexBufferObject;
 
         private int _elementCount;
-        
+
+        public GL33Mesh(string vmeshPath){
+            VMesh mesh = new VMesh(vmeshPath);
+            LoadMesh(mesh.vertices, mesh.indices);
+        }
+        public GL33Mesh(VMesh mesh){
+            LoadMesh(mesh.vertices, mesh.indices);
+        }
         /**
         <summary>
             Creates a Mesh from an element array
@@ -36,6 +45,10 @@ namespace Voxelesque.Render.GL33{
         </summary>
         */
         public GL33Mesh(float[] vertices, uint[] indices){
+            LoadMesh(vertices, indices);
+        }
+
+        private void LoadMesh(float[] vertices, uint[] indices){
             _elementCount = indices.Length;
             _id = GL.GenVertexArray();
             GL.BindVertexArray(_id);
@@ -60,7 +73,6 @@ namespace Voxelesque.Render.GL33{
             GL.EnableVertexAttribArray(2);
             GL.VertexAttribPointer(2, 3, VertexAttribPointerType.Float, false, 8 * sizeof(float), 5 * sizeof(float));
         }
-
         public void Bind(){
             GL.BindVertexArray(_id);
         }

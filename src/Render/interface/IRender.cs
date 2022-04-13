@@ -29,23 +29,27 @@ namespace Voxelesque.Render{
 
         /**
          <summary> 
-          loads a VMF file as a mesh (.vemf, .vbmf, .vmf)
-          More details about how vmf files work in the documentation
+          loads a vmesh file into a GPU-stored mesh.
          </summary>
         */
-        //IRenderMesh LoadMesh(string VMFPath);
+        IRenderMesh LoadMesh(string VMFPath);
 
         void DeleteMesh(IRenderMesh mesh);
         //textures
 
         /**
         <summary>
-        loads a texture.
+        loads a texture into the GPU.
         Supports png, jpg, jpeg, qoi, vqoi
         </summary>
         */
         IRenderTexture LoadTexture(string filePath);
 
+        /**
+        <summary>
+        loads a texture into the GPU
+        </summary>
+        */
         IRenderTexture LoadTexture(ImageResult image);
 
         void DeleteTexture(IRenderTexture texture);
@@ -71,9 +75,15 @@ namespace Voxelesque.Render{
         loads the mesh and texture from a vmf, vemf, or vbmf model
         </summary>
         */
-        //RenderEntityModel LoadModel(string VMFPath);
+        RenderEntityModel LoadModel(string folder, string file);
 
-        //void DeleteModel(RenderEntityModel model);
+        /**
+        <summary>
+        deletes the internal mesh and texture of a model.
+        </summary>
+        */
+
+        void DeleteModel(RenderEntityModel model);
         
 
         //entities

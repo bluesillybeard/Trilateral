@@ -35,6 +35,10 @@ namespace Voxelesque.Render.GL33{
             LoadTexture(data, width, height, channels);        
         }
 
+        public GL33Texture(VQoiImage image){
+            LoadTexture(image.Data, image.Width, image.Height, image.Channels);        
+        }
+
         private void LoadTexture(byte[] data, int width, int height, VQoiChannels channels){
             // Generate handle
             _id = GL.GenTexture();
@@ -42,8 +46,6 @@ namespace Voxelesque.Render.GL33{
             // Bind the handle
             GL.ActiveTexture(TextureUnit.Texture0);
             GL.BindTexture(TextureTarget.Texture2D, _id);
-
-            //We don't bother inverting the image for OpenGL because the fragment shader does that for us.
 
             PixelFormat format;
             switch (channels){
@@ -71,92 +73,6 @@ namespace Voxelesque.Render.GL33{
             SetParametersAndGenerateMipmaps();
         }
 
-        /*private void LoadTexture(Bitmap image){
-            // Generate handle
-            _id = GL.GenTexture();
-
-            // Bind the handle
-            GL.ActiveTexture(TextureUnit.Texture0);
-            GL.BindTexture(TextureTarget.Texture2D, _id);
-
-            //EDIT: this USED to be the case, HOWEVER the fragment shader *should* invert the Y texture coordinate, thus fixing the issue.
-            // Our Bitmap loads from the top-left pixel, whereas OpenGL loads from the bottom-left, causing the texture to be flipped vertically.
-            // This will correct that, making the texture display properly.
-            //image.RotateFlip(RotateFlipType.RotateNoneFlipY);
-
-
-
-            // First, we get our pixels from the bitmap we loaded.
-            // Arguments:
-            //   The pixel area we want. Typically, you want to leave it as (0,0) to (width,height), but you can
-            //   use other rectangles to get segments of textures, useful for things such as spritesheets.
-            //   The locking mode. Basically, how you want to use the pixels. Since we're passing them to OpenGL,
-            //   we only need ReadOnly.
-            //   Next is the pixel format we want our pixels to be in. In this case, ARGB will suffice.
-            //   We have to fully qualify the name because OpenTK also has an enum named PixelFormat.
-            BitmapData data = image.LockBits(
-                new Rectangle(0, 0, image.Width, image.Height),
-                ImageLockMode.ReadOnly,
-                System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-
-            // Now that our pixels are prepared, it's time to generate a texture. We do this with GL.TexImage2D.
-            // Arguments:
-            //   The type of texture we're generating. There are various different types of textures, but the only one we need right now is Texture2D.
-            //   Level of detail. We can use this to start from a smaller mipmap (if we want), but we don't need to do that, so leave it at 0.
-            //   Target format of the pixels. This is the format OpenGL will store our image with.
-            //   Width of the image
-            //   Height of the image.
-            //   Border of the image. This must always be 0; it's a legacy parameter that Khronos never got rid of.
-            //   The format of the pixels, explained above. Since we loaded the pixels as ARGB earlier, we need to use BGRA.
-            //   Data type of the pixels.
-            //   And finally, the actual pixels.
-            GL.TexImage2D(TextureTarget.Texture2D,
-                0,
-                PixelInternalFormat.Rgba,
-                image.Width,
-                image.Height,
-                0,
-                PixelFormat.Bgra,
-                PixelType.UnsignedByte,
-                data.Scan0);
-
-            SetParametersAndGenerateMipmaps();
-        }
-
-        private void LoadTexture(VQoiImage image){
-            _id = GL.GenTexture();
-
-            GL.ActiveTexture(TextureUnit.Texture0);
-            GL.BindTexture(TextureTarget.Texture2D, _id);
-
-            //determine what format to use.
-            PixelFormat format;
-            switch (image.Channels){
-                case VQoiChannels.Rgb: {
-                    format = PixelFormat.Rgb;
-                    break;
-                }
-                case VQoiChannels.RgbWithAlpha: {
-                    format = PixelFormat.Rgba;
-                    break;
-                }
-                default: throw new Exception("invalid QOI image type - only RGB and RGBA are supported.");
-            }
-
-            GL.TexImage2D(TextureTarget.Texture2D,
-                0,
-                PixelInternalFormat.Rgba,
-                image.Width,
-                image.Height,
-                0,
-                format,
-                PixelType.UnsignedByte,
-                image.Data);
-
-            SetParametersAndGenerateMipmaps();
-        }
-        */
-
         private void SetParametersAndGenerateMipmaps(){
             // Now that our texture is loaded, we can set a few settings to affect how the image appears on rendering.
 
@@ -165,8 +81,8 @@ namespace Voxelesque.Render.GL33{
             // You could also use (amongst other options) Nearest, which just grabs the nearest pixel, which makes the texture look pixelated if scaled too far.
             // NOTE: The default settings for both of these are LinearMipmap. If you leave these as default but don't generate mipmaps,
             // your image will fail to render at all (usually resulting in pure black instead).
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
 
             // Now, set the wrapping mode. S is for the X axis, and T is for the Y axis.
             // We set this to Repeat so that textures will repeat when wrapped. Not demonstrated here since the texture coordinates exactly match

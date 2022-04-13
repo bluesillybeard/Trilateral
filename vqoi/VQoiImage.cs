@@ -43,4 +43,19 @@ public class VQoiImage
         Channels = channels;
         ColorSpace = colorSpace;
     }
+
+    /// <summary>
+    /// Create the "error texture" - black and magenta squares.
+    /// </summary>
+    public VQoiImage()
+    {
+        this.Data = new byte[]{
+            255, 0, 255, 0,   0, 0,
+            0,   0, 0,   255, 0, 255
+        };
+        this.Width = 2;
+        this.Height = 2;
+        this.Channels = VQoiChannels.Rgb;
+        this.ColorSpace = VQoiColorSpace.SRgb;
+    }
 }

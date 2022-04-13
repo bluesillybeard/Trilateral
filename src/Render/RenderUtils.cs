@@ -73,5 +73,24 @@ namespace Voxelesque.Render{
             channels = VQoiChannels.RgbWithAlpha;
             return image.Data;
         }
+
+
+        public static VQoiImage GetRawImage(string ImagePath){
+            string lowerPath = ImagePath.ToLower();
+            if(lowerPath.EndsWith(".vqoi") || lowerPath.EndsWith(".qoi")){
+                return VQoiDecoder.Decode(File.ReadAllBytes(ImagePath));
+            } else {
+                ImageResult image = ImageResult.FromMemory(File.ReadAllBytes(ImagePath), ColorComponents.RedGreenBlueAlpha);
+                return GetRawImage(image);
+            }
+        }
+        public static VQoiImage GetRawImage(ImageResult image){
+            return new VQoiImage(
+                image.Data,
+                image.Width,
+                image.Height,
+                VQoiChannels.RgbWithAlpha
+            );
+        }
     }
 }

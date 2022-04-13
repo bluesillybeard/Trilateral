@@ -133,7 +133,6 @@ namespace Voxelesque.Render.Common
             m31 = MathF.FusedMultiplyAdd(m01, -_position.X, MathF.FusedMultiplyAdd(m11, -_position.Y, MathF.FusedMultiplyAdd(m21, -_position.Z, m31)));
             m32 = MathF.FusedMultiplyAdd(m02, -_position.X, MathF.FusedMultiplyAdd(m12, -_position.Y, MathF.FusedMultiplyAdd(m22, -_position.Z, m32)));
             m33 = MathF.FusedMultiplyAdd(m03, -_position.X, MathF.FusedMultiplyAdd(m13, -_position.Y, MathF.FusedMultiplyAdd(m23, -_position.Z, m33)));
-
             //actually finally, set our matrix to the new values, and multiply by the persoective transform.
             _transform = new Matrix4(
                 m00, m01, m02, m03,

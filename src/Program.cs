@@ -15,9 +15,11 @@ namespace Voxelesque
 
         static double time;
         static IRender render;
-        static IRenderMesh mesh;
+        //static IRenderMesh mesh;
 
-        static IRenderTexture texture;
+        //static IRenderTexture texture;
+
+        static RenderEntityModel model;
         static IRenderShader shader;
 
         static IRenderEntity entity;
@@ -39,6 +41,8 @@ namespace Voxelesque
             render.OnVoxelesqueUpdate += new System.Action<double>(update);
 
             //initial loading stuff here - move to update method when loading bar is added
+
+            /*
             mesh = render.LoadMesh(
                 new float[]{
                 //|-Position------|  |Texture coordinates|normals
@@ -54,6 +58,11 @@ namespace Voxelesque
             );
 
             texture = render.LoadTexture("Resources/container.png");
+            */
+
+            model = render.LoadModel("Resources/vmf/models", "GrassCube.vmf");
+
+
 
             shader = render.LoadShader("Resources/Shaders/");
 
@@ -61,7 +70,7 @@ namespace Voxelesque
                 new Vector3(0, 0, 0),
                 new Vector3(0, 0, 0),
                 Vector3.One
-            ), shader, mesh, texture);
+            ), shader, model.mesh, model.texture);
 
             camera = render.SpawnCamera(new Vector3(0, 0, 0), new Vector3(0, 0, 0), 90);
             render.SetCamera(camera);

@@ -1,6 +1,11 @@
 namespace Voxelesque.Render.Common{
     struct RenderEntityModel{
-        IRenderMesh mesh;
-        IRenderTexture texture;
+        public IRenderMesh mesh;
+        public IRenderTexture texture;
+
+        public RenderEntityModel(IRenderMesh mesh, IRenderTexture texture){
+            this.mesh = mesh;
+            this.texture = texture;
+        }
     }
 }

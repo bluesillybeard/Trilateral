@@ -57,6 +57,7 @@ namespace Voxelesque.Render.GL33{
 
                 //todo: set swap interval to 0
 
+                _window.Resize += new Action<ResizeEventArgs>(OnResize);
                 GL.Enable(EnableCap.DepthTest);
                 RenderUtils.CurrentRender = this;
                 RenderUtils.CurrentRenderType = ERenderType.GL33;
@@ -92,6 +93,16 @@ namespace Voxelesque.Render.GL33{
         }
 
         //meshes
+
+        public IRenderMesh LoadMesh(string path){
+            string lowerPath = path.ToLower();
+            if(lowerPath.EndsWith(".vmesh") || lowerPath.EndsWith(".vbmesh")){
+                return new GL33Mesh(path);
+            } else {
+                RenderUtils.printErr($"{path} is not a vmesh or vbmesh");
+                return null;
+            }
+        }
         public IRenderMesh LoadMesh(float[] vertices, uint[] indices){
             return new GL33Mesh(vertices, indices);
         }
@@ -122,6 +133,20 @@ namespace Voxelesque.Render.GL33{
             ((GL33Shader)shader).Dispose();
         }
 
+        //models
+        public RenderEntityModel LoadModel(string folder, string file){
+            //load the model data
+            VModel model = new VModel(folder, file);
+            //send it to the GPU
+            GL33Mesh mesh = new GL33Mesh(model.mesh);
+            GL33Texture texture = new GL33Texture(model.texture);
+            return new RenderEntityModel(mesh, texture);
+        }
+
+        public void DeleteModel(RenderEntityModel model){
+            ((GL33Mesh)model.mesh).Dispose();
+            ((GL33Texture)model.texture).Dispose();
+        }
         //entities
         public IRenderEntity SpawnEntity(EntityPosition pos, IRenderShader shader, IRenderMesh mesh, IRenderTexture texture){
             if(shader is null || mesh is null || texture is null){
@@ -229,6 +254,11 @@ namespace Voxelesque.Render.GL33{
             }
 
             _window.Context.SwapBuffers();
+        }
+        private void OnResize(ResizeEventArgs args){
+            GL.Viewport(0, 0, args.Width, args.Height);
+            _camera.Aspect = (float)args.Width/(float)args.Height;
+            //this._window.Size
         }
     }
 }
