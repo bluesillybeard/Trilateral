@@ -50,8 +50,8 @@ public class VQoiImage
     public VQoiImage()
     {
         this.Data = new byte[]{
-            255, 0, 255, 0,   0, 0,
-            0,   0, 0,   255, 0, 255
+                  255, 0  , 255, 0  , 0  , 0  ,
+            0, 0, 0  , 0  , 0  , 255, 0  , 255, //Don't ask me where the extra 2 bytes came from, I have no clue.
         };
         this.Width = 2;
         this.Height = 2;

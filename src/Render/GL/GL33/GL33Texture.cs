@@ -48,13 +48,16 @@ namespace Voxelesque.Render.GL33{
             GL.BindTexture(TextureTarget.Texture2D, _id);
 
             PixelFormat format;
+            PixelInternalFormat internalFormat;
             switch (channels){
                 case VQoiChannels.Rgb: {
                     format = PixelFormat.Rgb;
+                    internalFormat = PixelInternalFormat.Rgb;
                     break;
                 }
                 case VQoiChannels.RgbWithAlpha: {
                     format = PixelFormat.Rgba;
+                    internalFormat = PixelInternalFormat.Rgba;
                     break;
                 }
                 default: throw new Exception("invalid image type - only RGB and RGBA are supported.");
@@ -62,7 +65,7 @@ namespace Voxelesque.Render.GL33{
 
             GL.TexImage2D(TextureTarget.Texture2D,
                 0,
-                PixelInternalFormat.Rgba,
+                internalFormat,
                 width,
                 height,
                 0,
