@@ -69,10 +69,9 @@ bit 8 :side (-x)
 bit 16:side (+x)
 bits 32, 64, and 128 are unused and ignored. Theoretically, they could be used to hide a secret message...
 
+The blocked faces of a block model (the faces that the block will block from being seen on other blocks) are stored within the VMF file, not the vbmesh.
+This is because both the mesh and the texture can be modified to where it won't be blocked;
+both a model that allows it to be viewed through and transparent texture can reveal something that would otherwise be blocked.
 
 CHUNK POSITIONING
 the Y and Z scales are 0.5, while the X scale is 0.28867513459481288225
-
-4,294,967,296 * 2,479,700,524.51 * 4,294,967,296
-
-4.57424009551e+28 / 1.3824e+18

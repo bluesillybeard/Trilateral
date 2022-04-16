@@ -136,7 +136,7 @@ namespace Voxelesque.Render.GL33{
         //models
         public RenderEntityModel LoadModel(string folder, string file){
             //load the model data
-            VModel model = new VModel(folder, file);
+            VModel model = new VModel(folder, file, out var ignored);
             //send it to the GPU
             GL33Mesh mesh = new GL33Mesh(model.mesh);
             GL33Texture texture = new GL33Texture(model.texture);

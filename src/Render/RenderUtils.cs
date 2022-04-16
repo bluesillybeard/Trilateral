@@ -23,6 +23,9 @@ namespace Voxelesque.Render{
         public const ConsoleColor DefaultBack = ConsoleColor.Black;
         public const ConsoleColor DefaultFront = ConsoleColor.White;
 
+        public const ConsoleColor WarnBack = ConsoleColor.Black;
+        public const ConsoleColor WarnFront = ConsoleColor.Yellow;
+
         public const ConsoleColor ErrorBack = ConsoleColor.Black;
         public const ConsoleColor ErrorFront = ConsoleColor.Red;
 
@@ -36,6 +39,20 @@ namespace Voxelesque.Render{
         }
 
         public static void printLn(object message){
+            print(message);
+            Console.WriteLine();
+        }
+
+        public static void printWarn(object message){
+            lock(_printMutex){
+                Console.BackgroundColor = WarnBack;
+                Console.ForegroundColor = WarnFront;
+                Console.Write($"[{Thread.CurrentThread.Name}] {message}");
+                Console.ResetColor();
+            }
+        }
+
+        public static void printWarnLn(object message){
             print(message);
             Console.WriteLine();
         }
