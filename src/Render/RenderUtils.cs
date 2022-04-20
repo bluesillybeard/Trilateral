@@ -70,44 +70,5 @@ namespace Voxelesque.Render{
             printErr(message);
             Console.WriteLine();
         }
-
-        public static byte[] GetRawImageData(string ImagePath, out int width, out int height, out VQoiChannels channels){
-            string lowerPath = ImagePath.ToLower();
-            if(lowerPath.EndsWith(".vqoi") || lowerPath.EndsWith(".qoi")){
-                VQoiImage image = VQoiDecoder.Decode(File.ReadAllBytes(ImagePath));
-                width = image.Width;
-                height = image.Height;
-                channels = image.Channels;
-                return image.Data;
-            } else {
-                ImageResult image = ImageResult.FromMemory(File.ReadAllBytes(ImagePath), ColorComponents.RedGreenBlueAlpha);
-                return GetRawImageData(image, out width, out height, out channels);
-            }
-        }
-        public static byte[] GetRawImageData(ImageResult image, out int width, out int height, out VQoiChannels channels){
-            width = image.Width;
-            height = image.Height;
-            channels = VQoiChannels.RgbWithAlpha;
-            return image.Data;
-        }
-
-
-        public static VQoiImage GetRawImage(string ImagePath){
-            string lowerPath = ImagePath.ToLower();
-            if(lowerPath.EndsWith(".vqoi") || lowerPath.EndsWith(".qoi")){
-                return VQoiDecoder.Decode(File.ReadAllBytes(ImagePath));
-            } else {
-                ImageResult image = ImageResult.FromMemory(File.ReadAllBytes(ImagePath), ColorComponents.RedGreenBlueAlpha);
-                return GetRawImage(image);
-            }
-        }
-        public static VQoiImage GetRawImage(ImageResult image){
-            return new VQoiImage(
-                image.Data,
-                image.Width,
-                image.Height,
-                VQoiChannels.RgbWithAlpha
-            );
-        }
     }
 }

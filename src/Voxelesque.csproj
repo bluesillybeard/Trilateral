@@ -7,11 +7,12 @@
 
   <ItemGroup>
     <ProjectReference Include="../vqoi/vqoi.csproj"/>
+    <ProjectReference Include="../libvmodel/libvmodel.csproj" />
+    <ProjectReference Include="../VStbImageSharp/VStbImageSharp.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="OpenTK" Version="4.4.0" />
-	  <PackageReference Include="StbImageSharp" Version="2.22.6" />
   </ItemGroup>
 
 </Project>

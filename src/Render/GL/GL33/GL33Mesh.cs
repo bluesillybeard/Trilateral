@@ -3,8 +3,7 @@ using OpenTK.Graphics.OpenGL;
 using System;
 using System.Collections.Generic;
 
-using Voxelesque.Render.Common;
-
+using libvmodel;
 namespace Voxelesque.Render.GL33{
 
     struct GL33MeshHandle{
@@ -29,8 +28,11 @@ namespace Voxelesque.Render.GL33{
         private int _elementCount;
 
         public GL33Mesh(string vmeshPath){
-            VMesh mesh = new VMesh(vmeshPath);
+            VMesh mesh = new VMesh(vmeshPath, out ICollection<string> err);
             LoadMesh(mesh.vertices, mesh.indices);
+            if(err != null){
+                RenderUtils.printErrLn(string.Join("\n\n", err));
+            }
         }
         public GL33Mesh(VMesh mesh){
             LoadMesh(mesh.vertices, mesh.indices);

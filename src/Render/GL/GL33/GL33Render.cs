@@ -11,6 +11,8 @@ using Voxelesque.Render.Common;
 
 using StbImageSharp;
 
+using libvmodel;
+
 namespace Voxelesque.Render.GL33{
     class GL33Render : IRender{
         public RenderSettings Settings {get; internal set;}
@@ -136,10 +138,14 @@ namespace Voxelesque.Render.GL33{
         //models
         public RenderEntityModel LoadModel(string folder, string file){
             //load the model data
-            VModel model = new VModel(folder, file, out var ignored);
+            VModel model = new VModel(folder, file, out var ignored, out ICollection<string> err);
             //send it to the GPU
             GL33Mesh mesh = new GL33Mesh(model.mesh);
             GL33Texture texture = new GL33Texture(model.texture);
+
+            if(err != null){
+                RenderUtils.printErrLn(string.Join("/n", err));
+            }
             return new RenderEntityModel(mesh, texture);
         }
 

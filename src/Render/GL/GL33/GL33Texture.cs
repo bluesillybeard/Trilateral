@@ -26,20 +26,15 @@ namespace Voxelesque.Render.GL33{
         private bool _deleted;
         public GL33Texture(string path)
         {
-            byte[] data = RenderUtils.GetRawImageData(path, out int width, out int height, out VQoiChannels channels);
-            LoadTexture(data, width, height, channels);
+            ImageResult img = ImageResult.FromMemory(File.ReadAllBytes(path));
+            LoadTexture(img);
         }
 
         public GL33Texture(ImageResult image){
-            byte[] data = RenderUtils.GetRawImageData(image, out int width, out int height, out VQoiChannels channels);
-            LoadTexture(data, width, height, channels);        
+            LoadTexture(image);        
         }
 
-        public GL33Texture(VQoiImage image){
-            LoadTexture(image.Data, image.Width, image.Height, image.Channels);        
-        }
-
-        private void LoadTexture(byte[] data, int width, int height, VQoiChannels channels){
+        private void LoadTexture(ImageResult img){
             // Generate handle
             _id = GL.GenTexture();
 
@@ -49,13 +44,14 @@ namespace Voxelesque.Render.GL33{
 
             PixelFormat format;
             PixelInternalFormat internalFormat;
-            switch (channels){
-                case VQoiChannels.Rgb: {
+            //todo: add more component types
+            switch (img.Comp){
+                case ColorComponents.RedGreenBlue: {
                     format = PixelFormat.Rgb;
                     internalFormat = PixelInternalFormat.Rgb;
                     break;
                 }
-                case VQoiChannels.RgbWithAlpha: {
+                case ColorComponents.RedGreenBlueAlpha: {
                     format = PixelFormat.Rgba;
                     internalFormat = PixelInternalFormat.Rgba;
                     break;
@@ -66,12 +62,12 @@ namespace Voxelesque.Render.GL33{
             GL.TexImage2D(TextureTarget.Texture2D,
                 0,
                 internalFormat,
-                width,
-                height,
+                img.Width,
+                img.Height,
                 0,
                 format,
                 PixelType.UnsignedByte,
-                data);
+                img.Data);
 
             SetParametersAndGenerateMipmaps();
         }

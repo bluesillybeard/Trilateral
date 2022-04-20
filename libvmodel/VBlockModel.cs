@@ -2,20 +2,16 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 
-using VQoiSharp;
-namespace Voxelesque.Render.Common{
-    class VBlockModel{
+namespace libvmodel{
+    public class VBlockModel{
 
         VModel model;
 
         byte blockedFaces;
 
-        byte[] removableTriangles;
-
-        public VBlockModel(VModel model, byte blockedFaces, byte[] removableTriangles){
+        public VBlockModel(VModel model, byte blockedFaces){
             this.model = model;
             this.blockedFaces = blockedFaces;
-            this.removableTriangles = removableTriangles;
         }
 
         /**
@@ -28,8 +24,9 @@ namespace Voxelesque.Render.Common{
         The vmf parameter is for when you also need data from the vmf file.
         </summary>
         */
-        public VBlockModel(string folder, string file, out Dictionary<string, string> vmf){
-            this.model = new VModel(folder, file, out vmf, out this.removableTriangles, out this.blockedFaces);
+        public VBlockModel(string folder, string file, out Dictionary<string, string>? vmf, out ICollection<string>? errors){
+            vmf = null;
+            this.model = new VModel(folder, file, out vmf, out errors);
         }
 
     }
