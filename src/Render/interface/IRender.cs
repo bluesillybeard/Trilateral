@@ -1,5 +1,5 @@
 using System;
-using System.Drawing;
+using System.Collections.Generic;
 
 using Voxelesque.Render.Common;
 
@@ -92,6 +92,13 @@ namespace Voxelesque.Render{
 
         void DeleteEntity(IRenderEntity entity);
 
+        /**
+        <summary>
+        Returns the list of entities.
+        Note that there WILL be null elements. If an entity is 'null', it means that it has been removed.
+        </summary>
+        */
+        IEnumerable<IRenderEntity> GetEntities();
         //camera
 
         RenderCamera SpawnCamera(Vector3 position, Vector3 rotation, float fovy);

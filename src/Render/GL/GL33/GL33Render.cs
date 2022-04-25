@@ -15,11 +15,13 @@ using libvmodel;
 
 namespace Voxelesque.Render.GL33{
     class GL33Render : IRender{
-        public RenderSettings Settings {get; internal set;}
+        public RenderSettings Settings {get => _settings;}
 
         public List<GL33TextureHandle> _deletedTextures;
 
         public List<GL33MeshHandle> _deletedMeshes;
+
+        private long _lastUpdateTime;
 
         private RenderSettings _settings;
         private NativeWindow _window;
@@ -74,18 +76,18 @@ namespace Voxelesque.Render.GL33{
         public void Run(){
             //I implimented my own game loop, because OpenTKs GameWindow doesn't update the keyboard state properly for the external OnUpdate event.
             long lastRenderTime = DateTime.Now.Ticks;
-            long lastUpdateTime = lastRenderTime;
+            _lastUpdateTime = lastRenderTime;
             while(!_window.IsExiting){
                 bool didSomething = false;
                 long time = DateTime.Now.Ticks; //10.000 ticks is 1ms. 10.000.000 ticks is 1s.
                 if(time - lastRenderTime > 10_000_000*_settings.TargetFrameTime){
-                    Render(time - lastRenderTime);
+                    Render(lastRenderTime, time);
                     lastRenderTime = time;
                     didSomething = true;
                 }
-                if(time - lastUpdateTime > 10_000_000/15.0){
-                    Update(time - lastUpdateTime);
-                    lastUpdateTime = time;
+                if(time - _lastUpdateTime > 10_000_000*RenderUtils.UpdateTime){
+                    Update(time - _lastUpdateTime);
+                    _lastUpdateTime = time;
                     didSomething = true;
                 }
                 if(!didSomething){
@@ -156,7 +158,7 @@ namespace Voxelesque.Render.GL33{
         //entities
         public IRenderEntity SpawnEntity(EntityPosition pos, IRenderShader shader, IRenderMesh mesh, IRenderTexture texture){
             if(shader is null || mesh is null || texture is null){
-                System.Console.WriteLine("The Shader, Mesh, and/or Texture of an entity is null!");
+                RenderUtils.printErrLn("The Shader, Mesh, and/or Texture of an entity is null!");
                 return null;
             }
 
@@ -174,11 +176,15 @@ namespace Voxelesque.Render.GL33{
         public void DeleteEntity(IRenderEntity entity){
             GL33Entity glEntity = (GL33Entity)entity;
             if(glEntity.Id() < 0){
-                System.Console.WriteLine("ERROR: entity index is negative! This should be impossible.");
+            RenderUtils.printErrLn("ERROR: entity index is negative! This should be impossible.");
                 return;
             }
             _entities[glEntity.Id()] = null;//remove the entity
             _freeEntitySlots.AddLast(glEntity.Id()); //add its empty spot to the list
+        }
+
+        public IEnumerable<IRenderEntity> GetEntities(){
+            return _entities;
         }
         //camera
         public RenderCamera SpawnCamera(Vector3 position, Vector3 rotation, float fovy){
@@ -189,8 +195,9 @@ namespace Voxelesque.Render.GL33{
         }
         public void DeleteCamera(RenderCamera camera){
             if(camera == _camera){
-                System.Console.WriteLine("Cannot delete the active camera!");
+                RenderUtils.printWarnLn("Cannot delete the active camera!");
             }
+            //Cameras are handled by the C# runtime. Technically, this method is completely pointless.
         }
         //Input
         public KeyboardState Keyboard(){
@@ -216,7 +223,7 @@ namespace Voxelesque.Render.GL33{
             //meshes
             lock(_deletedMeshes){
                 if(_deletedMeshes.Count > 0){
-                    System.Console.WriteLine($"Clearing {_deletedMeshes.Count} leaked meshes - somebody (probably me) forgot to delete their meshes!");
+                    RenderUtils.printWarnLn($"Clearing {_deletedMeshes.Count} leaked meshes - somebody (probably me) forgot to delete their meshes!");
                     foreach(GL33MeshHandle mesh in _deletedMeshes){
                         GL33Mesh.Dispose(mesh);
                     }
@@ -227,7 +234,7 @@ namespace Voxelesque.Render.GL33{
             //textures
             lock(_deletedTextures){
                 if(_deletedTextures.Count > 0){
-                    System.Console.WriteLine($"Clearing {_deletedTextures.Count} leaked textures - somebody (probably me) forgot to delete their textures!");
+                    RenderUtils.printWarnLn($"Clearing {_deletedTextures.Count} leaked textures - somebody (probably me) forgot to delete their textures!");
                     foreach(GL33TextureHandle mesh in _deletedTextures){
                         GL33Texture.Dispose(mesh);
                     }
@@ -238,13 +245,36 @@ namespace Voxelesque.Render.GL33{
             //If it becomes an issue, then i'll add the deletion buffer for that.
 
 
+            foreach(GL33Entity entity in _entities){
+                //update previous matrix values
+                entity.lastTransform = entity.GetView();
+            }
+
+            _camera.lastTransform = _camera.GetTransform();
+
             //update events
             OnVoxelesqueUpdate.Invoke(ticks/10_000_000.0);
+            //RenderUtils.printLn("update");
+
         }
-        private void Render(long ticks){
+        private void Render(long lastRender, long now){
             _window.MakeCurrent(); //make sure the window context is current. Technically not required, but it makes it slightly easier for if/when I add multiwindowing
             GL.ClearColor(0, 0, 0, 1);
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
+
+            float delta = (now - _lastUpdateTime)/10_000_000.0f;
+            float weight = (float) (delta/RenderUtils.UpdateTime); //0=only last, 1=fully current'
+            float rweight = 1-weight;
+            Matrix4 currentCamera = _camera.GetTransform();
+            Matrix4 interpolatedCamera = new Matrix4(
+                currentCamera.Row0*weight + _camera.lastTransform.Row0*rweight,
+                currentCamera.Row1*weight + _camera.lastTransform.Row1*rweight,
+                currentCamera.Row2*weight + _camera.lastTransform.Row2*rweight,
+                currentCamera.Row3*weight + _camera.lastTransform.Row3*rweight
+            );
+
+
 
             foreach(GL33Entity entity in _entities){
                 if(entity is null)continue;
@@ -253,8 +283,17 @@ namespace Voxelesque.Render.GL33{
                 entity._shader.Use();
 
                 entity._shader.SetInt("tex", 0);
-                entity._shader.SetMatrix4("model", entity.GetView());
-                if(_camera != null)entity._shader.SetMatrix4("camera", _camera.GetTransform());
+
+                Matrix4 currentView = entity.GetView();
+                Matrix4 interpolatedEntityView = new Matrix4(
+                    currentView.Row0*weight + entity.lastTransform.Row0*rweight,
+                    currentView.Row1*weight + entity.lastTransform.Row1*rweight,
+                    currentView.Row2*weight + entity.lastTransform.Row2*rweight,
+                    currentView.Row3*weight + entity.lastTransform.Row3*rweight
+                );
+
+                entity._shader.SetMatrix4("model", interpolatedEntityView);
+                if(_camera != null)entity._shader.SetMatrix4("camera", interpolatedCamera);
                 else entity._shader.SetMatrix4("camera", Matrix4.Identity);
                 GL.DrawElements(BeginMode.Triangles, entity._mesh.ElementCount(), DrawElementsType.UnsignedInt, 0);
             }

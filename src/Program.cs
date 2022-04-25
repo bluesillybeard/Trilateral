@@ -38,27 +38,9 @@ namespace Voxelesque
 
             render.Init(new RenderSettings()); //todo: use something other than the default settings
 
-            render.OnVoxelesqueUpdate += new System.Action<double>(update);
+            render.OnVoxelesqueUpdate += new System.Action<double>(update); //subscribe the the voxelesque update event
 
             //initial loading stuff here - move to update method when loading bar is added
-
-            /*
-            mesh = render.LoadMesh(
-                new float[]{
-                //|-Position------|  |Texture coordinates|normals
-                   0.5f,  0.5f, 0.0f,  1.0f, 1.0f,         0, 0, 0,// top right
-                   0.5f, -0.5f, 0.0f,  1.0f, 0.0f,         0, 0, 0,// bottom right
-                  -0.5f, -0.5f, 0.0f,  0.0f, 0.0f,         0, 0, 0,// bottom left
-                  -0.5f,  0.5f, 0.0f,  0.0f, 1.0f,         0, 0, 0,// top left
-                },
-                new uint[]{
-                    0, 1, 3,
-                    1, 2, 3
-                }
-            );
-
-            texture = render.LoadTexture("Resources/container.png");
-            */
 
             model = render.LoadModel("Resources/vmf/models", "GrassCube.vmf");
 
@@ -90,6 +72,14 @@ namespace Voxelesque
             {
                 render.CursorLocked  = !render.CursorLocked;
             }
+
+            if(input.IsKeyDown(Keys.F)){
+                render.SpawnEntity(new EntityPosition(camera.Position - Vector3.UnitY, Vector3.Zero, Vector3.One), shader, model.mesh, model.texture);
+            }
+
+            //foreach(IRenderEntity entity in render.GetEntities()){
+            //    entity.RotationX += 0.1f;
+            //}
 
             Vector3 cameraInc = new Vector3();
             KeyboardState keyboard = render.Keyboard();

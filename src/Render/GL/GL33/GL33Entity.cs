@@ -8,71 +8,116 @@ namespace Voxelesque.Render.GL33{
             _texture = texture;
             _shader = shader;
             _id = id;
+            _modified = true;
         }
 
         public Matrix4 GetView(){
-            return Matrix4.Identity *
-            Matrix4.CreateScale(_position.scale) *
-            Matrix4.CreateRotationX(_position.rotation.X) *
-            Matrix4.CreateRotationY(_position.rotation.Y) *
-            Matrix4.CreateRotationZ(_position.rotation.Z) *
-            Matrix4.CreateTranslation(_position.location);
+            if(_modified){
+                _currentTransform = Matrix4.Identity *
+                Matrix4.CreateScale(_position.scale) *
+                Matrix4.CreateRotationX(_position.rotation.X) *
+                Matrix4.CreateRotationY(_position.rotation.Y) *
+                Matrix4.CreateRotationZ(_position.rotation.Z) *
+                Matrix4.CreateTranslation(_position.location);
+            }
+            return _currentTransform;
         }
+
+        public Matrix4 lastTransform; //modified and read externally (in the Render implimentation)
 
         public EntityPosition Position{
             get{return _position;}
-            set{_position = value;}
+            set{
+                _position = value;
+                _modified = true;
+            }
         }
         public Vector3 Location{
             get{return _position.location;}
-            set{_position.location = value;}
+            set{
+                _position.location = value;
+                _modified = true;
+            }
         }
         public Vector3 Rotation{
             get{return _position.rotation;}
-            set{_position.rotation = value;}
+            set{
+                _position.rotation = value;
+                _modified = true;
+            }
         }
         public Vector3 Scale{
             get{return _position.scale;}
-            set{_position.scale = value;}
+            set{
+                _position.scale = value;
+                _modified = true;
+            }
         }
 
         public float LocationX{
             get{return _position.location.X;} 
-            set{_position.location.X = value;}
+            set{
+                _position.location.X = value;
+                _modified = true;
+            }
         }
         public float LocationY{
             get{return _position.location.Y;}
-            set{_position.location.Y = value;}
+            set{
+                _position.location.Y = value;
+                _modified = true;
+            }
         }
         public float LocationZ{
             get{return _position.location.Z;}
-            set{_position.location.Z = value;}
+            set{
+                _position.location.Z = value;
+                _modified = true;
+            }
         }
 
         public float RotationX{
             get{return _position.rotation.X;}
-            set{_position.rotation.X = value;}
+            set{
+                _position.rotation.X = value;
+                _modified = true;
+            }
         }
         public float RotationY{
             get{return _position.rotation.Y;}
-            set{_position.rotation.Y = value;}
+            set{
+                _position.rotation.Y = value;
+                _modified = true;
+            }
         }
         public float RotationZ{
             get{return _position.rotation.Z;}
-            set{_position.rotation.Z = value;}
+            set{
+                _position.rotation.Z = value;
+                _modified = true;
+            }
         }
 
         public float ScaleX{
             get{return _position.scale.X;}
-            set{_position.scale.X = value;}
+            set{
+                _position.scale.X = value;
+                _modified = true;
+            }
         }
         public float ScaleY{
             get{return _position.scale.Y;}
-            set{_position.scale.Y = value;}
+            set{
+                _position.scale.Y = value;
+                _modified = true;
+            }
         }
         public float ScaleZ{
             get{return _position.scale.Z;}
-            set{_position.scale.Z = value;}
+            set{
+                _position.scale.Z = value;
+                _modified = true;
+            }
         }
 
         public IRenderMesh Mesh{
@@ -99,5 +144,8 @@ namespace Voxelesque.Render.GL33{
         }
 
         private EntityPosition _position;
+
+        private Matrix4 _currentTransform;
+        private bool _modified;
     }
 }

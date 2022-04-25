@@ -33,6 +33,7 @@ namespace Voxelesque.Render.Common
         private float _fovy; //fov
         private float _aspect; // y/x
         private Matrix4 _transform;
+        public Matrix4 lastTransform; //modified and read externally (in the Render implimentation)
 
         public RenderCamera(Vector3 position, Vector3 rotation, float fovy, float aspect){
             _position = position;

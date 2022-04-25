@@ -3,10 +3,13 @@ using System;
 using System.Collections.Generic;
 namespace libvmodel{
     public class VMesh{
-        public float[] vertices; //elements: xpos, ypos, zpos, xtex, ytex, xnorm, ynorm, znorm
-        public uint[] indices;
+        //These are nullable to stop C# from yelling at my face.
+        //They won't actually ever be null.
+        public float[]? vertices; //elements: xpos, ypos, zpos, xtex, ytex, xnorm, ynorm, znorm
+        public uint[]? indices;
 
-        public byte[]? removableTriangles;
+        public byte[]? removableTriangles; //this one might actually be null, so don't expect good things to come out of it.
+        //public byte blockedFaces; blocked faces are part of the vmf file, not the vbmesh.
 
         public VMesh(float[] vertices, uint[] indices){
             this.vertices = vertices;
