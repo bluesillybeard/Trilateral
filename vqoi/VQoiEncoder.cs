@@ -34,8 +34,8 @@ public static class VQoiEncoder
         byte colorSpace = (byte)image.ColorSpace;
         byte[] pixels = image.Data;
 
-        byte[] bytes = new byte[VQoiCodec.HeaderSize + VQoiCodec.Padding.Length + (width * height * channels)];
-
+        byte[] bytes = new byte[VQoiCodec.HeaderSize + VQoiCodec.Padding.Length + (width * height * (channels + 1))]; //allocate enough memory for a worst case scenario.
+        //WORST CASE: every element is an RGB or RGBA (takes channels+1 bytes). Yes, the worst case is larger than a bmp file would be.
         uint[] indexLookup = null; //used by the modified FIFO version that I translated from https://github.com/phoboslab/qoi/blob/fifo/qoi.h
         if(useModified)indexLookup = new uint[VQoiCodec.LookupHashTableSize];
         

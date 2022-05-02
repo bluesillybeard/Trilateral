@@ -536,6 +536,9 @@ namespace StbImageSharp
 			ri->bits_per_channel = 8;
 			ri->channel_order = STBI_ORDER_RGB;
 			ri->num_channels = 0;
+			if(stbi__vqoi_test(s) != 0){
+				return stbi__vqoi_load(s, x, y, comp, req_comp, ri);
+			}
 			if (stbi__png_test(s) != 0)
 				return stbi__png_load(s, x, y, comp, req_comp, ri);
 			if (stbi__bmp_test(s) != 0)

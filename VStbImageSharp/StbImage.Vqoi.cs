@@ -7,20 +7,21 @@ namespace StbImageSharp
     {
         public static int stbi__vqoi_test(stbi__context s)
 		{
-            int r;
+            int r = 1;
             int i0 = stbi__get8(s);
             if(i0 == 'v'){
                 //vqoi (modified)
                 if(stbi__get8(s) != 'q')r = 0;
-                if(stbi__get8(s) != 'o')r = 0;
-                if(stbi__get8(s) != 'i')r = 0;
+                else if(stbi__get8(s) != 'o')r = 0;
+                else if(stbi__get8(s) != 'i')r = 0;
             } else if (i0 == 'q'){
                 //qoif (unmodified)
                 if(stbi__get8(s) != 'o')r = 0;
-                if(stbi__get8(s) != 'i')r = 0;
-                if(stbi__get8(s) != 'f')r = 0;
+                else if(stbi__get8(s) != 'i')r = 0;
+                else if(stbi__get8(s) != 'f')r = 0;
+            } else {
+                r = 0;
             }
-            r = 1;
 			stbi__rewind(s);
 			return r;
 		}
@@ -50,24 +51,27 @@ namespace StbImageSharp
             }
 
             //We are already at index 4, so we can just continue reading forwards
-            //TODO: check endian
             s.img_x = stbi__get32be(s);
             s.img_y = stbi__get32be(s);
-            s.img_n = stbi__get8(s); 
+            s.img_n = stbi__get8(s);
+            //ri -> num_channels = s.img_n;
+            *comp = s.img_n;
+            *x = (int)s.img_x;
+            *y = (int)s.img_y;
             byte colorSpace = stbi__get8(s);            
 
             if (s.img_x <= 0)
             {
-                return (byte*)(ulong)(stbi__err("bad vqoi"));
+                return (byte*)(ulong)(stbi__err("bad width"));
             }
             //check the maximum pixel count
             if (s.img_y <= 0)
             {
-                return (byte*)(ulong)(stbi__err("bad vqoi"));
+                return (byte*)(ulong)(stbi__err("bad height"));
             }
             if(s.img_y >= 400_000_000 / s.img_x)
             {
-                return (byte*)(ulong)(stbi__err("bad vqoi"));
+                return (byte*)(ulong)(stbi__err("bad size"));
             }
             //check number of channels
             if (s.img_n != 3 && s.img_n != 4)
