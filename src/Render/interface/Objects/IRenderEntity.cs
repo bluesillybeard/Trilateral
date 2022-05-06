@@ -19,6 +19,8 @@ namespace Voxelesque.Render{
         float ScaleY{get; set;}
         float ScaleZ{get; set;}
 
+        Matrix4 GetTransform();
+
         IRenderMesh Mesh{get; set;}
         IRenderShader Shader{get; set;}
 

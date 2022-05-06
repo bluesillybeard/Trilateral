@@ -8,6 +8,8 @@ using Voxelesque.Render.GL33;
 using Voxelesque.Render.Common;
 
 using System;
+
+using libvmodel;
 namespace Voxelesque
 {
     public static class Program
@@ -20,9 +22,14 @@ namespace Voxelesque
         //static IRenderTexture texture;
 
         static RenderEntityModel model;
+        static VMesh cpuMesh;
         static IRenderShader shader;
 
         static IRenderEntity entity;
+
+        static IRenderTexture grass;
+
+        static IRenderTexture mod;
 
         static Random random;
 
@@ -42,17 +49,19 @@ namespace Voxelesque
 
             //initial loading stuff here - move to update method when loading bar is added
 
-            model = render.LoadModel("Resources/vmf/models", "GrassCube.vmf");
+            VModel cpuModel = new VModel("Resources/vmf/models", "GrassCube.vmf", out var ignored, out var errors);
+            cpuMesh = cpuModel.mesh;
 
-
-
+            if(errors != null)RenderUtils.printErrLn(string.Join("/n", errors));
+            model = render.LoadModel(cpuModel);
             shader = render.LoadShader("Resources/Shaders/");
-
             entity = render.SpawnEntity(new EntityPosition(
                 new Vector3(0, 0, 0),
                 new Vector3(0, 0, 0),
                 Vector3.One
             ), shader, model.mesh, model.texture);
+            grass = model.texture;
+            mod = render.LoadTexture("Resources/vmf/texture/GrassBlock.png");
 
             camera = render.SpawnCamera(new Vector3(0, 0, 0), new Vector3(0, 0, 0), 90);
             render.SetCamera(camera);
@@ -68,6 +77,9 @@ namespace Voxelesque
             //);
 
             KeyboardState input = render.Keyboard();
+            MouseState mouse = render.Mouse();
+            //between -1 and 1
+            Vector2 normalizedCursorPos = new Vector2(mouse.Position.X / render.WindowSize().X, mouse.Position.Y / render.WindowSize().Y) * 2 -Vector2.One;
             if (input.IsKeyReleased(Keys.C))
             {
                 render.CursorLocked  = !render.CursorLocked;
@@ -76,31 +88,35 @@ namespace Voxelesque
             if(input.IsKeyDown(Keys.F)){
                 render.SpawnEntity(new EntityPosition(camera.Position - Vector3.UnitY, Vector3.Zero, Vector3.One), shader, model.mesh, model.texture);
             }
-
-            //foreach(IRenderEntity entity in render.GetEntities()){
-            //    entity.RotationX += 0.1f;
-            //}
-
+            //IRenderEntity? toDelete = null;
+            foreach(IRenderEntity entity in render.GetEntities()){
+                if(entity is null)continue;
+                if(RenderUtils.MeshCollides(cpuMesh, normalizedCursorPos, entity.GetTransform() * camera.GetTransform())){
+                    entity.Texture = mod;
+                } else {
+                    entity.Texture = grass;
+                }
+            }
+            //if(toDelete != null)render.DeleteEntity(toDelete);
             Vector3 cameraInc = new Vector3();
-            KeyboardState keyboard = render.Keyboard();
-            if (keyboard.IsKeyDown(Keys.W)) {
+            if (input.IsKeyDown(Keys.W)) {
                 cameraInc.Z = -1;
-            } else if (keyboard.IsKeyDown(Keys.S)) {
+            } else if (input.IsKeyDown(Keys.S)) {
                 cameraInc.Z = 1;
             }
-            if (keyboard.IsKeyDown(Keys.A)) {
+            if (input.IsKeyDown(Keys.A)) {
                 cameraInc.X = -1;
-            } else if (keyboard.IsKeyDown(Keys.D)) {
+            } else if (input.IsKeyDown(Keys.D)) {
                 cameraInc.X = 1;
             }
-            if (keyboard.IsKeyDown(Keys.LeftControl)) {
+            if (input.IsKeyDown(Keys.LeftControl)) {
                 cameraInc.Y = -1;
-            } else if (keyboard.IsKeyDown(Keys.Space)) {
+            } else if (input.IsKeyDown(Keys.Space)) {
                 cameraInc.Y = 1;
             }
             // Update camera position
             float CAMERA_POS_STEP = 1f / 6f;
-            if(keyboard.IsKeyDown(Keys.LeftShift)) CAMERA_POS_STEP = 1f;
+            if(input.IsKeyDown(Keys.LeftShift)) CAMERA_POS_STEP = 1f;
             Vector3 pos = camera.Position;
             Vector3 rot = camera.Rotation * RenderCamera.degToRad;
             if (cameraInc.Z != 0) {
@@ -112,7 +128,6 @@ namespace Voxelesque
                 pos.Z += MathF.Cos(rot.Y - 1.57f) * cameraInc.X * CAMERA_POS_STEP;
             }
             pos.Y += cameraInc.Y * CAMERA_POS_STEP;
-            MouseState mouse = render.Mouse();
 
 
             // Update camera based on mouse

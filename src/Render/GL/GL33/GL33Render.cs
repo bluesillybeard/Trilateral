@@ -48,21 +48,24 @@ namespace Voxelesque.Render.GL33{
                         APIVersion = new System.Version(3, 3), //OpenGL 3.3
                         AutoLoadBindings = true,
                         NumberOfSamples = 0,
-                        Profile = ContextProfile.Core,
+                        Profile = ContextProfile.Compatability,
                         Size = settings.Size,
                         StartFocused = false,
                         StartVisible = true,
                         Title = settings.WindowTitle,
-                        
                     }
                 );
 
                 _window.MakeCurrent();
 
-                //todo: set swap interval to 0
+                //the NativeWindow class has no way to do this, so we directly ask GLFW for it
+                //(Setting the swap interval to 0.)
+                OpenTK.Windowing.GraphicsLibraryFramework.GLFW.SwapInterval(0);
 
                 _window.Resize += new Action<ResizeEventArgs>(OnResize);
                 GL.Enable(EnableCap.DepthTest);
+                //GL.Enable(EnableCap.CullFace); //Sadly, this face culling system was designed to be extremely simple and not easily worked with.
+                //My culling system is based on surface normals, so this simply won't do.
                 RenderUtils.CurrentRender = this;
                 RenderUtils.CurrentRenderType = ERenderType.GL33;
 
@@ -96,6 +99,10 @@ namespace Voxelesque.Render.GL33{
             }
         }
 
+        public Vector2 WindowSize(){
+            return _window.Size;
+        }
+
         //meshes
 
         public IRenderMesh LoadMesh(string path){
@@ -106,6 +113,10 @@ namespace Voxelesque.Render.GL33{
                 RenderUtils.printErr($"{path} is not a vmesh or vbmesh");
                 return null;
             }
+        }
+
+        public IRenderMesh LoadMesh(VMesh mesh){
+            return new GL33Mesh(mesh);
         }
         public IRenderMesh LoadMesh(float[] vertices, uint[] indices){
             return new GL33Mesh(vertices, indices);
@@ -149,6 +160,13 @@ namespace Voxelesque.Render.GL33{
                 RenderUtils.printErrLn(string.Join("/n", err));
             }
             return new RenderEntityModel(mesh, texture);
+        }
+
+        public RenderEntityModel LoadModel(VModel model){
+            //send it to the GPU
+            GL33Mesh mesh = new GL33Mesh(model.mesh);
+            GL33Texture texture = new GL33Texture(model.texture);
+            return new RenderEntityModel(mesh, texture);         
         }
 
         public void DeleteModel(RenderEntityModel model){
@@ -247,7 +265,8 @@ namespace Voxelesque.Render.GL33{
 
             foreach(GL33Entity entity in _entities){
                 //update previous matrix values
-                entity.lastTransform = entity.GetView();
+                if(entity == null) continue;
+                entity.lastTransform = entity.GetTransform();
             }
 
             _camera.lastTransform = _camera.GetTransform();
@@ -259,10 +278,6 @@ namespace Voxelesque.Render.GL33{
         }
         private void Render(long lastRender, long now){
             _window.MakeCurrent(); //make sure the window context is current. Technically not required, but it makes it slightly easier for if/when I add multiwindowing
-            GL.ClearColor(0, 0, 0, 1);
-            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-
-
             float delta = (now - _lastUpdateTime)/10_000_000.0f;
             float weight = (float) (delta/RenderUtils.UpdateTime); //0=only last, 1=fully current'
             float rweight = 1-weight;
@@ -284,7 +299,7 @@ namespace Voxelesque.Render.GL33{
 
                 entity._shader.SetInt("tex", 0);
 
-                Matrix4 currentView = entity.GetView();
+                Matrix4 currentView = entity.GetTransform();
                 Matrix4 interpolatedEntityView = new Matrix4(
                     currentView.Row0*weight + entity.lastTransform.Row0*rweight,
                     currentView.Row1*weight + entity.lastTransform.Row1*rweight,
@@ -299,6 +314,8 @@ namespace Voxelesque.Render.GL33{
             }
 
             _window.Context.SwapBuffers();
+            GL.ClearColor(0, 0, 0, 1);
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
         }
         private void OnResize(ResizeEventArgs args){
             GL.Viewport(0, 0, args.Width, args.Height);

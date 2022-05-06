@@ -11,7 +11,7 @@ namespace Voxelesque.Render.GL33{
             _modified = true;
         }
 
-        public Matrix4 GetView(){
+        public Matrix4 GetTransform(){
             if(_modified){
                 _currentTransform = Matrix4.Identity *
                 Matrix4.CreateScale(_position.scale) *

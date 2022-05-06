@@ -5,6 +5,8 @@ using System.Threading;
 using libvmodel;
 using OpenTK.Mathematics;
 
+using OpenTK.Graphics.OpenGL;
+
 namespace Voxelesque.Render{
     static class RenderUtils{
         public const double UpdateTime = 1.0/15.0;
@@ -72,39 +74,47 @@ namespace Voxelesque.Render{
         }
 
         public static bool MeshCollides(VMesh mesh, Vector2 pos, Matrix4? transform){
+            pos.Y *= -1;
 
             //in the Java version, I used temporary variables since they are always on the Heap anyway, so cache locality was an unfixable problem.
             // In C# however, Vectors are stack allocated (reference by value), and thus using temp variables on the Heap would actually result in WORSE performance
             // since it would have to access data from the Heap, which is less cache friendly.
 
-            //TODO: make suse the coordinates aren't inverted
-
             uint[] indices = mesh.indices;
             float[] vertices = mesh.vertices;
-            const int elements = 8; //8 elements per vertex
+            const int elements = 8; //8 elements per vertex]
+            //GL.UseProgram(0);
+            //GL.PointSize(10);
+            //GL.Begin(PrimitiveType.Points);
+            //GL.Vertex2(pos);
+            //GL.End();
+            //GL.Begin(PrimitiveType.Triangles);
+            //GL.Color4(1f, 0f, 1f, 1f);
             for(int i=0; i<indices.Length/3; i++){ //each triangle in the mesh
-                //get the triangle vertices
+                //get the triangle vertices and transform the triangle to the screen coordinates.
                 //We use Vector4s for the matrix transformation to work.
 
                 uint t = elements*indices[3*i];
-                Vector4 v1 = new Vector4(vertices[t], vertices[t+1], vertices[t+2], 1);
+                Vector3 v1 = Vector3.TransformPerspective(new Vector3(vertices[t], vertices[t+1], vertices[t+2]), transform.Value);
 
                 t = elements*indices[3*i+1];
-                Vector4 v2 = new Vector4(vertices[t], vertices[t+1], vertices[t+2], 1);
+                Vector3 v2 = Vector3.TransformPerspective(new Vector3(vertices[t], vertices[t+1], vertices[t+2]), transform.Value);
                 
                 t = elements*indices[3*i+2];
-                Vector4 v3 = new Vector4(vertices[t], vertices[t+1], vertices[t+2], 1);
+                Vector3 v3 = Vector3.TransformPerspective(new Vector3(vertices[t], vertices[t+1], vertices[t+2]), transform.Value);
 
-                //transform the triangle to the screen coordinates
-                //TODO: make sure perspective works properly
-                v1 *= transform.Value;
-                v2 *= transform.Value;
-                v3 *= transform.Value;
-                //if the triangle isn't behind the camera, and it touches the point, return true.
+                //if the triangle isn't behind the camera, and it touches the point, return true.'
+                //if(v1.Z < 1.0f && v2.Z < 1.0f && v3.Z < 1.0f){
+                //    GL.Vertex2(v1.X, v1.Y);
+                //    GL.Vertex2(v2.X, v2.Y);
+                //    GL.Vertex2(v3.X, v3.Y);
+                //}
                 if(v1.Z < 1.0f && v2.Z < 1.0f && v3.Z < 1.0f && IsInside(v1.Xy, v2.Xy, v3.Xy, pos)) {
+                    //GL.End();
                     return true;
                 }
             }
+            //GL.End();
             return false;
         }
 

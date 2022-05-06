@@ -7,6 +7,8 @@ using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 
 using StbImageSharp;
+
+using libvmodel;
 namespace Voxelesque.Render{
     interface IRender{
 
@@ -24,8 +26,12 @@ namespace Voxelesque.Render{
 
         RenderSettings Settings{get;}
 
+        Vector2 WindowSize();
+
         //meshes
         IRenderMesh LoadMesh(float[] vertices, uint[] indices);
+
+        IRenderMesh LoadMesh(VMesh mesh);
 
         /**
          <summary> 
@@ -76,6 +82,8 @@ namespace Voxelesque.Render{
         </summary>
         */
         RenderEntityModel LoadModel(string folder, string file);
+
+        RenderEntityModel LoadModel(VModel model);
 
         /**
         <summary>
