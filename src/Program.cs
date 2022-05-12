@@ -24,12 +24,13 @@ namespace Voxelesque
         static RenderEntityModel model;
         static VMesh cpuMesh;
         static IRenderShader shader;
+        static IRenderShader cameralessShader;
+
 
         static IRenderEntity entity;
 
         static IRenderTexture grass;
-
-        static IRenderTexture mod;
+        static IRenderTexture ascii;
 
         static Random random;
 
@@ -55,13 +56,17 @@ namespace Voxelesque
             if(errors != null)RenderUtils.printErrLn(string.Join("/n", errors));
             model = render.LoadModel(cpuModel);
             shader = render.LoadShader("Resources/Shaders/");
+            cameralessShader = render.LoadShader("Resources/Shaders/cameraless");
             entity = render.SpawnEntity(new EntityPosition(
-                new Vector3(0, 0, 0),
-                new Vector3(0, 0, 0),
+                Vector3.Zero,
+                Vector3.Zero,
                 Vector3.One
             ), shader, model.mesh, model.texture);
+            ascii = render.LoadTexture("Resources/ASCII-Extended.png");
+            render.SpawnTextEntity(new EntityPosition(Vector3.Zero,Vector3.Zero,Vector3.One/20), "testing 1 2 3", true, true, cameralessShader, ascii);
+
             grass = model.texture;
-            mod = render.LoadTexture("Resources/vmf/texture/GrassBlock.png");
+
 
             camera = render.SpawnCamera(new Vector3(0, 0, 0), new Vector3(0, 0, 0), 90);
             render.SetCamera(camera);
@@ -86,7 +91,8 @@ namespace Voxelesque
             }
 
             if(input.IsKeyDown(Keys.F)){
-                render.SpawnEntity(new EntityPosition(camera.Position - Vector3.UnitY, Vector3.Zero, Vector3.One), shader, model.mesh, model.texture);
+                render.SpawnTextEntity(new EntityPosition(camera.Position - Vector3.UnitY, Vector3.Zero, Vector3.One), "testing 1 2 3", true, true, shader, ascii);
+                render.SpawnEntity(new EntityPosition(camera.Position - Vector3.UnitY, new Vector3(Random.Shared.NextSingle(), Random.Shared.NextSingle(), Random.Shared.NextSingle()), Vector3.One), shader, model.mesh, model.texture); 
             }
             if(mouse.IsButtonDown(MouseButton.Left)){
                 IRenderEntity toDelete = null;

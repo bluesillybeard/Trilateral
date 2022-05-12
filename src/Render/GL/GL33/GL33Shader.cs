@@ -7,8 +7,7 @@ using OpenTK.Mathematics;
 //NOTICE: this is a modified version of the shader class from the official OpenTK examples.
 
 namespace Voxelesque.Render.GL33{
-    class GL33Shader: GL33Object, IRenderShader, IDisposable
-    {
+    class GL33Shader: GL33Object, IRenderShader, IDisposable{
         private readonly Dictionary<string, int> _uniformLocations;
         public readonly string _name;
         public GL33Shader(string vertPath, string fragPath)
@@ -123,12 +122,12 @@ namespace Voxelesque.Render.GL33{
         /// </summary>
         /// <param name="name">The name of the uniform</param>
         /// <param name="data">The data to set</param>
-        public void SetInt(string name, int data){
+        public void SetInt(string name, int data, bool printErrors){
             if(_uniformLocations.TryGetValue(name, out int uniformID)){
                 GL.UseProgram(_id);
                 GL.Uniform1(uniformID, data);
             } else {
-                Console.WriteLine($"ERROR: shader uniform \"{name}\" doesn't exist in {this._name}");
+                if(printErrors)RenderUtils.printWarnLn($"ERROR: shader uniform \"{name}\" doesn't exist in {this._name}");
             }
         }
 
@@ -137,13 +136,13 @@ namespace Voxelesque.Render.GL33{
         /// </summary>
         /// <param name="name">The name of the uniform</param>
         /// <param name="data">The data to set</param>
-        public void SetFloat(string name, float data)
+        public void SetFloat(string name, float data, bool printErrors)
         {
             if(_uniformLocations.TryGetValue(name, out int uniformID)){
                 GL.UseProgram(_id);
                 GL.Uniform1(uniformID, data);
             } else {
-                Console.WriteLine($"ERROR: shader uniform \"{name}\" doesn't exist in {this._name}");
+                if(printErrors)RenderUtils.printWarnLn($"ERROR: shader uniform \"{name}\" doesn't exist in {this._name}");
             }
         }
 
@@ -157,13 +156,13 @@ namespace Voxelesque.Render.GL33{
         ///   The matrix is transposed before being sent to the shader.
         ///   </para>
         /// </remarks>
-        public void SetMatrix4(string name, Matrix4 data)
+        public void SetMatrix4(string name, Matrix4 data, bool printErrors)
         {
             if(_uniformLocations.TryGetValue(name, out int uniformID)){
                 GL.UseProgram(_id);
                 GL.UniformMatrix4(uniformID, true, ref data);
             } else {
-                Console.WriteLine($"ERROR: shader uniform \"{name}\" doesn't exist in {this._name}");
+                if(printErrors)RenderUtils.printWarnLn($"ERROR: shader uniform \"{name}\" doesn't exist in {this._name}");
             }
         }
 
@@ -172,13 +171,13 @@ namespace Voxelesque.Render.GL33{
         /// </summary>
         /// <param name="name">The name of the uniform</param>
         /// <param name="data">The data to set</param>
-        public void SetVector3(string name, Vector3 data)
+        public void SetVector3(string name, Vector3 data, bool printErrors)
         {
             if(_uniformLocations.TryGetValue(name, out int uniformID)){
                 GL.UseProgram(_id);
                 GL.Uniform3(uniformID, data);
             } else {
-                Console.WriteLine($"ERROR: shader uniform \"{name}\" doesn't exist in {this._name}");
+                if(printErrors)RenderUtils.printWarnLn($"ERROR: shader uniform \"{name}\" doesn't exist in {this._name}");
             }
         }
 

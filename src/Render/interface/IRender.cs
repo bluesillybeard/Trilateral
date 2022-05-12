@@ -100,6 +100,16 @@ namespace Voxelesque.Render{
 
         IRenderEntity SpawnEntity(EntityPosition pos, IRenderShader shader, IRenderMesh mesh, IRenderTexture texture);
 
+        //text entities. A normal entity, but it has text mesh generation built-in.
+        IRenderTextEntity SpawnTextEntity(EntityPosition pos, string text, bool centerX, bool centerY, IRenderShader shader, IRenderTexture texture);
+
+        //Entities are deleted using the same method as normal entitues
+        /**
+        <summary>
+        Deletes an entity.
+        Note that this can be used to delete both normal and text entities.
+        </summary>
+        */
         void DeleteEntity(IRenderEntity entity);
 
         /**

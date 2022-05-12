@@ -28,7 +28,7 @@ namespace Voxelesque.Render.GL33{
 
         private List<GL33Entity> _entities;
 
-        private LinkedList<int> _freeEntitySlots;
+        private List<int> _freeEntitySlots;
 
         private RenderCamera _camera;
 
@@ -44,7 +44,7 @@ namespace Voxelesque.Render.GL33{
                 _deletedMeshes = new List<GL33MeshHandle>();
                 _deletedTextures = new List<GL33TextureHandle>();
                 _entities = new List<GL33Entity>();
-                _freeEntitySlots = new LinkedList<int>();
+                _freeEntitySlots = new List<int>();
 
 
                 _window = new NativeWindow(
@@ -186,14 +186,17 @@ namespace Voxelesque.Render.GL33{
             }
 
             GL33Entity entity = new GL33Entity(pos, (GL33Mesh)mesh, (GL33Texture)texture, (GL33Shader)shader, 0);
-            if(_freeEntitySlots.Count > 0){
-                int id = _freeEntitySlots.First.Value;
-                _freeEntitySlots.RemoveFirst();
-                entity.Id(id);
-            } else {
-                entity.Id(_entities.Count);
-                _entities.Add(entity);
+            _AddEntity(entity);
+            return entity;
+        }
+
+        public IRenderTextEntity SpawnTextEntity(EntityPosition pos, string text, bool centerX, bool centerY, IRenderShader shader, IRenderTexture texture){
+            if(shader is null || text is null || texture is null){
+                RenderUtils.printErrLn("The Shader, Text, and/or Texture of an entity is null!");
+                return null;
             }
+            GL33TextEntity entity = new GL33TextEntity(pos, text, centerX, centerY, (GL33Texture)texture, (GL33Shader)shader, 0);
+            _AddEntity(entity);
             return entity;
         }
 
@@ -204,7 +207,19 @@ namespace Voxelesque.Render.GL33{
                 return;
             }
             _entities[glEntity.Id()] = null;//remove the entity
-            _freeEntitySlots.AddLast(glEntity.Id()); //add its empty spot to the list
+            _freeEntitySlots.Add(glEntity.Id()); //add its empty spot to the list
+        }
+
+        private void _AddEntity(GL33Entity entity){
+            if(_freeEntitySlots.Count > 0){
+                int id = _freeEntitySlots[_freeEntitySlots.Count-1];
+                _freeEntitySlots.RemoveAt(_freeEntitySlots.Count-1);
+                _entities[id] = entity;
+                entity.Id(id);
+            } else {
+                entity.Id(_entities.Count);
+                _entities.Add(entity);
+            }
         }
 
         public IEnumerable<IRenderEntity> GetEntities(){
@@ -303,7 +318,7 @@ namespace Voxelesque.Render.GL33{
                 entity._texture.Use(TextureUnit.Texture0);
                 entity._shader.Use();
 
-                entity._shader.SetInt("tex", 0);
+                entity._shader.SetInt("tex", 0, true);
 
                 Matrix4 currentView = entity.GetTransform();
                 Matrix4 interpolatedEntityView = new Matrix4(
@@ -313,9 +328,9 @@ namespace Voxelesque.Render.GL33{
                     currentView.Row3*weight + entity.lastTransform.Row3*rweight
                 );
 
-                entity._shader.SetMatrix4("model", interpolatedEntityView);
-                if(_camera != null)entity._shader.SetMatrix4("camera", interpolatedCamera);
-                else entity._shader.SetMatrix4("camera", Matrix4.Identity);
+                entity._shader.SetMatrix4("model", interpolatedEntityView, false);
+                if(_camera != null)entity._shader.SetMatrix4("camera", interpolatedCamera, false);
+                else entity._shader.SetMatrix4("camera", Matrix4.Identity, false);
                 GL.DrawElements(BeginMode.Triangles, entity._mesh.ElementCount(), DrawElementsType.UnsignedInt, 0);
             }
 
