@@ -17,6 +17,8 @@ namespace Voxelesque.Render{
 
         void Run();
 
+        bool DebugRendering{get;set;}
+
         /**
         <summary>
         This action is called every update - 15 times each second by default

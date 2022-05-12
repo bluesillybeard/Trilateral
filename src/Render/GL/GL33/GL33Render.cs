@@ -33,6 +33,11 @@ namespace Voxelesque.Render.GL33{
         private RenderCamera _camera;
 
         private bool _cursorLocked;
+        private bool _debugRendering;
+        public bool DebugRendering{
+            get => _debugRendering;
+            set => _debugRendering = value;
+        }
         public bool Init(RenderSettings settings){
             try{
                 _settings = settings;
@@ -48,7 +53,7 @@ namespace Voxelesque.Render.GL33{
                         APIVersion = new System.Version(3, 3), //OpenGL 3.3
                         AutoLoadBindings = true,
                         NumberOfSamples = 0,
-                        Profile = ContextProfile.Compatability,
+                        Profile = ContextProfile.Core,
                         Size = settings.Size,
                         StartFocused = false,
                         StartVisible = true,
@@ -186,6 +191,7 @@ namespace Voxelesque.Render.GL33{
                 _freeEntitySlots.RemoveFirst();
                 entity.Id(id);
             } else {
+                entity.Id(_entities.Count);
                 _entities.Add(entity);
             }
             return entity;

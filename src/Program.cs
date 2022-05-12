@@ -88,16 +88,16 @@ namespace Voxelesque
             if(input.IsKeyDown(Keys.F)){
                 render.SpawnEntity(new EntityPosition(camera.Position - Vector3.UnitY, Vector3.Zero, Vector3.One), shader, model.mesh, model.texture);
             }
-            //IRenderEntity? toDelete = null;
-            foreach(IRenderEntity entity in render.GetEntities()){
-                if(entity is null)continue;
-                if(RenderUtils.MeshCollides(cpuMesh, normalizedCursorPos, entity.GetTransform() * camera.GetTransform())){
-                    entity.Texture = mod;
-                } else {
-                    entity.Texture = grass;
+            if(mouse.IsButtonDown(MouseButton.Left)){
+                IRenderEntity toDelete = null;
+                foreach(IRenderEntity entity in render.GetEntities()){
+                    if(entity != null && RenderUtils.MeshCollides(cpuMesh, normalizedCursorPos, entity.GetTransform() * camera.GetTransform())){
+                        toDelete = entity;
+                        break;
+                    }
                 }
+                if(toDelete != null)render.DeleteEntity(toDelete);
             }
-            //if(toDelete != null)render.DeleteEntity(toDelete);
             Vector3 cameraInc = new Vector3();
             if (input.IsKeyDown(Keys.W)) {
                 cameraInc.Z = -1;

@@ -41,8 +41,7 @@ namespace Voxelesque.Render{
         }
 
         public static void printLn(object message){
-            print(message);
-            Console.WriteLine();
+            print($"{message}\n");
         }
 
         public static void printWarn(object message){
@@ -55,8 +54,7 @@ namespace Voxelesque.Render{
         }
 
         public static void printWarnLn(object message){
-            print(message);
-            Console.WriteLine();
+            print($"{message}\n");
         }
 
         public static void printErr(object message){
@@ -69,8 +67,7 @@ namespace Voxelesque.Render{
         }
 
         public static void printErrLn(object message){
-            printErr(message);
-            Console.WriteLine();
+            printErr($"{message}\n");
         }
 
         public static bool MeshCollides(VMesh mesh, Vector2 pos, Matrix4? transform){
@@ -83,13 +80,6 @@ namespace Voxelesque.Render{
             uint[] indices = mesh.indices;
             float[] vertices = mesh.vertices;
             const int elements = 8; //8 elements per vertex]
-            //GL.UseProgram(0);
-            //GL.PointSize(10);
-            //GL.Begin(PrimitiveType.Points);
-            //GL.Vertex2(pos);
-            //GL.End();
-            //GL.Begin(PrimitiveType.Triangles);
-            //GL.Color4(1f, 0f, 1f, 1f);
             for(int i=0; i<indices.Length/3; i++){ //each triangle in the mesh
                 //get the triangle vertices and transform the triangle to the screen coordinates.
                 //We use Vector4s for the matrix transformation to work.
@@ -103,18 +93,10 @@ namespace Voxelesque.Render{
                 t = elements*indices[3*i+2];
                 Vector3 v3 = Vector3.TransformPerspective(new Vector3(vertices[t], vertices[t+1], vertices[t+2]), transform.Value);
 
-                //if the triangle isn't behind the camera, and it touches the point, return true.'
-                //if(v1.Z < 1.0f && v2.Z < 1.0f && v3.Z < 1.0f){
-                //    GL.Vertex2(v1.X, v1.Y);
-                //    GL.Vertex2(v2.X, v2.Y);
-                //    GL.Vertex2(v3.X, v3.Y);
-                //}
                 if(v1.Z < 1.0f && v2.Z < 1.0f && v3.Z < 1.0f && IsInside(v1.Xy, v2.Xy, v3.Xy, pos)) {
-                    //GL.End();
                     return true;
                 }
             }
-            //GL.End();
             return false;
         }
 
