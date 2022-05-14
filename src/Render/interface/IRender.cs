@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 
-using Voxelesque.Render.Common;
-
 using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 

@@ -7,8 +7,6 @@ using OpenTK.Mathematics;
 using System;
 using System.Collections.Generic;
 
-using Voxelesque.Render.Common;
-
 using StbImageSharp;
 
 using libvmodel;

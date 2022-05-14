@@ -5,7 +5,6 @@ using OpenTK.Windowing.GraphicsLibraryFramework;
 
 using Voxelesque.Render;
 using Voxelesque.Render.GL33;
-using Voxelesque.Render.Common;
 
 using System;
 

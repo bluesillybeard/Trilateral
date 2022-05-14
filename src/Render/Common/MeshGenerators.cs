@@ -1,4 +1,4 @@
-namespace Voxelesque;
+namespace Voxelesque.Render;
 
 using libvmodel;
 
