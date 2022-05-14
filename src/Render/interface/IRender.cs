@@ -9,6 +9,8 @@ using StbImageSharp;
 using libvmodel;
 namespace Voxelesque.Render{
     interface IRender{
+        public static IRender CurrentRender;
+        public static ERenderType CurrentRenderType;
 
         //mixed bits
         bool Init(RenderSettings settings);

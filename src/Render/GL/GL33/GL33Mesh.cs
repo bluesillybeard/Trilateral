@@ -104,7 +104,7 @@ namespace Voxelesque.Render.GL33{
                 //add it to the deleted meshes buffer, since the C# garbage collector won't have the OpenGl context.
                 //I am aware of the fact this is spaghetti code. I just can't think of a better way to do it.
                 //any time this code is used, it can be safely cast to a GL33 object, since only GL33Objects can be created with a GL33Render.
-                List<GL33MeshHandle> deletedMeshes = ((GL33Render)RenderUtils.CurrentRender)._deletedMeshes;
+                List<GL33MeshHandle> deletedMeshes = ((GL33Render)IRender.CurrentRender)._deletedMeshes;
                 lock(deletedMeshes)
                     deletedMeshes.Add(new GL33MeshHandle(_indexBuffer, _vertexBufferObject, _id));
             }

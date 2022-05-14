@@ -69,8 +69,8 @@ namespace Voxelesque.Render.GL33{
                 GL.Enable(EnableCap.DepthTest);
                 //GL.Enable(EnableCap.CullFace); //Sadly, this face culling system was designed to be extremely simple and not easily worked with.
                 //My culling system is based on surface normals, so this simply won't do.
-                RenderUtils.CurrentRender = this;
-                RenderUtils.CurrentRenderType = ERenderType.GL33;
+                IRender.CurrentRender = this;
+                IRender.CurrentRenderType = ERenderType.GL33;
 
                 return true;
             } catch (Exception e){

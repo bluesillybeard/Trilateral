@@ -45,14 +45,14 @@ class MeshGenerators{
                 uint charElement = charIndex*4*8; //the start of the first element to write to. A pointer, if you will.
 
                 float iXStart = XStart+j;
-                float iYStart = YStart-i-1;
+                float iYStart = YStart-i;
 
                 float UVXPosition = column*0.0625f;
                 float UVYPosition = row*0.0625f; //get the actual UV coordinates of the top left corner
 
                 //set vertices
                 vertices[charElement  ] = iXStart; //top left
-                vertices[charElement+1] = iYStart+1;
+                vertices[charElement+1] = iYStart;
                 vertices[charElement+2] = 0;
                 vertices[charElement+3] = UVXPosition;
                 vertices[charElement+4] = UVYPosition;
@@ -61,7 +61,7 @@ class MeshGenerators{
                 vertices[charElement+7] = 0;
 
                 vertices[charElement+8] = iXStart+1; //top right
-                vertices[charElement+9] = iYStart+1;
+                vertices[charElement+9] = iYStart;
                 vertices[charElement+10] = 0;
                 vertices[charElement+11] = UVXPosition+0.0625f;
                 vertices[charElement+12] = UVYPosition;
@@ -70,7 +70,7 @@ class MeshGenerators{
                 vertices[charElement+15] = 0;
 
                 vertices[charElement+16] = iXStart; //bottom left
-                vertices[charElement+17] = iYStart;
+                vertices[charElement+17] = iYStart-1;
                 vertices[charElement+18] = 0;
                 vertices[charElement+19] = UVXPosition;
                 vertices[charElement+20] = UVYPosition + 0.0625f;
@@ -79,7 +79,7 @@ class MeshGenerators{
                 vertices[charElement+23] = 0;
 
                 vertices[charElement+24] = iXStart+1; //bottom right
-                vertices[charElement+25] = iYStart;
+                vertices[charElement+25] = iYStart-1;
                 vertices[charElement+26] = 0;
                 vertices[charElement+27] = UVXPosition + 0.0625f;
                 vertices[charElement+28] = UVYPosition + 0.0625f;

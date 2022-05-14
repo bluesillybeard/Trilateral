@@ -16,10 +16,6 @@ namespace Voxelesque.Render{
         public const double RadiansToDegreesd = 180/(2*Pid);
         public const float DegreesToRadiansf = (2*Pif)/180;
         public const float RadiansToDegreesf = 180/(2*Pif);
-
-        public static IRender CurrentRender;
-        public static ERenderType CurrentRenderType;
-
         private static object _printMutex = new object(); //makes sure that the print messages don't get screwed up by concurrency
 
         public const ConsoleColor DefaultBack = ConsoleColor.Black;
