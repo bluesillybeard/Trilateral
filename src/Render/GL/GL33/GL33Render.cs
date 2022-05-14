@@ -106,6 +106,14 @@ namespace Voxelesque.Render.GL33{
             return _window.Size;
         }
 
+        public uint EntityCount(){
+            return (uint)(_entities.Count - _freeEntitySlots.Count);
+        }
+
+        public uint EntityCapacity(){
+            return (uint)_entities.Count;
+        }
+
         //meshes
 
         public IRenderMesh LoadMesh(string path){

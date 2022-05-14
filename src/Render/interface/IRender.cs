@@ -29,6 +29,10 @@ namespace Voxelesque.Render{
 
         Vector2 WindowSize();
 
+        uint EntityCount();
+
+        uint EntityCapacity();
+
         //meshes
         IRenderMesh LoadMesh(float[] vertices, uint[] indices);
 

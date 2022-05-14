@@ -27,6 +27,7 @@ namespace Voxelesque
 
 
         static IRenderEntity entity;
+        static IRenderTextEntity debug;
 
         static IRenderTexture grass;
         static IRenderTexture ascii;
@@ -62,7 +63,7 @@ namespace Voxelesque
                 Vector3.One
             ), shader, model.mesh, model.texture);
             ascii = render.LoadTexture("Resources/ASCII-Extended.png");
-            render.SpawnTextEntity(new EntityPosition(Vector3.Zero,Vector3.Zero,Vector3.One/20), "testing 1 2 3", true, true, cameralessShader, ascii);
+            debug = render.SpawnTextEntity(new EntityPosition(-Vector3.UnitX+Vector3.UnitY,Vector3.Zero,Vector3.One/30), "", false, false, cameralessShader, ascii);
 
             grass = model.texture;
 
@@ -79,7 +80,9 @@ namespace Voxelesque
             //    new Vector3((float)(random.NextDouble()-0.5), (float)(random.NextDouble()-0.5), (float)(random.NextDouble()-0.5)),
             //    Vector3.One
             //);
-
+            debug.Text = "Entities: " + render.EntityCount() + "\n"
+             + "Camera Position: " + camera.Position + "\n"
+             + "Camera Rotation: " + camera.Rotation;
             KeyboardState input = render.Keyboard();
             MouseState mouse = render.Mouse();
             //between -1 and 1
@@ -90,7 +93,6 @@ namespace Voxelesque
             }
 
             if(input.IsKeyDown(Keys.F)){
-                render.SpawnTextEntity(new EntityPosition(camera.Position - Vector3.UnitY, Vector3.Zero, Vector3.One), "testing 1 2 3", true, true, shader, ascii);
                 render.SpawnEntity(new EntityPosition(camera.Position - Vector3.UnitY, new Vector3(Random.Shared.NextSingle(), Random.Shared.NextSingle(), Random.Shared.NextSingle()), Vector3.One), shader, model.mesh, model.texture); 
             }
             if(mouse.IsButtonDown(MouseButton.Left)){

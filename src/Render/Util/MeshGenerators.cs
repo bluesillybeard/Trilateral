@@ -1,4 +1,4 @@
-namespace Voxelesque.Render;
+namespace Voxelesque.Render.Util;
 
 using libvmodel;
 
@@ -45,7 +45,7 @@ class MeshGenerators{
                 uint charElement = charIndex*4*8; //the start of the first element to write to. A pointer, if you will.
 
                 float iXStart = XStart+j;
-                float iYStart = YStart-i;
+                float iYStart = YStart-i-1;
 
                 float UVXPosition = column*0.0625f;
                 float UVYPosition = row*0.0625f; //get the actual UV coordinates of the top left corner

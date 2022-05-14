@@ -54,7 +54,7 @@ namespace Voxelesque.Render{
         }
 
         public static void printWarnLn(object message){
-            print($"{message}\n");
+            printWarn($"{message}\n");
         }
 
         public static void printErr(object message){

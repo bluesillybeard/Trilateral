@@ -54,16 +54,13 @@ namespace Voxelesque.Render.GL33{
             ReData(mesh.vertices, mesh.indices);
         }
         
-        //This method is untesded.
         public void ReData(float[] vertices, uint[] indices){
             _elementCount = indices.Length;
             GL.BindVertexArray(_id);
 
-            //_vertexBufferObject = GL.GenBuffer();
             GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexBufferObject);
             GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * sizeof(float), vertices, BufferUsageHint.StaticDraw);
 
-            //_indexBuffer = GL.GenBuffer();
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, _indexBuffer);
             GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(uint), indices, BufferUsageHint.StaticDraw);
         }

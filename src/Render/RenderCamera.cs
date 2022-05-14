@@ -14,6 +14,10 @@ namespace Voxelesque.Render
             set{
             _rotation.X = MathHelper.Clamp(value.X, -90f, 90f);
             _rotation.Y = value.Y;
+            if(_rotation.Y > 360) _rotation.Y -= 360;
+            if(_rotation.Y < 0) _rotation.Y += 360;
+            if(_rotation.Z > 360) _rotation.Z -= 360;
+            if(_rotation.Z < 0) _rotation.Z += 360;
             _rotation.Z = value.Z;
             _rotation *= degToRad;
             _modified = true;
