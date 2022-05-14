@@ -6,6 +6,7 @@ namespace Voxelesque.Render{
     The specific Render implimentation runs parallel with the IRenderObject types
 
     the IRenderObject types give a layer that allows a single game to use multiple APIs, and interact with them at the same level.
+    It is technically possible to use function pointers, but this is C#, not C.
     </summary>
     */
     interface IRenderObject{

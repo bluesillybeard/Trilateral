@@ -19,7 +19,8 @@ namespace Voxelesque.Render{
 
         /**
         <summary>
-        This action is called every update - 15 times each second by default
+        This action is called every update - 15 times each second by default.
+        Entity components are automatically updated, 
         </summary>
         */
         Action<double> OnVoxelesqueUpdate {get; set;}
