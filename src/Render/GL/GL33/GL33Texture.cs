@@ -34,6 +34,27 @@ namespace Voxelesque.Render.GL33{
             LoadTexture(image);        
         }
 
+        public GL33Texture(float r, float g, float b, float a){
+            // Generate handle
+            _id = GL.GenTexture();
+
+            // Bind the handle
+            GL.ActiveTexture(TextureUnit.Texture0);
+            GL.BindTexture(TextureTarget.Texture2D, _id);
+            //upload the "texture" (single color)
+            GL.TexImage2D(TextureTarget.Texture2D,
+                0,
+                PixelInternalFormat.Rgba,
+                2,
+                2,
+                0,
+                PixelFormat.Rgba,
+                PixelType.UnsignedByte,
+                new float[]{r, g, b, a, r, g, b, a, r, g, b, a, r, g, b, a, });
+
+            SetParametersAndGenerateMipmaps();        
+        }
+
         private void LoadTexture(ImageResult img){
             // Generate handle
             _id = GL.GenTexture();

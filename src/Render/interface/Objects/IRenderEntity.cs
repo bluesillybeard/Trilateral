@@ -25,5 +25,7 @@ namespace Voxelesque.Render{
         IRenderShader Shader{get; set;}
 
         IRenderTexture Texture{get; set;}
+
+        bool DepthTest{get; set;}
     }
 }

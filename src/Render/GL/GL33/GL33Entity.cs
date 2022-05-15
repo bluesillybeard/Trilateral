@@ -2,13 +2,14 @@ using OpenTK.Mathematics;
 
 namespace Voxelesque.Render.GL33{
     class GL33Entity: GL33Object, IRenderEntity{
-        public GL33Entity(EntityPosition pos, GL33Mesh mesh, GL33Texture texture, GL33Shader shader, int id){
+        public GL33Entity(EntityPosition pos, GL33Mesh mesh, GL33Texture texture, GL33Shader shader, int id, bool depthTest){
             _position = pos;
             _mesh = mesh;
             _texture = texture;
             _shader = shader;
             _id = id;
             _modified = true;
+            _depthTest = depthTest;
         }
 
         public Matrix4 GetTransform(){
@@ -134,6 +135,11 @@ namespace Voxelesque.Render.GL33{
             set{_texture = (GL33Texture)value;}
         }
 
+        public bool DepthTest {
+            get => _depthTest;
+            set => _depthTest = value;
+        }
+
         public GL33Mesh _mesh;
         public GL33Shader _shader;
 
@@ -147,5 +153,7 @@ namespace Voxelesque.Render.GL33{
 
         private Matrix4 _currentTransform;
         private bool _modified;
+
+        public bool _depthTest;
     }
 }

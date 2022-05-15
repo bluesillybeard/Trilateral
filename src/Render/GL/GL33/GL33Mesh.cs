@@ -2,8 +2,12 @@ using OpenTK.Graphics.OpenGL;
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
+
 
 using libvmodel;
+
+
 namespace Voxelesque.Render.GL33{
 
     struct GL33MeshHandle{
@@ -25,17 +29,19 @@ namespace Voxelesque.Render.GL33{
 
         private int _vertexBufferObject;
 
-        private int _elementCount;
+        private int _indexCount;
+
+        private int _vertexCount;
 
         public GL33Mesh(string vmeshPath){
             VMesh mesh = new VMesh(vmeshPath, out ICollection<string> err);
-            LoadMesh(mesh.vertices, mesh.indices);
+            LoadMesh(mesh.vertices, mesh.indices, false);
             if(err != null){
                 RenderUtils.printErrLn(string.Join("\n\n", err));
             }
         }
         public GL33Mesh(VMesh mesh){
-            LoadMesh(mesh.vertices, mesh.indices);
+            LoadMesh(mesh.vertices, mesh.indices, false);
         }
         /**
         <summary>
@@ -47,15 +53,27 @@ namespace Voxelesque.Render.GL33{
         </summary>
         */
         public GL33Mesh(float[] vertices, uint[] indices){
-            LoadMesh(vertices, indices);
+            LoadMesh(vertices, indices, false);
         }
 
+        /**
+        <summary>
+            Creates a Mesh from an element array
+            Each vertec has 8 elements: X pos, y pos, z pos, x tex coord, y tex coord, x normal, y normal, z normal.
+            the X Y Z coordinates should be obvious.
+            the X Y tex coords are the X and Y texture coordinates, also often refered to as UV
+            the X Y Z normals form a cartesian vector of the surface normal.
+        </summary>
+        */
+        public GL33Mesh(float[] vertices, uint[] indices, bool dynamic){
+            LoadMesh(vertices, indices, dynamic);
+        }
         public void ReData(VMesh mesh){
             ReData(mesh.vertices, mesh.indices);
         }
         
         public void ReData(float[] vertices, uint[] indices){
-            _elementCount = indices.Length;
+            _indexCount = indices.Length;
             GL.BindVertexArray(_id);
 
             GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexBufferObject);
@@ -65,18 +83,66 @@ namespace Voxelesque.Render.GL33{
             GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(uint), indices, BufferUsageHint.StaticDraw);
         }
 
-        private void LoadMesh(float[] vertices, uint[] indices){
-            _elementCount = indices.Length;
+        public void AddData(VMesh mesh){
+            AddData(mesh.vertices, mesh.indices);
+        }
+        
+        //Implementing this function was a huge pain.
+        //Mostly since OpenGL doesn't do it for me.
+        public unsafe void AddData(float[] vertices, uint[] indices){
+            //modify the indices so we can haphazardly add them on.
+            for(int i=0; i<indices.Length; i++){
+                indices[i] += (uint)_indexCount;
+            }
+            //The fact that OpenGL has no built-in way to expand the size of a buffer without overriding it is annoying.
+            
+            //TODO: finish implimenting this surprisingly complicated method.
+            GL.BindVertexArray(_id);
+            {
+                //This is in a separate block to keep the stack from leacking.
+                //I'm so tired that leacking doesn't even look like a word anymore.
+                GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexBufferObject);
+                //load the buffer into memory
+                float[] bufferVertices = new float[_vertexCount + vertices.Length];
+                GL.GetBufferSubData(BufferTarget.ArrayBuffer, IntPtr.Zero, _vertexCount*sizeof(float), bufferVertices);
+                //add the new data
+                for(int i=0; i<vertices.Length; i++){
+                    bufferVertices[i+_vertexCount] = vertices[i];
+                }
+                //upload the new buffer.
+                GL.BufferData(BufferTarget.ArrayBuffer, ((_vertexCount+vertices.Length)*sizeof(float)), bufferVertices, BufferUsageHint.DynamicDraw);
+            }
+            {
+                GL.BindBuffer(BufferTarget.ElementArrayBuffer, _indexBuffer);
+                //load the buffer into memory
+                uint[] bufferIndices = new uint[_indexCount + indices.Length];
+                GL.GetBufferSubData(BufferTarget.ElementArrayBuffer, IntPtr.Zero, _indexCount*sizeof(uint), bufferIndices);
+                //add the new data
+                for(int i=0; i<indices.Length; i++){
+                    bufferIndices[i+_indexCount] = indices[i];
+                }
+                //upload the new buffer.
+                GL.BufferData(BufferTarget.ElementArrayBuffer, ((_indexCount+indices.Length)*sizeof(uint)), bufferIndices, BufferUsageHint.DynamicDraw);
+            }
+            _indexCount += indices.Length;
+            _vertexCount += vertices.Length;
+        }
+
+        private void LoadMesh(float[] vertices, uint[] indices, bool dynamic){
+            _indexCount = indices.Length;
+            _vertexCount = vertices.Length;
             _id = GL.GenVertexArray();
             GL.BindVertexArray(_id);
 
             _vertexBufferObject = GL.GenBuffer();
             GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexBufferObject);
-            GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * sizeof(float), vertices, BufferUsageHint.StaticDraw);
+            if(dynamic)GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * sizeof(float), vertices, BufferUsageHint.StaticDraw);
+            else GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * sizeof(float), vertices, BufferUsageHint.DynamicDraw);
 
             _indexBuffer = GL.GenBuffer();
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, _indexBuffer);
-            GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(uint), indices, BufferUsageHint.StaticDraw);
+            if(dynamic)GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(uint), indices, BufferUsageHint.StaticDraw);
+            else GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(uint), indices, BufferUsageHint.DynamicDraw);
 
             //coordinates
             GL.EnableVertexAttribArray(0);
@@ -95,7 +161,7 @@ namespace Voxelesque.Render.GL33{
         }
 
         public int ElementCount(){
-            return _elementCount;
+            return _indexCount;
         }
 
         ~GL33Mesh(){

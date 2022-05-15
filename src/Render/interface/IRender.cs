@@ -65,6 +65,8 @@ namespace Voxelesque.Render{
         */
         IRenderTexture LoadTexture(ImageResult image);
 
+        IRenderTexture LoadTexture(float r, float g, float b, float a);
+
         void DeleteTexture(IRenderTexture texture);
 
         //shaders
@@ -103,10 +105,10 @@ namespace Voxelesque.Render{
 
         //entities
 
-        IRenderEntity SpawnEntity(EntityPosition pos, IRenderShader shader, IRenderMesh mesh, IRenderTexture texture);
+        IRenderEntity SpawnEntity(EntityPosition pos, IRenderShader shader, IRenderMesh mesh, IRenderTexture texture, bool depthTest);
 
         //text entities. A normal entity, but it has text mesh generation built-in.
-        IRenderTextEntity SpawnTextEntity(EntityPosition pos, string text, bool centerX, bool centerY, IRenderShader shader, IRenderTexture texture);
+        IRenderTextEntity SpawnTextEntity(EntityPosition pos, string text, bool centerX, bool centerY, IRenderShader shader, IRenderTexture texture, bool depthTest);
 
         //Entities are deleted using the same method as normal entitues
         /**

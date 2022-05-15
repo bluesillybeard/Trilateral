@@ -16,21 +16,19 @@ namespace Voxelesque
 
         static double time;
         static IRender render;
-        //static IRenderMesh mesh;
-
-        //static IRenderTexture texture;
-
         static RenderEntityModel model;
         static VMesh cpuMesh;
         static IRenderShader shader;
         static IRenderShader cameralessShader;
 
 
-        static IRenderEntity entity;
-        static IRenderTextEntity debug;
+        static IRenderEntity debugEntity;
+        static IRenderMesh debugMesh;
+        static IRenderTextEntity debugText;
 
         static IRenderTexture grass;
         static IRenderTexture ascii;
+        static IRenderTexture magenta;
 
         static Random random;
 
@@ -40,7 +38,7 @@ namespace Voxelesque
             System.Threading.Thread.CurrentThread.Name = "Main Thread";
 
             
-            random = new Random();
+            random = new Random((int)DateTime.Now.Ticks);
 
             render = new GL33Render(); //todo: make a method that creates the most appropiate Render.
 
@@ -57,22 +55,25 @@ namespace Voxelesque
             model = render.LoadModel(cpuModel);
             shader = render.LoadShader("Resources/Shaders/");
             cameralessShader = render.LoadShader("Resources/Shaders/cameraless");
-            entity = render.SpawnEntity(new EntityPosition(
+            render.SpawnEntity(new EntityPosition(
                 Vector3.Zero,
                 Vector3.Zero,
                 Vector3.One
-            ), shader, model.mesh, model.texture);
+            ), shader, model.mesh, model.texture, true);
             ascii = render.LoadTexture("Resources/ASCII-Extended.png");
-            debug = render.SpawnTextEntity(new EntityPosition(-Vector3.UnitX+Vector3.UnitY,Vector3.Zero,Vector3.One/30), "", false, false, cameralessShader, ascii);
-
+            debugText = render.SpawnTextEntity(new EntityPosition(-Vector3.UnitX+Vector3.UnitY,Vector3.Zero,Vector3.One/30), "", false, false, cameralessShader, ascii, false);
             grass = model.texture;
 
+            magenta = render.LoadTexture(1, 1, 1, 1);
+            debugMesh = render.LoadMesh(new float[8], new uint[3]);
+            debugEntity = render.SpawnEntity(EntityPosition.Zero, cameralessShader, debugMesh, magenta, false);
 
             camera = render.SpawnCamera(new Vector3(0, 0, 0), new Vector3(0, 0, 0), 90);
             render.SetCamera(camera);
             render.Run();
         }
         static void update(double d){
+            debugMesh.ReData(new float[8], new uint[3]);
             time += d;
 
             //entity.Position = new EntityPosition(
@@ -80,7 +81,7 @@ namespace Voxelesque
             //    new Vector3((float)(random.NextDouble()-0.5), (float)(random.NextDouble()-0.5), (float)(random.NextDouble()-0.5)),
             //    Vector3.One
             //);
-            debug.Text = "Entities: " + render.EntityCount() + "\n"
+            debugText.Text = "Entities: " + render.EntityCount() + "\n"
              + "Camera Position: " + camera.Position + "\n"
              + "Camera Rotation: " + camera.Rotation;
             KeyboardState input = render.Keyboard();
@@ -93,12 +94,12 @@ namespace Voxelesque
             }
 
             if(input.IsKeyDown(Keys.F)){
-                render.SpawnEntity(new EntityPosition(camera.Position - Vector3.UnitY, new Vector3(Random.Shared.NextSingle(), Random.Shared.NextSingle(), Random.Shared.NextSingle()), Vector3.One), shader, model.mesh, model.texture); 
+                render.SpawnEntity(new EntityPosition(camera.Position - Vector3.UnitY, new Vector3(random.NextSingle(), random.NextSingle(), random.NextSingle()), Vector3.One), shader, model.mesh, model.texture, true); 
             }
             if(mouse.IsButtonDown(MouseButton.Left)){
                 IRenderEntity toDelete = null;
                 foreach(IRenderEntity entity in render.GetEntities()){
-                    if(entity != null && RenderUtils.MeshCollides(cpuMesh, normalizedCursorPos, entity.GetTransform() * camera.GetTransform())){
+                    if(entity != null && RenderUtils.MeshCollides(cpuMesh, normalizedCursorPos, entity.GetTransform() * camera.GetTransform(), debugMesh)){
                         toDelete = entity;
                         break;
                     }

@@ -1,13 +1,12 @@
 using System;
 using System.Threading;
-
+using System.Collections.Generic;
 
 using libvmodel;
 using OpenTK.Mathematics;
 
-using OpenTK.Graphics.OpenGL;
-
-namespace Voxelesque.Render{
+namespace Voxelesque.Render
+{
     static class RenderUtils{
         public const double UpdateTime = 1.0/15.0;
         public const double Pid = 3.141592653589793238462643383279502884197169399375105820974944592307816406286;
@@ -66,7 +65,15 @@ namespace Voxelesque.Render{
             printErr($"{message}\n");
         }
 
-        public static bool MeshCollides(VMesh mesh, Vector2 pos, Matrix4? transform){
+        public static bool MeshCollides(VMesh mesh, Vector2 pos, Matrix4? transform, IRenderMesh debugMesh){
+            List<float> addVertices = null;
+            List<uint> addIndices = null;
+            uint index = 0;
+            if(debugMesh != null){
+                addVertices = new List<float>();
+                addIndices = new List<uint>();
+            }
+            
             pos.Y *= -1;
 
             //in the Java version, I used temporary variables since they are always on the Heap anyway, so cache locality was an unfixable problem.
@@ -88,11 +95,22 @@ namespace Voxelesque.Render{
                 
                 t = elements*indices[3*i+2];
                 Vector3 v3 = Vector3.TransformPerspective(new Vector3(vertices[t], vertices[t+1], vertices[t+2]), transform.Value);
-
+                //if the triangle isn't behind the camera, and it touches the point, return true.'
+                if(debugMesh != null && v1.Z < 1.0f && v2.Z < 1.0f && v3.Z < 1.0f){
+                    addVertices.AddRange(new float[]{v1.X, v1.Y, v1.Z, 0, 0, 0, 0, 0});
+                    addVertices.AddRange(new float[]{v2.X, v2.Y, v2.Z, 0, 0, 0, 0, 0});
+                    addVertices.AddRange(new float[]{v3.X, v3.Y, v3.Z, 0, 0, 0, 0, 0});
+                    addIndices.Add(index*3);
+                    addIndices.Add(index*3+1);
+                    addIndices.Add(index*3+2);
+                    index++;
+                }
                 if(v1.Z < 1.0f && v2.Z < 1.0f && v3.Z < 1.0f && IsInside(v1.Xy, v2.Xy, v3.Xy, pos)) {
+                    if(debugMesh != null)debugMesh.AddData(addVertices.ToArray(), addIndices.ToArray());
                     return true;
                 }
             }
+            if(debugMesh != null)debugMesh.AddData(addVertices.ToArray(), addIndices.ToArray());
             return false;
         }
 

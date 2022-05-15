@@ -145,6 +145,9 @@ namespace Voxelesque.Render.GL33{
         public IRenderTexture LoadTexture(ImageResult image){
             return new GL33Texture(image);
         }
+        public IRenderTexture LoadTexture(float r, float g, float b, float a){
+            return new GL33Texture(r, g, b, a);
+        }
 
         public void DeleteTexture(IRenderTexture texture){
             ((GL33Texture)texture).Dispose(); //any time this code is run, it can be safely cast to a GL33 object, since only GL33Objects can be created with a GL33Render.
@@ -185,23 +188,23 @@ namespace Voxelesque.Render.GL33{
             ((GL33Texture)model.texture).Dispose();
         }
         //entities
-        public IRenderEntity SpawnEntity(EntityPosition pos, IRenderShader shader, IRenderMesh mesh, IRenderTexture texture){
+        public IRenderEntity SpawnEntity(EntityPosition pos, IRenderShader shader, IRenderMesh mesh, IRenderTexture texture, bool depthTest){
             if(shader is null || mesh is null || texture is null){
                 RenderUtils.printErrLn("The Shader, Mesh, and/or Texture of an entity is null!");
                 return null;
             }
 
-            GL33Entity entity = new GL33Entity(pos, (GL33Mesh)mesh, (GL33Texture)texture, (GL33Shader)shader, 0);
+            GL33Entity entity = new GL33Entity(pos, (GL33Mesh)mesh, (GL33Texture)texture, (GL33Shader)shader, 0, depthTest);
             _AddEntity(entity);
             return entity;
         }
 
-        public IRenderTextEntity SpawnTextEntity(EntityPosition pos, string text, bool centerX, bool centerY, IRenderShader shader, IRenderTexture texture){
+        public IRenderTextEntity SpawnTextEntity(EntityPosition pos, string text, bool centerX, bool centerY, IRenderShader shader, IRenderTexture texture, bool depthTest){
             if(shader is null || text is null || texture is null){
                 RenderUtils.printErrLn("The Shader, Text, and/or Texture of an entity is null!");
                 return null;
             }
-            GL33TextEntity entity = new GL33TextEntity(pos, text, centerX, centerY, (GL33Texture)texture, (GL33Shader)shader, 0);
+            GL33TextEntity entity = new GL33TextEntity(pos, text, centerX, centerY, (GL33Texture)texture, (GL33Shader)shader, 0, depthTest);
             _AddEntity(entity);
             return entity;
         }
@@ -337,11 +340,14 @@ namespace Voxelesque.Render.GL33{
                 entity._shader.SetMatrix4("model", interpolatedEntityView, false);
                 if(_camera != null)entity._shader.SetMatrix4("camera", interpolatedCamera, false);
                 else entity._shader.SetMatrix4("camera", Matrix4.Identity, false);
+
+                if(entity._depthTest)GL.Enable(EnableCap.DepthTest);
+                else GL.Disable(EnableCap.DepthTest);
                 GL.DrawElements(BeginMode.Triangles, entity._mesh.ElementCount(), DrawElementsType.UnsignedInt, 0);
             }
 
             _window.Context.SwapBuffers();
-            GL.ClearColor(0, 0, 0, 1);
+            GL.ClearColor(0.5f, 0.5f, 0.5f, 1);
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
         }
         private void OnResize(ResizeEventArgs args){
