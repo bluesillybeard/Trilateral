@@ -74,6 +74,7 @@ namespace Voxelesque.Render.GL33{
         
         public void ReData(float[] vertices, uint[] indices){
             _indexCount = indices.Length;
+            _vertexCount = vertices.Length;
             GL.BindVertexArray(_id);
 
             GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexBufferObject);

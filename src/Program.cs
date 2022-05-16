@@ -66,7 +66,7 @@ namespace Voxelesque
 
             magenta = render.LoadTexture(1, 1, 1, 1);
             debugMesh = render.LoadMesh(new float[8], new uint[3]);
-            debugEntity = render.SpawnEntity(EntityPosition.Zero, cameralessShader, debugMesh, magenta, false);
+            debugEntity = render.SpawnEntity(EntityPosition.Zero, cameralessShader, debugMesh, magenta, true);
 
             camera = render.SpawnCamera(new Vector3(0, 0, 0), new Vector3(0, 0, 0), 90);
             render.SetCamera(camera);

@@ -16,6 +16,6 @@ void main(void)
 {
     texCoord = aTexCoord;
     normal = aNormal;
-
-    gl_Position = vec4(aPosition, 1.0) * model;
+    //Force it to always render on top, since this shader is ment for GUI and debug rendering, which should always be rendered on top of everything.
+    gl_Position = vec4((vec4(aPosition, 1.0) * model).xy, 0.001, 1.0);
 }
