@@ -1,4 +1,4 @@
 comment:This model is cursed. Cubes aren't allowed in a triangular game!
 type:entity
 mesh: ../mesh/GrassCube.vmesh
-texture: ../texture/GrassCube.qoi
+texture: ../texture/GrassCube.png
