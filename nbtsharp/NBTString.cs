@@ -12,9 +12,9 @@ public class NBTString: INBTElement{
             throw new NotSupportedException("Cannot use data for type " + INBTElement.NBTNameType((ENBTType)serializedData[4]) + " to create type " + INBTElement.NBTNameType(ENBTType.String) + ".");
         int size = BitConverter.ToInt32(serializedData, 0);
         //check indices
-        int index = Array.IndexOf<byte>(serializedData[5..size], 0);
-        _name = ASCIIEncoding.ASCII.GetString(serializedData[5..(index+5)]);
-        _value = ASCIIEncoding.ASCII.GetString(serializedData[(index+5)..size]);
+        int index = Array.IndexOf<byte>(serializedData[5..size], 0)+5;
+        _name = ASCIIEncoding.ASCII.GetString(serializedData[5..index]);
+        _value = ASCIIEncoding.ASCII.GetString(serializedData[index..size]);
     }
     public ENBTType Type => ENBTType.String;
 
