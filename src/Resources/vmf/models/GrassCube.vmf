@@ -1,4 +1,5 @@
 comment:This model is cursed. Cubes aren't allowed in a triangular game!
+comment:Comments aren't technically allowed in the vmf format, but creating a tag that doesn't exist is a good workaround.
 type:entity
 mesh: ../mesh/GrassCube.vmesh
 texture: ../texture/GrassCube.png

@@ -1,0 +1,35 @@
+Voxelesque NBT format specification.
+Apparently Minecraft is the only game that uses an NBT system? I honestly don't think Notch was the first person to think of NBT, but if he was that's quite impressive.
+
+Voxelesque's NBT system is MUCH more simple than what Minecraft has.
+First, let's talk about how it is stored when not serialized:
+There are 9 types of NBT data:
+-Int       (a signed 32 bit integer)
+IntArr    (an array of signed 32 bit integers)
+-UInt      (an unsigned 32 bit integer)
+UIntArr   (an arrray of unsigned 32 bit integers)
+-Float     (a 32 bit float)
+FloatArr  (an array fo 32 bit floats)
+-String    (an ASCII string)
+StringArr (an array of ASCII strings)
+Folder    (A list of NBT elements. Each element can be any type, including another folder. One could create a circular reference, but that wouldn't end well.)
+
+All of these inherit from the generic INBTElement interface, which contains 3 members and 2 methods.
+For full documentation and implimentation details on those members and methods, look at the INBTElement.cs file.
+
+Serialization is complicated enough that it also is inculded here:
+The serialized form of a single NBT element is like so:
+note:x is the length of the elements name.
+    :y is the length of the elements internal data.
+4 bytes: total lenght of this element. (6+x+y)
+1 byte: the type of this element. See ENBTType interface for specific values.
+x bytes:the name of the element in ASCII characters.
+1 byte: null terminator for the name.
+y bytes: the actual data of the NBT element.
+
+For example, an NBT int with the name "anint" and value 7 would be serialized like so:
+0f 00 00 00  00  'a' 'n' 'i' 'n' 't' 00 07 00 00 00
+|  length  |type|          name        |   value  |
+Note that all the values are in little endian.
+
+This system of serialization allows an NBTFolder to haphazardly stack elements in front of each other, since it can read the length and know when the element ends.
