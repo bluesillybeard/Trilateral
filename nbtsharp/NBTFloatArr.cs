@@ -2,42 +2,42 @@ namespace nbtsharp;
 using System;
 using System.Text;
 using System.IO;
-public class NBTIntArr: INBTElement{
-    public NBTIntArr(string name, int[] value){
+public class NBTFloatArr: INBTElement{
+    public NBTFloatArr(string name, float[] value){
         _name = name;
         _value = value;
     }
 
-    public NBTIntArr(byte[] serializedData){
-        if(serializedData[4] != ((byte)ENBTType.IntArr))
-            throw new NotSupportedException("Cannot use data for type " + INBTElement.NBTNameType((ENBTType)serializedData[4]) + " to create type " + INBTElement.NBTNameType(ENBTType.IntArr) + ".");
+    public NBTFloatArr(byte[] serializedData){
+        if(serializedData[4] != ((byte)ENBTType.FloatArr))
+            throw new NotSupportedException("Cannot use data for type " + INBTElement.NBTNameType((ENBTType)serializedData[4]) + " to create type " + INBTElement.NBTNameType(ENBTType.FloatArr) + ".");
         int size = BitConverter.ToInt32(serializedData, 0);
         //check indices
         int index = Array.IndexOf<byte>(serializedData[5..size], 0)+5;
         _name = ASCIIEncoding.ASCII.GetString(serializedData[5..index]);
-        _value = new int[(size-index)/4];
+        _value = new float[(size-index)/4];
         for(int i=0; i<_value.Length; i++){
-            _value[i] = BitConverter.ToInt32(serializedData, index+i*4+1);
+            _value[i] = BitConverter.ToSingle(serializedData, index+i*4+1);
         }
     }
 
     public string Name{get => _name;set => _name=value;}
     public object Contained{get => _value;}
 
-    public int[] ContainedArray => _value;
-
-    public void SetContainedArray(int[] val){
-        this._value = val;
+    public float[] ContainedArray => _value;
+    public void SetContainedArray(float[] val){
+        _value = val;
     }
-    public ENBTType Type => ENBTType.IntArr;
+    public ENBTType Type => ENBTType.FloatArr;
 
     public byte[] Serialize(){
         byte[] valueBytes = new byte[_value.Length*sizeof(int)];
         for(int i=0; i<_value.Length; i++){
-            valueBytes[4*i+0] = (byte)(_value[i]);
-            valueBytes[4*i+1] = (byte)(_value[i]>>8);
-            valueBytes[4*i+2] = (byte)(_value[i]>>16);
-            valueBytes[4*i+3] = (byte)(_value[i]>>24);
+            int bits = BitConverter.SingleToInt32Bits(_value[i]);
+            valueBytes[4*i+0] = (byte)(bits);
+            valueBytes[4*i+1] = (byte)(bits>>8);
+            valueBytes[4*i+2] = (byte)(bits>>16);
+            valueBytes[4*i+3] = (byte)(bits>>24);
         }
         return INBTElement.AddHeader(this, valueBytes);
     }
@@ -46,11 +46,11 @@ public class NBTIntArr: INBTElement{
     public override string ToString(){
         StringBuilder b = new StringBuilder();
         b.Append(_name.ToString()).Append(": {");
-        foreach (int element in _value){
+        foreach (float element in _value){
             b.Append(element).Append(", ");
         }
         b.Append("}");
         return b.ToString();    } 
-    private int[] _value;
+    private float[] _value;
     private string _name;
 }

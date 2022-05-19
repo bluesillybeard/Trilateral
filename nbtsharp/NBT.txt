@@ -5,14 +5,14 @@ Voxelesque's NBT system is MUCH more simple than what Minecraft has.
 First, let's talk about how it is stored when not serialized:
 There are 9 types of NBT data:
 -Int       (a signed 32 bit integer)
-IntArr    (an array of signed 32 bit integers)
+-IntArr    (an array of signed 32 bit integers)
 -UInt      (an unsigned 32 bit integer)
-UIntArr   (an arrray of unsigned 32 bit integers)
+-UIntArr   (an arrray of unsigned 32 bit integers)
 -Float     (a 32 bit float)
-FloatArr  (an array fo 32 bit floats)
+-FloatArr  (an array fo 32 bit floats)
 -String    (an ASCII string)
-StringArr (an array of ASCII strings)
-Folder    (A list of NBT elements. Each element can be any type, including another folder. One could create a circular reference, but that wouldn't end well.)
+-StringArr (an array of ASCII strings)
+-Folder    (A list of NBT elements. Each element can be any type, including another folder. One could create a circular reference, but that wouldn't end well.)
 
 All of these inherit from the generic INBTElement interface, which contains 3 members and 2 methods.
 For full documentation and implimentation details on those members and methods, look at the INBTElement.cs file.
