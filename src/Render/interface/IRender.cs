@@ -21,7 +21,7 @@ namespace Voxelesque.Render{
 
         /**
         <summary>
-        This action is called every update - 15 times each second by default.
+        This action is called every update - 30 times each second.
         Entity components are automatically updated, 
         </summary>
         */
@@ -104,13 +104,17 @@ namespace Voxelesque.Render{
         
 
         //entities
-
-        IRenderEntity SpawnEntity(EntityPosition pos, IRenderShader shader, IRenderMesh mesh, IRenderTexture texture, bool depthTest);
+        
+        IRenderEntity SpawnEntity(EntityPosition pos, IRenderShader shader, IRenderMesh mesh, IRenderTexture texture, bool depthTest, IEntityBehavior behavior);
+        ///<summary>Waits until the end of the update cycle to spawn an entity </summary>
+        IRenderEntity SpawnEntityDelayed(EntityPosition pos, IRenderShader shader, IRenderMesh mesh, IRenderTexture texture, bool depthTest, IEntityBehavior behavior);
 
         //text entities. A normal entity, but it has text mesh generation built-in.
-        IRenderTextEntity SpawnTextEntity(EntityPosition pos, string text, bool centerX, bool centerY, IRenderShader shader, IRenderTexture texture, bool depthTest);
+        IRenderTextEntity SpawnTextEntity(EntityPosition pos, string text, bool centerX, bool centerY, IRenderShader shader, IRenderTexture texture, bool depthTest, IEntityBehavior behavior);
+        ///<summary>Waits until the end of the update cycle to spawn an entity </summary>
+        IRenderTextEntity SpawnTextEntityDelayed(EntityPosition pos, string text, bool centerX, bool centerY, IRenderShader shader, IRenderTexture texture, bool depthTest, IEntityBehavior behavior);
 
-        //Entities are deleted using the same method as normal entitues
+        //Entities are deleted using the same method as normal entities
         /**
         <summary>
         Deletes an entity.
@@ -118,6 +122,13 @@ namespace Voxelesque.Render{
         </summary>
         */
         void DeleteEntity(IRenderEntity entity);
+        /**
+        <summary>
+        Waits until the end of the update cycle to delete the entity.
+        Note that this can be used to delete both normal and text entities.
+        </summary>
+        */
+        void DeleteEntityDelayed(IRenderEntity entity);
 
         /**
         <summary>
@@ -131,6 +142,7 @@ namespace Voxelesque.Render{
         RenderCamera SpawnCamera(Vector3 position, Vector3 rotation, float fovy);
 
         void SetCamera(RenderCamera camera);
+        RenderCamera GetCamera();
         void DeleteCamera(RenderCamera camera);
 
         //input

@@ -15,29 +15,14 @@ namespace Voxelesque.Render.GL33{
     class GL33Render : IRender{
         public RenderSettings Settings {get => _settings;}
 
-        public List<GL33TextureHandle> _deletedTextures;
-
-        public List<GL33MeshHandle> _deletedMeshes;
-
-        private long _lastUpdateTime;
-
-        private RenderSettings _settings;
-        private NativeWindow _window;
-
-        private List<GL33Entity> _entities;
-
-        private List<int> _freeEntitySlots;
-
-        private RenderCamera _camera;
-
-        private bool _cursorLocked;
-        private bool _debugRendering;
         public bool DebugRendering{
             get => _debugRendering;
             set => _debugRendering = value;
         }
         public bool Init(RenderSettings settings){
             try{
+                _delayedEntities = new Stack<GL33Entity>();
+                _delayedEntityRemovals = new Stack<GL33Entity>();
                 _settings = settings;
                 _deletedMeshes = new List<GL33MeshHandle>();
                 _deletedTextures = new List<GL33TextureHandle>();
@@ -92,7 +77,7 @@ namespace Voxelesque.Render.GL33{
                     didSomething = true;
                 }
                 if(time - _lastUpdateTime > 10_000_000*RenderUtils.UpdateTime){
-                    Update(time - _lastUpdateTime);
+                    Update(time, time - _lastUpdateTime);
                     _lastUpdateTime = time;
                     didSomething = true;
                 }
@@ -188,24 +173,44 @@ namespace Voxelesque.Render.GL33{
             ((GL33Texture)model.texture).Dispose();
         }
         //entities
-        public IRenderEntity SpawnEntity(EntityPosition pos, IRenderShader shader, IRenderMesh mesh, IRenderTexture texture, bool depthTest){
+        public IRenderEntity SpawnEntity(EntityPosition pos, IRenderShader shader, IRenderMesh mesh, IRenderTexture texture, bool depthTest, IEntityBehavior behavior){
             if(shader is null || mesh is null || texture is null){
                 RenderUtils.printErrLn("The Shader, Mesh, and/or Texture of an entity is null!");
                 return null;
             }
 
-            GL33Entity entity = new GL33Entity(pos, (GL33Mesh)mesh, (GL33Texture)texture, (GL33Shader)shader, 0, depthTest);
+            GL33Entity entity = new GL33Entity(pos, (GL33Mesh)mesh, (GL33Texture)texture, (GL33Shader)shader, 0, depthTest, behavior);
             _AddEntity(entity);
             return entity;
         }
 
-        public IRenderTextEntity SpawnTextEntity(EntityPosition pos, string text, bool centerX, bool centerY, IRenderShader shader, IRenderTexture texture, bool depthTest){
+        public IRenderEntity SpawnEntityDelayed(EntityPosition pos, IRenderShader shader, IRenderMesh mesh, IRenderTexture texture, bool depthTest, IEntityBehavior behavior){
+            if(shader is null || mesh is null || texture is null){
+                RenderUtils.printErrLn("The Shader, Mesh, and/or Texture of an entity is null!");
+                return null;
+            }
+
+            GL33Entity entity = new GL33Entity(pos, (GL33Mesh)mesh, (GL33Texture)texture, (GL33Shader)shader, 0, depthTest, behavior);
+            _delayedEntities.Push(entity);
+            return entity;
+        }
+
+        public IRenderTextEntity SpawnTextEntity(EntityPosition pos, string text, bool centerX, bool centerY, IRenderShader shader, IRenderTexture texture, bool depthTest, IEntityBehavior behavior){
             if(shader is null || text is null || texture is null){
                 RenderUtils.printErrLn("The Shader, Text, and/or Texture of an entity is null!");
                 return null;
             }
-            GL33TextEntity entity = new GL33TextEntity(pos, text, centerX, centerY, (GL33Texture)texture, (GL33Shader)shader, 0, depthTest);
+            GL33TextEntity entity = new GL33TextEntity(pos, text, centerX, centerY, (GL33Texture)texture, (GL33Shader)shader, 0, depthTest, behavior);
             _AddEntity(entity);
+            return entity;
+        }
+        public IRenderTextEntity SpawnTextEntityDelayed(EntityPosition pos, string text, bool centerX, bool centerY, IRenderShader shader, IRenderTexture texture, bool depthTest, IEntityBehavior behavior){
+            if(shader is null || text is null || texture is null){
+                RenderUtils.printErrLn("The Shader, Text, and/or Texture of an entity is null!");
+                return null;
+            }
+            GL33TextEntity entity = new GL33TextEntity(pos, text, centerX, centerY, (GL33Texture)texture, (GL33Shader)shader, 0, depthTest, behavior);
+            _delayedEntities.Push(entity);
             return entity;
         }
 
@@ -217,6 +222,15 @@ namespace Voxelesque.Render.GL33{
             }
             _entities[glEntity.Id()] = null;//remove the entity
             _freeEntitySlots.Add(glEntity.Id()); //add its empty spot to the list
+        }
+
+        public void DeleteEntityDelayed(IRenderEntity entity){
+            GL33Entity glEntity = (GL33Entity)entity;
+            if(glEntity.Id() < 0){
+            RenderUtils.printErrLn("ERROR: entity index is negative! This should be impossible.");
+                return;
+            }
+            _delayedEntityRemovals.Push(glEntity);
         }
 
         private void _AddEntity(GL33Entity entity){
@@ -241,6 +255,9 @@ namespace Voxelesque.Render.GL33{
         public void SetCamera(RenderCamera camera){
             _camera = camera;
         }
+        public RenderCamera GetCamera(){
+            return _camera;
+        }
         public void DeleteCamera(RenderCamera camera){
             if(camera == _camera){
                 RenderUtils.printWarnLn("Cannot delete the active camera!");
@@ -264,7 +281,7 @@ namespace Voxelesque.Render.GL33{
                 _window.CursorGrabbed = _cursorLocked;
             }
         }
-        private void Update(long ticks){
+        private void Update(long timeTicks, long deltaTicks){
             _window.ProcessEvents();
             //clear out deletion buffers
 
@@ -302,7 +319,23 @@ namespace Voxelesque.Render.GL33{
             _camera.lastTransform = _camera.GetTransform();
 
             //update events
-            OnVoxelesqueUpdate.Invoke(ticks/10_000_000.0);
+            OnVoxelesqueUpdate.Invoke(deltaTicks/10_000_000.0);
+            //update entity behaviors
+            KeyboardState keyboard = Keyboard();
+            MouseState mouse = Mouse();
+            foreach(GL33Entity entity in _entities){
+                if(entity is null)continue;
+                if(entity.Behavior is null)continue;
+                entity.Behavior.Update(timeTicks/10_000_000.0, deltaTicks/10_000_000.0, entity, keyboard, mouse);
+            }
+
+            //process delayed entities
+            while(_delayedEntities.Count > 0){
+                _AddEntity(_delayedEntities.Pop());
+            }
+            while(_delayedEntityRemovals.Count > 0){
+                DeleteEntity(_delayedEntityRemovals.Pop());
+            }
             //RenderUtils.printLn("update");
 
         }
@@ -355,5 +388,26 @@ namespace Voxelesque.Render.GL33{
             _camera.Aspect = (float)args.Width/(float)args.Height;
             //this._window.Size
         }
+
+        public List<GL33TextureHandle> _deletedTextures;
+
+        public List<GL33MeshHandle> _deletedMeshes;
+
+        private long _lastUpdateTime;
+
+        private RenderSettings _settings;
+        private NativeWindow _window;
+
+        private List<GL33Entity> _entities;
+
+        private List<int> _freeEntitySlots;
+
+        private RenderCamera _camera;
+
+        private bool _cursorLocked;
+        private bool _debugRendering;
+
+        private Stack<GL33Entity> _delayedEntities;
+        private Stack<GL33Entity> _delayedEntityRemovals;
     }
 }

@@ -8,7 +8,7 @@ using OpenTK.Mathematics;
 namespace Voxelesque.Render
 {
     static class RenderUtils{
-        public const double UpdateTime = 1.0/15.0;
+        public const double UpdateTime = 1.0/30.0;
         public const double Pid = 3.141592653589793238462643383279502884197169399375105820974944592307816406286;
         public const float Pif = (float)Pid;
         public const double DegreesToRadiansd = (2*Pid)/180;

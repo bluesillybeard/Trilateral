@@ -2,7 +2,7 @@ using OpenTK.Mathematics;
 
 namespace Voxelesque.Render.GL33{
     class GL33Entity: GL33Object, IRenderEntity{
-        public GL33Entity(EntityPosition pos, GL33Mesh mesh, GL33Texture texture, GL33Shader shader, int id, bool depthTest){
+        public GL33Entity(EntityPosition pos, GL33Mesh mesh, GL33Texture texture, GL33Shader shader, int id, bool depthTest, IEntityBehavior behavior){
             _position = pos;
             _mesh = mesh;
             _texture = texture;
@@ -10,6 +10,7 @@ namespace Voxelesque.Render.GL33{
             _id = id;
             _modified = true;
             _depthTest = depthTest;
+            _behavior = behavior;
         }
 
         public Matrix4 GetTransform(){
@@ -24,7 +25,7 @@ namespace Voxelesque.Render.GL33{
             return _currentTransform;
         }
 
-        public Matrix4 lastTransform; //modified and read externally (in the Render implimentation)
+        public Matrix4 lastTransform; //modified and read externally (in the Render implimentation). Yes it's spaghetti code, but I can't think of a better way to do it.
 
         public EntityPosition Position{
             get{return _position;}
@@ -140,6 +141,15 @@ namespace Voxelesque.Render.GL33{
             set => _depthTest = value;
         }
 
+        public IEntityBehavior Behavior{
+            get => _behavior;
+            set {
+                if(_behavior != null)_behavior.Detach(this);
+                _behavior = value;
+                _behavior.Attach(this);
+            }
+        }
+
         public GL33Mesh _mesh;
         public GL33Shader _shader;
 
@@ -155,5 +165,7 @@ namespace Voxelesque.Render.GL33{
         private bool _modified;
 
         public bool _depthTest;
+
+        private IEntityBehavior _behavior;
     }
 }

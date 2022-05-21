@@ -9,7 +9,7 @@ using Voxelesque.Render.GL33;
 using System;
 
 using libvmodel;
-namespace Voxelesque
+namespace Voxelesque.Game
 {
     public static class Program
     {
@@ -25,6 +25,8 @@ namespace Voxelesque
         static IRenderTexture grass;
         static IRenderTexture ascii;
         static Random random;
+
+        static RemoveOnTouchBehavior GrassCubeBehavior;
 
         static RenderCamera camera;
         private static void Main()
@@ -53,12 +55,14 @@ namespace Voxelesque
                 Vector3.Zero,
                 Vector3.Zero,
                 Vector3.One
-            ), shader, model.mesh, model.texture, true);
+            ), shader, model.mesh, model.texture, true, null);
             ascii = render.LoadTexture("Resources/ASCII-Extended.png");
-            debugText = render.SpawnTextEntity(new EntityPosition(-Vector3.UnitX+Vector3.UnitY,Vector3.Zero,Vector3.One/30), "", false, false, cameralessShader, ascii, false);
+            debugText = render.SpawnTextEntity(new EntityPosition(-Vector3.UnitX+Vector3.UnitY,Vector3.Zero,Vector3.One/30), "", false, false, cameralessShader, ascii, false, null);
             grass = model.texture;
 
             camera = render.SpawnCamera(new Vector3(0, 0, 0), new Vector3(0, 0, 0), 90);
+
+            GrassCubeBehavior = new RemoveOnTouchBehavior(cpuMesh);
             render.SetCamera(camera);
             render.Run();
         }
@@ -67,47 +71,38 @@ namespace Voxelesque
             debugText.Text = "Entities: " + render.EntityCount() + "\n"
              + "Camera Position: " + camera.Position + "\n"
              + "Camera Rotation: " + camera.Rotation;
-            KeyboardState input = render.Keyboard();
+            KeyboardState keyboard = render.Keyboard();
             MouseState mouse = render.Mouse();
             //between -1 and 1
             Vector2 normalizedCursorPos = new Vector2(mouse.Position.X / render.WindowSize().X, mouse.Position.Y / render.WindowSize().Y) * 2 -Vector2.One;
-            if (input.IsKeyReleased(Keys.C))
+            if(keyboard.IsKeyDown(Keys.F)){
+                render.SpawnEntity(new EntityPosition(camera.Position - Vector3.UnitY, new Vector3(random.NextSingle(), random.NextSingle(), random.NextSingle()), Vector3.One), shader, model.mesh, model.texture, true, GrassCubeBehavior); 
+            }
+            
+            if (keyboard.IsKeyReleased(Keys.C))
             {
                 render.CursorLocked  = !render.CursorLocked;
             }
 
-            //if(input.IsKeyDown(Keys.F)){
-            //    render.SpawnEntity(new EntityPosition(camera.Position - Vector3.UnitY, new Vector3(random.NextSingle(), random.NextSingle(), random.NextSingle()), Vector3.One), shader, model.mesh, model.texture, true); 
-            //}
-            //if(mouse.IsButtonDown(MouseButton.Left)){
-            //    IRenderEntity toDelete = null;
-            //    foreach(IRenderEntity entity in render.GetEntities()){
-            //        if(entity != null && RenderUtils.MeshCollides(cpuMesh, normalizedCursorPos, entity.GetTransform() * camera.GetTransform(), null)){
-            //            toDelete = entity;
-            //            break;
-            //        }
-            //    }
-            //    if(toDelete != null)render.DeleteEntity(toDelete);
-            //}
             Vector3 cameraInc = new Vector3();
-            if (input.IsKeyDown(Keys.W)) {
+            if (keyboard.IsKeyDown(Keys.W)) {
                 cameraInc.Z = -1;
-            } else if (input.IsKeyDown(Keys.S)) {
+            } else if (keyboard.IsKeyDown(Keys.S)) {
                 cameraInc.Z = 1;
             }
-            if (input.IsKeyDown(Keys.A)) {
+            if (keyboard.IsKeyDown(Keys.A)) {
                 cameraInc.X = -1;
-            } else if (input.IsKeyDown(Keys.D)) {
+            } else if (keyboard.IsKeyDown(Keys.D)) {
                 cameraInc.X = 1;
             }
-            if (input.IsKeyDown(Keys.LeftControl)) {
+            if (keyboard.IsKeyDown(Keys.LeftControl)) {
                 cameraInc.Y = -1;
-            } else if (input.IsKeyDown(Keys.Space)) {
+            } else if (keyboard.IsKeyDown(Keys.Space)) {
                 cameraInc.Y = 1;
             }
             // Update camera position
             float cameraSpeed = 1f / 6f;
-            if(input.IsKeyDown(Keys.LeftShift)) cameraSpeed = 1f;
+            if(keyboard.IsKeyDown(Keys.LeftShift)) cameraSpeed = 1f;
 
             camera.Move(cameraInc * cameraSpeed);
 

@@ -19,7 +19,8 @@ class GL33TextEntity : GL33Entity, IRenderTextEntity{
     //No mesh is provided since we generate that ourselves.
 
     //Personally I prever the Java way of calling the base constructor ourself, instead of having it automatically called. To each their own.
-    public GL33TextEntity(EntityPosition pos, string text, bool centerX, bool centerY, GL33Texture texture, GL33Shader shader, int id, bool depthTest) : base(pos, null, texture, shader, id, depthTest){
+    public GL33TextEntity(EntityPosition pos, string text, bool centerX, bool centerY, GL33Texture texture, GL33Shader shader, int id, bool depthTest, IEntityBehavior behavior)
+    :base(pos, null, texture, shader, id, depthTest, behavior){
         _CenterX = centerX;
         _CenterY = centerY;
         _text = text;
