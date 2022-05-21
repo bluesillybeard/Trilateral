@@ -54,6 +54,26 @@ namespace Voxelesque.Render
             _aspect = ((float)size.X)/((float)size.Y);
             UpdateTransform();
         }
+        /**
+        <summary>
+        Moves the window according to the movement variable.
+        X moves right, Y moves up, Z moves forward.
+        Note that the Z rotation component is ignored
+        </summary>
+        */
+        public void Move(Vector3 movement){
+            if (movement.Z != 0) {
+                _position.X -= MathF.Sin(_rotation.Y) * movement.Z;
+                _position.Z += MathF.Cos(_rotation.Y) * movement.Z;
+            }
+            if (movement.X != 0) {
+                _position.X += MathF.Cos(_rotation.Y) * movement.X;
+                _position.Z += MathF.Sin(_rotation.Y) * movement.X;
+            }
+            //apply Y movement properly? Not required.
+            _position.Y += movement.Y;
+            UpdateTransform();
+        }
 
         public Matrix4 GetTransform(){
             if(_modified){
@@ -64,6 +84,9 @@ namespace Voxelesque.Render
         }
 
         private void UpdateTransform(){
+            //IMPORTANT: This isn't my code; I basically stole this from JOJL (Java OpenGL Math Library).
+            //I simply folowed the method/logic tree from my old Java codebase, laid it all out, then simplified it for my specific case.
+
             //do the most performance-friendly way of setting the matrix, since it's not gonnna make sense to anybody anyway.
             //initialize our 4x4 "matrix"
             float m00, m01, m02, m03;
@@ -146,8 +169,6 @@ namespace Voxelesque.Render
                 m30, m31, m32, m33
             ) * Matrix4.CreatePerspectiveFieldOfView(_fovy, _aspect, 1.0f/256.0f, 8192f);
             //OK but seriously: whose idea was it to use matrices? because it's the most idiotic stupid thing ever, and it's genius.
-            //This isn't my code; I basically stole this from JOJL (Java OpenGL Math Library).
-            //I simply folowed the method/logic tree, laid it all out, then simplified it for my specific case.
         }
     }
 }

@@ -20,16 +20,10 @@ namespace Voxelesque
         static VMesh cpuMesh;
         static IRenderShader shader;
         static IRenderShader cameralessShader;
-
-
-        static IRenderEntity debugEntity;
-        static IRenderMesh debugMesh;
         static IRenderTextEntity debugText;
 
         static IRenderTexture grass;
         static IRenderTexture ascii;
-        static IRenderTexture magenta;
-
         static Random random;
 
         static RenderCamera camera;
@@ -64,23 +58,12 @@ namespace Voxelesque
             debugText = render.SpawnTextEntity(new EntityPosition(-Vector3.UnitX+Vector3.UnitY,Vector3.Zero,Vector3.One/30), "", false, false, cameralessShader, ascii, false);
             grass = model.texture;
 
-            magenta = render.LoadTexture(1, 1, 1, 1);
-            debugMesh = render.LoadMesh(new float[8], new uint[3]);
-            debugEntity = render.SpawnEntity(EntityPosition.Zero, cameralessShader, debugMesh, magenta, true);
-
             camera = render.SpawnCamera(new Vector3(0, 0, 0), new Vector3(0, 0, 0), 90);
             render.SetCamera(camera);
             render.Run();
         }
         static void update(double d){
-            debugMesh.ReData(new float[8], new uint[3]);
             time += d;
-
-            //entity.Position = new EntityPosition(
-            //    new Vector3((float)(random.NextDouble()-0.5), (float)(random.NextDouble()-0.5), (float)(random.NextDouble()-0.5)),
-            //    new Vector3((float)(random.NextDouble()-0.5), (float)(random.NextDouble()-0.5), (float)(random.NextDouble()-0.5)),
-            //    Vector3.One
-            //);
             debugText.Text = "Entities: " + render.EntityCount() + "\n"
              + "Camera Position: " + camera.Position + "\n"
              + "Camera Rotation: " + camera.Rotation;
@@ -93,19 +76,19 @@ namespace Voxelesque
                 render.CursorLocked  = !render.CursorLocked;
             }
 
-            if(input.IsKeyDown(Keys.F)){
-                render.SpawnEntity(new EntityPosition(camera.Position - Vector3.UnitY, new Vector3(random.NextSingle(), random.NextSingle(), random.NextSingle()), Vector3.One), shader, model.mesh, model.texture, true); 
-            }
-            if(mouse.IsButtonDown(MouseButton.Left)){
-                IRenderEntity toDelete = null;
-                foreach(IRenderEntity entity in render.GetEntities()){
-                    if(entity != null && RenderUtils.MeshCollides(cpuMesh, normalizedCursorPos, entity.GetTransform() * camera.GetTransform(), debugMesh)){
-                        toDelete = entity;
-                        break;
-                    }
-                }
-                if(toDelete != null)render.DeleteEntity(toDelete);
-            }
+            //if(input.IsKeyDown(Keys.F)){
+            //    render.SpawnEntity(new EntityPosition(camera.Position - Vector3.UnitY, new Vector3(random.NextSingle(), random.NextSingle(), random.NextSingle()), Vector3.One), shader, model.mesh, model.texture, true); 
+            //}
+            //if(mouse.IsButtonDown(MouseButton.Left)){
+            //    IRenderEntity toDelete = null;
+            //    foreach(IRenderEntity entity in render.GetEntities()){
+            //        if(entity != null && RenderUtils.MeshCollides(cpuMesh, normalizedCursorPos, entity.GetTransform() * camera.GetTransform(), null)){
+            //            toDelete = entity;
+            //            break;
+            //        }
+            //    }
+            //    if(toDelete != null)render.DeleteEntity(toDelete);
+            //}
             Vector3 cameraInc = new Vector3();
             if (input.IsKeyDown(Keys.W)) {
                 cameraInc.Z = -1;
@@ -123,32 +106,17 @@ namespace Voxelesque
                 cameraInc.Y = 1;
             }
             // Update camera position
-            float CAMERA_POS_STEP = 1f / 6f;
-            if(input.IsKeyDown(Keys.LeftShift)) CAMERA_POS_STEP = 1f;
-            Vector3 pos = camera.Position;
-            Vector3 rot = camera.Rotation * RenderCamera.degToRad;
-            if (cameraInc.Z != 0) {
-                pos.X += MathF.Sin(rot.Y) * -1.0f * cameraInc.Z * CAMERA_POS_STEP;
-                pos.Z += MathF.Cos(rot.Y) * cameraInc.Z * CAMERA_POS_STEP;
-            }
-            if (cameraInc.X != 0) {
-                pos.X += MathF.Sin(rot.Y - 1.57f) * -1.0f * cameraInc.X * CAMERA_POS_STEP;
-                pos.Z += MathF.Cos(rot.Y - 1.57f) * cameraInc.X * CAMERA_POS_STEP;
-            }
-            pos.Y += cameraInc.Y * CAMERA_POS_STEP;
+            float cameraSpeed = 1f / 6f;
+            if(input.IsKeyDown(Keys.LeftShift)) cameraSpeed = 1f;
 
+            camera.Move(cameraInc * cameraSpeed);
 
-            // Update camera based on mouse
-            float sensitivity = 0.01f;
+            // Update camera baseda on mouse
+            float sensitivity = 0.5f;
 
             if (mouse.IsButtonDown(MouseButton.Right) || render.CursorLocked) {
-                rot.X += (mouse.Y - mouse.PreviousY) * sensitivity;
-                rot.Y += (mouse.X - mouse.PreviousX) * sensitivity;
+                camera.Rotation += new Vector3((mouse.Y - mouse.PreviousY) * sensitivity, (mouse.X - mouse.PreviousX) * sensitivity, 0);
             }
-            //send the camera position to Render
-            camera.Position = pos;
-            camera.Rotation = rot * RenderCamera.radToDeg;
-            
         }
     }
 }
