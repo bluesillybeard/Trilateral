@@ -26,7 +26,7 @@ namespace Voxelesque.Render
         public const ConsoleColor ErrorBack = ConsoleColor.Black;
         public const ConsoleColor ErrorFront = ConsoleColor.Red;
 
-        public static void print(object message){
+        public static void Print(object message){
             lock(_printMutex){
                 Console.BackgroundColor = DefaultBack;
                 Console.ForegroundColor = DefaultFront;
@@ -35,11 +35,11 @@ namespace Voxelesque.Render
             }
         }
 
-        public static void printLn(object message){
-            print($"{message}\n");
+        public static void PrintLn(object message){
+            Print($"{message}\n");
         }
 
-        public static void printWarn(object message){
+        public static void PrintWarn(object message){
             lock(_printMutex){
                 Console.BackgroundColor = WarnBack;
                 Console.ForegroundColor = WarnFront;
@@ -48,11 +48,11 @@ namespace Voxelesque.Render
             }
         }
 
-        public static void printWarnLn(object message){
-            printWarn($"{message}\n");
+        public static void PrintWarnLn(object message){
+            PrintWarn($"{message}\n");
         }
 
-        public static void printErr(object message){
+        public static void PrintErr(object message){
             lock(_printMutex){
                 Console.BackgroundColor = ErrorBack;
                 Console.ForegroundColor = ErrorFront;
@@ -61,8 +61,8 @@ namespace Voxelesque.Render
             }
         }
 
-        public static void printErrLn(object message){
-            printErr($"{message}\n");
+        public static void PrintErrLn(object message){
+            PrintErr($"{message}\n");
         }
 
         public static bool MeshCollides(VMesh mesh, Vector2 pos, Matrix4? transform, IRenderMesh debugMesh){

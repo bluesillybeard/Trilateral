@@ -63,7 +63,7 @@ namespace Voxelesque.Render.GL33{
                 return false;
             }
         }
-        public Action<double> OnVoxelesqueUpdate {get; set;}
+        public Action<double> OnUpdate {get; set;}
         public void Run(){
             //I implimented my own game loop, because OpenTKs GameWindow doesn't update the keyboard state properly for the external OnUpdate event.
             long lastRenderTime = DateTime.Now.Ticks;
@@ -106,7 +106,7 @@ namespace Voxelesque.Render.GL33{
             if(lowerPath.EndsWith(".vmesh") || lowerPath.EndsWith(".vbmesh")){
                 return new GL33Mesh(path);
             } else {
-                RenderUtils.printErr($"{path} is not a vmesh or vbmesh");
+                RenderUtils.PrintErr($"{path} is not a vmesh or vbmesh");
                 return null;
             }
         }
@@ -156,7 +156,7 @@ namespace Voxelesque.Render.GL33{
             GL33Texture texture = new GL33Texture(model.texture);
 
             if(err != null){
-                RenderUtils.printErrLn(string.Join("/n", err));
+                RenderUtils.PrintErrLn(string.Join("/n", err));
             }
             return new RenderEntityModel(mesh, texture);
         }
@@ -175,7 +175,7 @@ namespace Voxelesque.Render.GL33{
         //entities
         public IRenderEntity SpawnEntity(EntityPosition pos, IRenderShader shader, IRenderMesh mesh, IRenderTexture texture, bool depthTest, IEntityBehavior behavior){
             if(shader is null || mesh is null || texture is null){
-                RenderUtils.printErrLn("The Shader, Mesh, and/or Texture of an entity is null!");
+                RenderUtils.PrintErrLn("The Shader, Mesh, and/or Texture of an entity is null!");
                 return null;
             }
 
@@ -186,7 +186,7 @@ namespace Voxelesque.Render.GL33{
 
         public IRenderEntity SpawnEntityDelayed(EntityPosition pos, IRenderShader shader, IRenderMesh mesh, IRenderTexture texture, bool depthTest, IEntityBehavior behavior){
             if(shader is null || mesh is null || texture is null){
-                RenderUtils.printErrLn("The Shader, Mesh, and/or Texture of an entity is null!");
+                RenderUtils.PrintErrLn("The Shader, Mesh, and/or Texture of an entity is null!");
                 return null;
             }
 
@@ -197,7 +197,7 @@ namespace Voxelesque.Render.GL33{
 
         public IRenderTextEntity SpawnTextEntity(EntityPosition pos, string text, bool centerX, bool centerY, IRenderShader shader, IRenderTexture texture, bool depthTest, IEntityBehavior behavior){
             if(shader is null || text is null || texture is null){
-                RenderUtils.printErrLn("The Shader, Text, and/or Texture of an entity is null!");
+                RenderUtils.PrintErrLn("The Shader, Text, and/or Texture of an entity is null!");
                 return null;
             }
             GL33TextEntity entity = new GL33TextEntity(pos, text, centerX, centerY, (GL33Texture)texture, (GL33Shader)shader, 0, depthTest, behavior);
@@ -206,7 +206,7 @@ namespace Voxelesque.Render.GL33{
         }
         public IRenderTextEntity SpawnTextEntityDelayed(EntityPosition pos, string text, bool centerX, bool centerY, IRenderShader shader, IRenderTexture texture, bool depthTest, IEntityBehavior behavior){
             if(shader is null || text is null || texture is null){
-                RenderUtils.printErrLn("The Shader, Text, and/or Texture of an entity is null!");
+                RenderUtils.PrintErrLn("The Shader, Text, and/or Texture of an entity is null!");
                 return null;
             }
             GL33TextEntity entity = new GL33TextEntity(pos, text, centerX, centerY, (GL33Texture)texture, (GL33Shader)shader, 0, depthTest, behavior);
@@ -217,7 +217,7 @@ namespace Voxelesque.Render.GL33{
         public void DeleteEntity(IRenderEntity entity){
             GL33Entity glEntity = (GL33Entity)entity;
             if(glEntity.Id() < 0){
-            RenderUtils.printErrLn("ERROR: entity index is negative! This should be impossible.");
+            RenderUtils.PrintErrLn("ERROR: entity index is negative! This should be impossible.");
                 return;
             }
             _entities[glEntity.Id()] = null;//remove the entity
@@ -227,7 +227,7 @@ namespace Voxelesque.Render.GL33{
         public void DeleteEntityDelayed(IRenderEntity entity){
             GL33Entity glEntity = (GL33Entity)entity;
             if(glEntity.Id() < 0){
-            RenderUtils.printErrLn("ERROR: entity index is negative! This should be impossible.");
+            RenderUtils.PrintErrLn("ERROR: entity index is negative! This should be impossible.");
                 return;
             }
             _delayedEntityRemovals.Push(glEntity);
@@ -260,7 +260,7 @@ namespace Voxelesque.Render.GL33{
         }
         public void DeleteCamera(RenderCamera camera){
             if(camera == _camera){
-                RenderUtils.printWarnLn("Cannot delete the active camera!");
+                RenderUtils.PrintWarnLn("Cannot delete the active camera!");
             }
             //Cameras are handled by the C# runtime. Technically, this method is completely pointless.
         }
@@ -288,7 +288,7 @@ namespace Voxelesque.Render.GL33{
             //meshes
             lock(_deletedMeshes){
                 if(_deletedMeshes.Count > 0){
-                    RenderUtils.printWarnLn($"Clearing {_deletedMeshes.Count} leaked meshes - somebody (probably me) forgot to delete their meshes!");
+                    RenderUtils.PrintWarnLn($"Clearing {_deletedMeshes.Count} leaked meshes - somebody (probably me) forgot to delete their meshes!");
                     foreach(GL33MeshHandle mesh in _deletedMeshes){
                         GL33Mesh.Dispose(mesh);
                     }
@@ -299,7 +299,7 @@ namespace Voxelesque.Render.GL33{
             //textures
             lock(_deletedTextures){
                 if(_deletedTextures.Count > 0){
-                    RenderUtils.printWarnLn($"Clearing {_deletedTextures.Count} leaked textures - somebody (probably me) forgot to delete their textures!");
+                    RenderUtils.PrintWarnLn($"Clearing {_deletedTextures.Count} leaked textures - somebody (probably me) forgot to delete their textures!");
                     foreach(GL33TextureHandle mesh in _deletedTextures){
                         GL33Texture.Dispose(mesh);
                     }
@@ -319,7 +319,7 @@ namespace Voxelesque.Render.GL33{
             _camera.lastTransform = _camera.GetTransform();
 
             //update events
-            OnVoxelesqueUpdate.Invoke(deltaTicks/10_000_000.0);
+            OnUpdate.Invoke(deltaTicks/10_000_000.0);
             //update entity behaviors
             KeyboardState keyboard = Keyboard();
             MouseState mouse = Mouse();

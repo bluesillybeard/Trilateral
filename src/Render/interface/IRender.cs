@@ -25,7 +25,7 @@ namespace Voxelesque.Render{
         Entity components are automatically updated, 
         </summary>
         */
-        Action<double> OnVoxelesqueUpdate {get; set;}
+        Action<double> OnUpdate {get; set;}
 
         RenderSettings Settings{get;}
 

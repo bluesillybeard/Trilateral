@@ -37,7 +37,7 @@ namespace Voxelesque.Render.GL33{
             VMesh mesh = new VMesh(vmeshPath, out ICollection<string> err);
             LoadMesh(mesh.vertices, mesh.indices, false);
             if(err != null){
-                RenderUtils.printErrLn(string.Join("\n\n", err));
+                RenderUtils.PrintErrLn(string.Join("\n\n", err));
             }
         }
         public GL33Mesh(VMesh mesh){

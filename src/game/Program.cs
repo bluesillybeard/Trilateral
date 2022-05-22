@@ -31,6 +31,9 @@ namespace Voxelesque.Game
         static RenderCamera camera;
         private static void Main()
         {
+            //Goes without saying, but the Main method here is an absolutely atrocious mess.
+            //I'll fix it someday, but for now it stays.
+            //TODO: fix horrible mess of a Main method
             System.Threading.Thread.CurrentThread.Name = "Main Thread";
 
             
@@ -40,14 +43,14 @@ namespace Voxelesque.Game
 
             render.Init(new RenderSettings()); //todo: use something other than the default settings
 
-            render.OnVoxelesqueUpdate += new System.Action<double>(update); //subscribe the the voxelesque update event
+            render.OnUpdate += new System.Action<double>(update); //subscribe the the update event
 
-            //initial loading stuff here - move to update method when loading bar is added
+            //initial loading stuff here - move to update method and make asynchronous when loading bar is added
 
             VModel cpuModel = new VModel("Resources/vmf/models", "GrassCube.vmf", out var ignored, out var errors);
             cpuMesh = cpuModel.mesh;
 
-            if(errors != null)RenderUtils.printErrLn(string.Join("/n", errors));
+            if(errors != null)RenderUtils.PrintErrLn(string.Join("/n", errors));
             model = render.LoadModel(cpuModel);
             shader = render.LoadShader("Resources/Shaders/");
             cameralessShader = render.LoadShader("Resources/Shaders/cameraless");
@@ -74,7 +77,6 @@ namespace Voxelesque.Game
             KeyboardState keyboard = render.Keyboard();
             MouseState mouse = render.Mouse();
             //between -1 and 1
-            Vector2 normalizedCursorPos = new Vector2(mouse.Position.X / render.WindowSize().X, mouse.Position.Y / render.WindowSize().Y) * 2 -Vector2.One;
             if(keyboard.IsKeyDown(Keys.F)){
                 render.SpawnEntity(new EntityPosition(camera.Position - Vector3.UnitY, new Vector3(random.NextSingle(), random.NextSingle(), random.NextSingle()), Vector3.One), shader, model.mesh, model.texture, true, GrassCubeBehavior); 
             }
@@ -109,7 +111,7 @@ namespace Voxelesque.Game
             // Update camera baseda on mouse
             float sensitivity = 0.5f;
 
-            if (mouse.IsButtonDown(MouseButton.Right) || render.CursorLocked) {
+            if (render.CursorLocked || mouse.IsButtonDown(MouseButton.Right)) {
                 camera.Rotation += new Vector3((mouse.Y - mouse.PreviousY) * sensitivity, (mouse.X - mouse.PreviousX) * sensitivity, 0);
             }
         }

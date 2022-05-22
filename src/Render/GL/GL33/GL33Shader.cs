@@ -127,7 +127,7 @@ namespace Voxelesque.Render.GL33{
                 GL.UseProgram(_id);
                 GL.Uniform1(uniformID, data);
             } else {
-                if(printErrors)RenderUtils.printWarnLn($"ERROR: shader uniform \"{name}\" doesn't exist in {this._name}");
+                if(printErrors)RenderUtils.PrintWarnLn($"ERROR: shader uniform \"{name}\" doesn't exist in {this._name}");
             }
         }
 
@@ -142,7 +142,7 @@ namespace Voxelesque.Render.GL33{
                 GL.UseProgram(_id);
                 GL.Uniform1(uniformID, data);
             } else {
-                if(printErrors)RenderUtils.printWarnLn($"ERROR: shader uniform \"{name}\" doesn't exist in {this._name}");
+                if(printErrors)RenderUtils.PrintWarnLn($"ERROR: shader uniform \"{name}\" doesn't exist in {this._name}");
             }
         }
 
@@ -162,7 +162,7 @@ namespace Voxelesque.Render.GL33{
                 GL.UseProgram(_id);
                 GL.UniformMatrix4(uniformID, true, ref data);
             } else {
-                if(printErrors)RenderUtils.printWarnLn($"ERROR: shader uniform \"{name}\" doesn't exist in {this._name}");
+                if(printErrors)RenderUtils.PrintWarnLn($"ERROR: shader uniform \"{name}\" doesn't exist in {this._name}");
             }
         }
 
@@ -177,7 +177,7 @@ namespace Voxelesque.Render.GL33{
                 GL.UseProgram(_id);
                 GL.Uniform3(uniformID, data);
             } else {
-                if(printErrors)RenderUtils.printWarnLn($"ERROR: shader uniform \"{name}\" doesn't exist in {this._name}");
+                if(printErrors)RenderUtils.PrintWarnLn($"ERROR: shader uniform \"{name}\" doesn't exist in {this._name}");
             }
         }
 

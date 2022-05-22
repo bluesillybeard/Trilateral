@@ -19,11 +19,11 @@ class RemoveOnTouchBehavior : IEntityBehavior{
     }
 
     public void Attach(IRenderEntity entity){
-        RenderUtils.printLn("Attached GrassCubeBehavior to " + entity);
+        RenderUtils.PrintLn("Attached GrassCubeBehavior to " + entity);
     }
 
     public void Detach(IRenderEntity entity){
-        RenderUtils.printLn("Detached GrassCubeBehavior to " + entity);
+        RenderUtils.PrintLn("Detached GrassCubeBehavior to " + entity);
     }
 
 }
