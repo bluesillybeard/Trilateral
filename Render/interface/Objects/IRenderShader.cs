@@ -1,6 +1,6 @@
-namespace Voxelesque.Render{
+namespace Render{
     //this interface exists solely to take advantage of OOP.
-    interface IRenderShader: IRenderObject{
+    public interface IRenderShader: IRenderObject{
         
     }
 }

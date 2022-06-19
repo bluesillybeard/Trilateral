@@ -4,3 +4,5 @@
 #vscode stuff
 .vscode/
 tests/
+#any Java code, since I'll often use java code from the old codebase for reference writing the new code
+*.java

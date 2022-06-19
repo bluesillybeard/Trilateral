@@ -1,5 +1,5 @@
-namespace Voxelesque.Render{
-    struct RenderEntityModel{
+namespace Render{
+    public struct RenderEntityModel{
         public IRenderMesh mesh;
         public IRenderTexture texture;
 

@@ -1,6 +1,6 @@
-namespace Voxelesque.Render.GL33;
+namespace Render.GL33;
 
-using Voxelesque.Render.Util;
+using Render.Util;
 class GL33TextEntity : GL33Entity, IRenderTextEntity{
     public string Text{
         get => _text;

@@ -1,7 +1,7 @@
 using OpenTK.Mathematics;
 
-namespace Voxelesque.Render{
-    struct EntityPosition{
+namespace Render{
+    public struct EntityPosition{
         public static EntityPosition Zero = new EntityPosition(Vector3.Zero, Vector3.Zero, Vector3.One);
 
         public EntityPosition(Vector3 location_, Vector3 rotation, Vector3 scale_){

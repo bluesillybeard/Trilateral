@@ -5,13 +5,10 @@ using System.Collections.Generic;
 using PixelFormat = OpenTK.Graphics.OpenGL.PixelFormat;
 using System.IO;
 
-using VQoiSharp;
-using VQoiSharp.Codec;
-
 using StbImageSharp;
 //NOTICE: this is a modified version of the texture class from the official OpenTK examples.
 
-namespace Voxelesque.Render.GL33{
+namespace Render.GL33{
 
     //This is used to clean up leacked textures from the GPU.
     struct GL33TextureHandle{

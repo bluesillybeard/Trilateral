@@ -1,4 +1,4 @@
-namespace Voxelesque.Render{
+namespace Render{
     /**
     <summary>
     Represents an object that is contained within a Render.
@@ -9,7 +9,7 @@ namespace Voxelesque.Render{
     It is technically possible to use function pointers, but this is C#, not C.
     </summary>
     */
-    interface IRenderObject{
+    public interface IRenderObject{
         ERenderType Type();
         int Id();
     }

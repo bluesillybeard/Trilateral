@@ -2,9 +2,9 @@ using OpenTK.Mathematics;
 using System;
 
 //This would be modified code from the OpenTK example, but their Camera class was so bad that I decided to simply write my own.
-namespace Voxelesque.Render
+namespace Render
 {
-    class RenderCamera
+    public class RenderCamera
     {
         public const float radToDeg = 180.0f/MathF.PI;
         public const float degToRad = MathF.PI/180.0f;

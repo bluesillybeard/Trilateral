@@ -1,8 +1,8 @@
 using OpenTK.Mathematics;
 
 
-namespace Voxelesque.Render{
-    class RenderSettings{
+namespace Render{
+    public class RenderSettings{
 
         public Vector2i Size = new Vector2i(800, 600);
 

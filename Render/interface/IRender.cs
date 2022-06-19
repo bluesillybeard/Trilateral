@@ -7,8 +7,8 @@ using OpenTK.Windowing.GraphicsLibraryFramework;
 using StbImageSharp;
 
 using libvmodel;
-namespace Voxelesque.Render{
-    interface IRender{
+namespace Render{
+    public interface IRender{
         public static IRender CurrentRender;
         public static ERenderType CurrentRenderType;
 

@@ -1,4 +1,4 @@
-namespace Voxelesque.Render.GL33{
+namespace Render.GL33{
     class GL33Object: IRenderObject{
         public ERenderType Type(){
             return ERenderType.GL33;

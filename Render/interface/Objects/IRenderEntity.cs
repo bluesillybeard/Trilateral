@@ -1,7 +1,7 @@
 using OpenTK.Mathematics;
 
-namespace Voxelesque.Render{
-    interface IRenderEntity{
+namespace Render{
+    public interface IRenderEntity{
         EntityPosition Position{get; set;}
         Vector3 Location{get; set;}
         Vector3 Rotation{get; set;}

@@ -5,9 +5,11 @@ using System.Collections.Generic;
 using libvmodel;
 using OpenTK.Mathematics;
 
-namespace Voxelesque.Render
+using Render.GL33;
+
+namespace Render
 {
-    static class RenderUtils{
+    public static class RenderUtils{
         public const double UpdateTime = 1.0/30.0;
         public const double Pid = 3.141592653589793238462643383279502884197169399375105820974944592307816406286;
         public const float Pif = (float)Pid;
@@ -129,6 +131,11 @@ namespace Voxelesque.Render
 
             return (area >= area1 + area2 + area3);        //when three triangles are forming the whole triangle
             //I changed it to >= because floats cannot be trusted to hold perfectly accurate data,
+        }
+
+        public static IRender CreateIdealRender(){
+            return new GL33Render();
+            //TODO: update when adding new Render implementations
         }
     }
 }

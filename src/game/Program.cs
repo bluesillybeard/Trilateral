@@ -3,8 +3,8 @@ using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 
-using Voxelesque.Render;
-using Voxelesque.Render.GL33;
+using Render;
+using Render.GL33;
 
 using System;
 
@@ -39,7 +39,7 @@ namespace Voxelesque.Game
             
             random = new Random((int)DateTime.Now.Ticks);
 
-            render = new GL33Render(); //todo: make a method that creates the most appropiate Render.
+            render = RenderUtils.CreateIdealRender();
 
             render.Init(new RenderSettings()); //todo: use something other than the default settings
 

@@ -1,7 +1,7 @@
 using libvmodel;
 
-namespace Voxelesque.Render{
-    interface IRenderMesh: IRenderObject{
+namespace Render{
+    public interface IRenderMesh: IRenderObject{
         int ElementCount();
         void ReData(float[] vertices, uint[] indices);
         void ReData(VMesh mesh);

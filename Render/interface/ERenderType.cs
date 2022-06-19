@@ -1,5 +1,5 @@
-namespace Voxelesque.Render{
-    enum ERenderType{
+namespace Render{
+    public enum ERenderType{
         GL33,
         //todo: implement more rendering backends
         //GL21, //for legacy computers. like, REALLY REALLY freakishly old computers, at this point. Seriously, if this is ever genuinely used, i'll be blown.

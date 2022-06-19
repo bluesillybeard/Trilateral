@@ -1,9 +1,9 @@
-namespace Voxelesque.Render.Util;
+namespace Render.Util;
 
 using libvmodel;
 
 using System.Collections.Generic;
-class MeshGenerators{
+public class MeshGenerators{
     public static VMesh BasicText(string text, bool centerX, bool centerY){
         //NOTE: This was copied verbatim (and modified for the different way vertices are stored) from my old Java codebase (the 'proof of concept' if you will)
         //that means, this is pretty inneficient and bad code. It will be replaced once I get SDFs to work. (which, let's be honest, is never)
@@ -51,41 +51,42 @@ class MeshGenerators{
                 float UVYPosition = row*0.0625f; //get the actual UV coordinates of the top left corner
 
                 //set vertices
+                //This is the most beautiful (inneficient lol) thing I have ever created.
                 vertices[charElement  ] = iXStart; //top left
                 vertices[charElement+1] = iYStart;
-                vertices[charElement+2] = 0;
+                //vertices[charElement+2] = 0;
                 vertices[charElement+3] = UVXPosition;
                 vertices[charElement+4] = UVYPosition;
-                vertices[charElement+5] = 0; //set normals to 0, since text should render from either side.
-                vertices[charElement+6] = 0;
-                vertices[charElement+7] = 0;
+                //vertices[charElement+5] = 0; //set normals to 0, since text should render from either side.
+                //vertices[charElement+6] = 0;
+                //vertices[charElement+7] = 0;
 
                 vertices[charElement+8] = iXStart+1; //top right
                 vertices[charElement+9] = iYStart;
-                vertices[charElement+10] = 0;
+                //vertices[charElement+10] = 0;
                 vertices[charElement+11] = UVXPosition+0.0625f;
                 vertices[charElement+12] = UVYPosition;
-                vertices[charElement+13] = 0; //set normals to 0, since text should render from either side.
-                vertices[charElement+14] = 0;
-                vertices[charElement+15] = 0;
+                //vertices[charElement+13] = 0; //set normals to 0, since text should render from either side.
+                //vertices[charElement+14] = 0;
+                //vertices[charElement+15] = 0;
 
                 vertices[charElement+16] = iXStart; //bottom left
                 vertices[charElement+17] = iYStart-1;
-                vertices[charElement+18] = 0;
+                //vertices[charElement+18] = 0;
                 vertices[charElement+19] = UVXPosition;
                 vertices[charElement+20] = UVYPosition + 0.0625f;
-                vertices[charElement+21] = 0; //set normals to 0, since text should render from either side.
-                vertices[charElement+22] = 0;
-                vertices[charElement+23] = 0;
+                //vertices[charElement+21] = 0; //set normals to 0, since text should render from either side.
+                //vertices[charElement+22] = 0;
+                //vertices[charElement+23] = 0;
 
                 vertices[charElement+24] = iXStart+1; //bottom right
                 vertices[charElement+25] = iYStart-1;
-                vertices[charElement+26] = 0;
+                //vertices[charElement+26] = 0;
                 vertices[charElement+27] = UVXPosition + 0.0625f;
                 vertices[charElement+28] = UVYPosition + 0.0625f;
-                vertices[charElement+29] = 0; //set normals to 0, since text should render from either side.
-                vertices[charElement+30] = 0;
-                vertices[charElement+31] = 0;
+                //vertices[charElement+29] = 0; //set normals to 0, since text should render from either side.
+                //vertices[charElement+30] = 0;
+                //vertices[charElement+31] = 0;
 
                 //indices 0, 1, 2, 1, 2, 3
                 uint j6 = charIndex*6;

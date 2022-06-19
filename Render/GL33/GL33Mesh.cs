@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 using libvmodel;
 
 
-namespace Voxelesque.Render.GL33{
+namespace Render.GL33{
 
     struct GL33MeshHandle{
 

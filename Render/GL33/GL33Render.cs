@@ -11,7 +11,7 @@ using StbImageSharp;
 
 using libvmodel;
 
-namespace Voxelesque.Render.GL33{
+namespace Render.GL33{
     class GL33Render : IRender{
         public RenderSettings Settings {get => _settings;}
 

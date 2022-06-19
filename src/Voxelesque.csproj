@@ -10,6 +10,7 @@
     <ProjectReference Include="../vqoi/vqoi.csproj"/>
     <ProjectReference Include="../libvmodel/libvmodel.csproj" />
     <ProjectReference Include="../VStbImageSharp/VStbImageSharp.csproj" />
+    <ProjectReference Include="../Render/Render.csproj" />
   </ItemGroup>
 
   <ItemGroup>
