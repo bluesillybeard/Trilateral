@@ -316,10 +316,10 @@ namespace Render.GL33{
                 entity.lastTransform = entity.GetTransform();
             }
 
-            _camera.lastTransform = _camera.GetTransform();
+            if(_camera != null) _camera.lastTransform = _camera.GetTransform();
 
             //update events
-            OnUpdate.Invoke(deltaTicks/10_000_000.0);
+            if(OnUpdate != null) OnUpdate.Invoke(deltaTicks/10_000_000.0);
             //update entity behaviors
             KeyboardState keyboard = Keyboard();
             MouseState mouse = Mouse();
@@ -344,13 +344,18 @@ namespace Render.GL33{
             float delta = (now - _lastUpdateTime)/10_000_000.0f;
             float weight = (float) (delta/RenderUtils.UpdateTime); //0=only last, 1=fully current'
             float rweight = 1-weight;
-            Matrix4 currentCamera = _camera.GetTransform();
-            Matrix4 interpolatedCamera = new Matrix4(
-                currentCamera.Row0*weight + _camera.lastTransform.Row0*rweight,
-                currentCamera.Row1*weight + _camera.lastTransform.Row1*rweight,
-                currentCamera.Row2*weight + _camera.lastTransform.Row2*rweight,
-                currentCamera.Row3*weight + _camera.lastTransform.Row3*rweight
-            );
+            Matrix4 interpolatedCamera;
+            if(_camera != null){
+                Matrix4 currentCamera = _camera.GetTransform();
+                interpolatedCamera = new Matrix4(
+                    currentCamera.Row0*weight + _camera.lastTransform.Row0*rweight,
+                    currentCamera.Row1*weight + _camera.lastTransform.Row1*rweight,
+                    currentCamera.Row2*weight + _camera.lastTransform.Row2*rweight,
+                    currentCamera.Row3*weight + _camera.lastTransform.Row3*rweight
+                );
+            } else {
+                interpolatedCamera = Matrix4.Identity;
+            }
 
 
 
