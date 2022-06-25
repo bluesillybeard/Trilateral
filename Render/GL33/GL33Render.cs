@@ -390,7 +390,7 @@ namespace Render.GL33{
         }
         private void OnResize(ResizeEventArgs args){
             GL.Viewport(0, 0, args.Width, args.Height);
-            _camera.Aspect = (float)args.Width/(float)args.Height;
+            if(_camera != null)_camera.Aspect = (float)args.Width/(float)args.Height;
             //this._window.Size
         }
 

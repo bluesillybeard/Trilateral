@@ -11,12 +11,11 @@ public class MeshGenerators{
         //Yes, I am aware that this is a really inefficient way of doing it.
         //But, unless we are rendering insane amounts of text, I think it will be fine.
 
-        char[] iterableText = text.ToCharArray();
         List<List<char>> lines = new List<List<char>>();
         List<char> line = new List<char>();
         int numCharacters = 0;
         //split into lines
-        foreach(char character in iterableText){
+        foreach(char character in text){
             if(character == '\n'){
                 lines.Add(line);
                 line = new List<char>();
