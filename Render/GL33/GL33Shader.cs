@@ -10,6 +10,8 @@ namespace Render.GL33{
     class GL33Shader: GL33Object, IRenderShader, IDisposable{
         private readonly Dictionary<string, int> _uniformLocations;
         public readonly string _name;
+
+        private int errors;
         public GL33Shader(string vertPath, string fragPath)
         {
             _name = vertPath + "|" + fragPath;
@@ -101,7 +103,7 @@ namespace Render.GL33{
             GL.UseProgram(_id);
         }
 
-        // The shader sources provided with this project use hardcoded layout(location)-s. If you want to do it dynamically,
+        // The shader sources provided with this project use hardcoded layout(location)s. If you want to do it dynamically,
         // you can omit the layout(location=X) lines in the vertex shader, and use this in VertexAttribPointer instead of the hardcoded values.
         public int GetAttribLocation(string attribName)
         {
@@ -127,7 +129,8 @@ namespace Render.GL33{
                 GL.UseProgram(_id);
                 GL.Uniform1(uniformID, data);
             } else {
-                if(printErrors)RenderUtils.PrintWarnLn($"ERROR: shader uniform \"{name}\" doesn't exist in {this._name}");
+                if(printErrors && errors<50)RenderUtils.PrintWarnLn($"ERROR: shader uniform \"{name}\" doesn't exist in {this._name}");
+                errors++;
             }
         }
 
@@ -142,7 +145,8 @@ namespace Render.GL33{
                 GL.UseProgram(_id);
                 GL.Uniform1(uniformID, data);
             } else {
-                if(printErrors)RenderUtils.PrintWarnLn($"ERROR: shader uniform \"{name}\" doesn't exist in {this._name}");
+                if(printErrors && errors<50)RenderUtils.PrintWarnLn($"ERROR: shader uniform \"{name}\" doesn't exist in {this._name}");
+                errors++;
             }
         }
 
@@ -162,7 +166,8 @@ namespace Render.GL33{
                 GL.UseProgram(_id);
                 GL.UniformMatrix4(uniformID, true, ref data);
             } else {
-                if(printErrors)RenderUtils.PrintWarnLn($"ERROR: shader uniform \"{name}\" doesn't exist in {this._name}");
+                if(printErrors && errors<50)RenderUtils.PrintWarnLn($"ERROR: shader uniform \"{name}\" doesn't exist in {this._name}");
+                errors++;
             }
         }
 
@@ -177,7 +182,8 @@ namespace Render.GL33{
                 GL.UseProgram(_id);
                 GL.Uniform3(uniformID, data);
             } else {
-                if(printErrors)RenderUtils.PrintWarnLn($"ERROR: shader uniform \"{name}\" doesn't exist in {this._name}");
+                if(printErrors && errors<50)RenderUtils.PrintWarnLn($"ERROR: shader uniform \"{name}\" doesn't exist in {this._name}");
+                errors++;
             }
         }
 

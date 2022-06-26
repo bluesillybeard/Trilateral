@@ -48,7 +48,7 @@ class Program{
         assets.GUIShader = render.LoadShader("gui");
         assets.GUITextShader = render.LoadShader("text");
         //create the required entities
-        entities.GUIEntity = render.SpawnEntity(EntityPosition.Zero, assets.GUIShader, assets.GUIMesh, null, false, null);
+        entities.GUIEntity = render.SpawnEntity(EntityPosition.Zero, assets.GUIShader, assets.GUIMesh, render.LoadTexture(0, 0, 0, 1), false, null);
         entities.GUITopBarText = render.SpawnTextEntity(new EntityPosition(new Vector3(-1f, 1f, 0), Vector3.Zero, Vector3.One*GuiScale), "File|View|Settings|Tools", false, false, assets.GUITextShader, assets.TextTexture, false, null);
         entities.GUIVertices = render.SpawnTextEntity(EntityPosition.Zero, 
 @"PX  |PY  |PZ  |TX  |TY  |NX  |NY  |NZ  |
@@ -72,9 +72,8 @@ class Program{
         entities.GUISelector.LocationY = 1;
         entities.GUISelector.LocationX = 1-(entities.GUISelector.Text.Length*GuiScale);
         entities.GUISelector.Scale = new Vector3(GuiScale, GuiScale*aspect, 0);
-        //Place the vertices text on the bottom left of the top bar
         entities.GUIVertices.LocationY = 1-GuiScale*aspect;
-        entities.GUIVertices.LocationX = -1+(entities.GUITopBarText.Text.Length*GuiScale);
+        entities.GUIVertices.LocationX = 1-((entities.GUIVertices.Text.IndexOf('\n')-1)*GuiScale*0.52f);
         entities.GUIVertices.Scale = new Vector3(GuiScale*0.52f, GuiScale*0.52f*aspect, 0); //Don't you just love a gui that can't be reogranized without huge changes to the code? Me neither, but i'm too lazy to make it better.
         //If I want to change the GUI scale, I also have to change a whole bunch of other variariables because i'm totally good at making a GUI lol
         //But, for my first GUI from scratch, it's acceptable.
