@@ -36,8 +36,9 @@ public static class VQoiEncoder
 
         byte[] bytes = new byte[VQoiCodec.HeaderSize + VQoiCodec.Padding.Length + (width * height * (channels + 1))]; //allocate enough memory for a worst case scenario.
         //WORST CASE: every element is an RGB or RGBA (takes channels+1 bytes). Yes, the worst case is larger than a bmp file would be.
-        uint[] indexLookup = null; //used by the modified FIFO version that I translated from https://github.com/phoboslab/qoi/blob/fifo/qoi.h
+        uint[]? indexLookup; //used by the modified FIFO version that I translated from https://github.com/phoboslab/qoi/blob/fifo/qoi.h
         if(useModified)indexLookup = new uint[VQoiCodec.LookupHashTableSize];
+        else indexLookup = null;
         
         uint indexPos = 0; //used by FIFO (modified)
         
@@ -122,7 +123,7 @@ public static class VQoiEncoder
                 //since the root algorithm is the same, but how the hash table is used changes.
                 int hash;
                 bool indexEquals;
-                if(useModified){
+                if(indexLookup is not null){ //if indexLookup != null, it's the modified version and we need to use that instead
                     hash = VQoiCodec.CalculateLookupHashIndex(r, g, b, a);
                     indexEquals = RgbaEquals(r, g, b, a, index[indexLookup[hash/4]],index[indexLookup[hash/4]+1],index[indexLookup[hash/4]+2],index[indexLookup[hash/4]+3]);
                 }
@@ -133,13 +134,14 @@ public static class VQoiEncoder
                 if (indexEquals)
                 {
                     //add the index, if it matches.
-                    if(useModified)             
+                    if(indexLookup is not null) //if indexLookup != null, it's the modified version and we need to use that instead        
                         bytes[p++] = (byte)(VQoiCodec.Index | indexLookup[hash/4]/4);
-                    else bytes[p++] = (byte)(VQoiCodec.Index | (hash / 4));
+                    else
+                        bytes[p++] = (byte)(VQoiCodec.Index | (hash / 4));
                 }
                 else
                 {
-                    if(useModified){
+                    if(indexLookup is not null){ //if indexLookup != null, it's the modified version and we need to use that instead
                         indexLookup[hash/4] = indexPos/4;
 
                         index[indexPos] = r;

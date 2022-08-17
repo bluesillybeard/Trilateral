@@ -67,9 +67,9 @@ namespace Render
             PrintErr($"{message}\n");
         }
 
-        public static bool MeshCollides(VMesh mesh, Vector2 pos, Matrix4? transform, IRenderMesh debugMesh){
-            List<float> addVertices = null;
-            List<uint> addIndices = null;
+        public static bool MeshCollides(VMesh mesh, Vector2 pos, Matrix4 transform, IRenderMesh? debugMesh){
+            List<float>? addVertices = null;
+            List<uint>? addIndices = null;
             uint index = 1;
             if(debugMesh != null){
                 addVertices = new List<float>();
@@ -90,15 +90,15 @@ namespace Render
                 //We use Vector4s for the matrix transformation to work.
 
                 uint t = elements*indices[3*i];
-                Vector3 v1 = Vector3.TransformPerspective(new Vector3(vertices[t], vertices[t+1], vertices[t+2]), transform.Value);
+                Vector3 v1 = Vector3.TransformPerspective(new Vector3(vertices[t], vertices[t+1], vertices[t+2]), transform);
 
                 t = elements*indices[3*i+1];
-                Vector3 v2 = Vector3.TransformPerspective(new Vector3(vertices[t], vertices[t+1], vertices[t+2]), transform.Value);
+                Vector3 v2 = Vector3.TransformPerspective(new Vector3(vertices[t], vertices[t+1], vertices[t+2]), transform);
                 
                 t = elements*indices[3*i+2];
-                Vector3 v3 = Vector3.TransformPerspective(new Vector3(vertices[t], vertices[t+1], vertices[t+2]), transform.Value);
+                Vector3 v3 = Vector3.TransformPerspective(new Vector3(vertices[t], vertices[t+1], vertices[t+2]), transform);
                 //if the triangle isn't behind the camera, and it touches the point, return true.'
-                if(debugMesh != null && v1.Z < 1.0f && v2.Z < 1.0f && v3.Z < 1.0f){
+                if(debugMesh != null && addVertices != null && addIndices != null && v1.Z < 1.0f && v2.Z < 1.0f && v3.Z < 1.0f){
                     addVertices.AddRange(new float[]{v1.X, v1.Y, v1.Z, 0.5f, 0.5f, 0, 0, 0});
                     addVertices.AddRange(new float[]{v2.X, v2.Y, v2.Z, 0.5f, 0.5f, 0, 0, 0});
                     addVertices.AddRange(new float[]{v3.X, v3.Y, v3.Z, 0.5f, 0.5f, 0, 0, 0});
@@ -107,11 +107,11 @@ namespace Render
                     addIndices.Add(index++);
                 }
                 if(v1.Z < 1.0f && v2.Z < 1.0f && v3.Z < 1.0f && IsInside(v1.Xy, v2.Xy, v3.Xy, pos)) {
-                    if(debugMesh != null)debugMesh.AddData(addVertices.ToArray(), addIndices.ToArray());
+                    if(debugMesh != null && addVertices != null && addIndices != null)debugMesh.AddData(addVertices.ToArray(), addIndices.ToArray());
                     return true;
                 }
             }
-            if(debugMesh != null)debugMesh.AddData(addVertices.ToArray(), addIndices.ToArray());
+            if(debugMesh != null && addVertices != null && addIndices != null)debugMesh.AddData(addVertices.ToArray(), addIndices.ToArray());
             return false;
         }
 

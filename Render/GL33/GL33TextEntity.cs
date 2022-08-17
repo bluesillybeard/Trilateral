@@ -18,9 +18,11 @@ class GL33TextEntity : GL33Entity, IRenderTextEntity{
     private string _text;
     //No mesh is provided since we generate that ourselves.
 
-    //Personally I prever the Java way of calling the base constructor ourself, instead of having it automatically called. To each their own.
+    //Personally, being forced to call the super constructor as the very first thing is a little dumb, because (like in this case) there is code that would normally need to run before the constructor.
+    #pragma warning disable //disable the null warning, because the mesh is IMMEDIATELY set to a non-null value after the super constructor is called.
     public GL33TextEntity(EntityPosition pos, string text, bool centerX, bool centerY, GL33Texture texture, GL33Shader shader, int id, bool depthTest, IEntityBehavior behavior)
     :base(pos, null, texture, shader, id, depthTest, behavior){
+        #pragma warning enable
         _CenterX = centerX;
         _CenterY = centerY;
         _text = text;

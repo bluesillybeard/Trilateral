@@ -2,6 +2,7 @@
 
 	<PropertyGroup>
 		<TargetFrameworks>net6.0</TargetFrameworks>
+    <Nullable>enable</Nullable>
 	</PropertyGroup>
 	<!--really simple library to allow the loading and creation of qoi and vqoi files.-->
 	<!--It's worth mentioning that VStmImageSharp is used to load the files in actual projects, this is just a library that also allows the creation of such files, not just decoding them.-->

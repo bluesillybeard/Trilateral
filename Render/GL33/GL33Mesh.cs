@@ -34,7 +34,7 @@ namespace Render.GL33{
         private int _vertexCount;
 
         public GL33Mesh(string vmeshPath){
-            VMesh mesh = new VMesh(vmeshPath, out ICollection<string> err);
+            VMesh mesh = new VMesh(vmeshPath, out ICollection<string>? err);
             LoadMesh(mesh.vertices, mesh.indices, false);
             if(err != null){
                 RenderUtils.PrintErrLn(string.Join("\n\n", err));

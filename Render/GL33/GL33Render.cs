@@ -26,7 +26,7 @@ namespace Render.GL33{
                 _settings = settings;
                 _deletedMeshes = new List<GL33MeshHandle>();
                 _deletedTextures = new List<GL33TextureHandle>();
-                _entities = new List<GL33Entity>();
+                _entities = new List<GL33Entity?>();
                 _freeEntitySlots = new List<int>();
 
 
@@ -48,22 +48,23 @@ namespace Render.GL33{
 
                 //the NativeWindow class has no way to do this, so we directly ask GLFW for it
                 //(Setting the swap interval to 0.)
+                //TODO: make this a setting
                 OpenTK.Windowing.GraphicsLibraryFramework.GLFW.SwapInterval(0);
 
                 _window.Resize += new Action<ResizeEventArgs>(OnResize);
                 GL.Enable(EnableCap.DepthTest);
-                //GL.Enable(EnableCap.CullFace); //Sadly, this face culling system was designed to be extremely simple and not easily worked with.
+                //GL.Enable(EnableCap.CullFace); //Sadly, OpenGLs face culling system was designed to be extremely simple and not easily worked with.
                 //My culling system is based on surface normals, so this simply won't do.
+
                 IRender.CurrentRender = this;
                 IRender.CurrentRenderType = ERenderType.GL33;
-
                 return true;
             } catch (Exception e){
                 Console.WriteLine("Error creating OpenGL 3.3 (GL33) window.\n\n" + e.StackTrace);
                 return false;
             }
         }
-        public Action<double> OnUpdate {get; set;}
+        public Action<double>? OnUpdate {get; set;}
         public void Run(){
             //I implimented my own game loop, because OpenTKs GameWindow doesn't update the keyboard state properly for the external OnUpdate event.
             long lastRenderTime = DateTime.Now.Ticks;
@@ -102,13 +103,7 @@ namespace Render.GL33{
         //meshes
 
         public IRenderMesh LoadMesh(string path){
-            string lowerPath = path.ToLower();
-            if(lowerPath.EndsWith(".vmesh") || lowerPath.EndsWith(".vbmesh")){
-                return new GL33Mesh(path);
-            } else {
-                RenderUtils.PrintErr($"{path} is not a vmesh or vbmesh");
-                return null;
-            }
+            return new GL33Mesh(path);
         }
 
         public IRenderMesh LoadMesh(VMesh mesh){
@@ -150,7 +145,7 @@ namespace Render.GL33{
         //models
         public RenderEntityModel LoadModel(string folder, string file){
             //load the model data
-            VModel model = new VModel(folder, file, out var ignored, out ICollection<string> err);
+            VModel model = new VModel(folder, file, out var ignored, out ICollection<string>? err);
             //send it to the GPU
             GL33Mesh mesh = new GL33Mesh(model.mesh);
             GL33Texture texture = new GL33Texture(model.texture);
@@ -174,41 +169,23 @@ namespace Render.GL33{
         }
         //entities
         public IRenderEntity SpawnEntity(EntityPosition pos, IRenderShader shader, IRenderMesh mesh, IRenderTexture texture, bool depthTest, IEntityBehavior behavior){
-            if(shader is null || mesh is null || texture is null){
-                RenderUtils.PrintErrLn("The Shader, Mesh, and/or Texture of an entity is null!");
-                return null;
-            }
-
             GL33Entity entity = new GL33Entity(pos, (GL33Mesh)mesh, (GL33Texture)texture, (GL33Shader)shader, 0, depthTest, behavior);
             _AddEntity(entity);
             return entity;
         }
 
         public IRenderEntity SpawnEntityDelayed(EntityPosition pos, IRenderShader shader, IRenderMesh mesh, IRenderTexture texture, bool depthTest, IEntityBehavior behavior){
-            if(shader is null || mesh is null || texture is null){
-                RenderUtils.PrintErrLn("The Shader, Mesh, and/or Texture of an entity is null!");
-                return null;
-            }
-
             GL33Entity entity = new GL33Entity(pos, (GL33Mesh)mesh, (GL33Texture)texture, (GL33Shader)shader, 0, depthTest, behavior);
             _delayedEntities.Push(entity);
             return entity;
         }
 
         public IRenderTextEntity SpawnTextEntity(EntityPosition pos, string text, bool centerX, bool centerY, IRenderShader shader, IRenderTexture texture, bool depthTest, IEntityBehavior behavior){
-            if(shader is null || text is null || texture is null){
-                RenderUtils.PrintErrLn("The Shader, Text, and/or Texture of an entity is null!");
-                return null;
-            }
             GL33TextEntity entity = new GL33TextEntity(pos, text, centerX, centerY, (GL33Texture)texture, (GL33Shader)shader, 0, depthTest, behavior);
             _AddEntity(entity);
             return entity;
         }
         public IRenderTextEntity SpawnTextEntityDelayed(EntityPosition pos, string text, bool centerX, bool centerY, IRenderShader shader, IRenderTexture texture, bool depthTest, IEntityBehavior behavior){
-            if(shader is null || text is null || texture is null){
-                RenderUtils.PrintErrLn("The Shader, Text, and/or Texture of an entity is null!");
-                return null;
-            }
             GL33TextEntity entity = new GL33TextEntity(pos, text, centerX, centerY, (GL33Texture)texture, (GL33Shader)shader, 0, depthTest, behavior);
             _delayedEntities.Push(entity);
             return entity;
@@ -245,7 +222,7 @@ namespace Render.GL33{
             }
         }
 
-        public IEnumerable<IRenderEntity> GetEntities(){
+        public IEnumerable<IRenderEntity?> GetEntities(){
             return _entities;
         }
         //camera
@@ -310,7 +287,7 @@ namespace Render.GL33{
             //If it becomes an issue, then i'll add the deletion buffer for that.
 
 
-            foreach(GL33Entity entity in _entities){
+            foreach(GL33Entity? entity in _entities){
                 //update previous matrix values
                 if(entity == null) continue;
                 entity.lastTransform = entity.GetTransform();
@@ -319,11 +296,11 @@ namespace Render.GL33{
             if(_camera != null) _camera.lastTransform = _camera.GetTransform();
 
             //update events
-            if(OnUpdate != null) OnUpdate.Invoke(deltaTicks/10_000_000.0);
+            if(OnUpdate != null)OnUpdate.Invoke(deltaTicks/10_000_000.0);
             //update entity behaviors
             KeyboardState keyboard = Keyboard();
             MouseState mouse = Mouse();
-            foreach(GL33Entity entity in _entities){
+            foreach(GL33Entity? entity in _entities){
                 if(entity is null)continue;
                 if(entity.Behavior is null)continue;
                 entity.Behavior.Update(timeTicks/10_000_000.0, deltaTicks/10_000_000.0, entity, keyboard, mouse);
@@ -359,7 +336,7 @@ namespace Render.GL33{
 
 
 
-            foreach(GL33Entity entity in _entities){
+            foreach(GL33Entity? entity in _entities){
                 if(entity is null)continue;
                 entity._mesh.Bind();
                 entity._texture.Use(TextureUnit.Texture0);
@@ -394,6 +371,7 @@ namespace Render.GL33{
             //this._window.Size
         }
 
+        #pragma warning disable //the null checks are pointless here, since the initialization doesn't happen in the constructor.
         public List<GL33TextureHandle> _deletedTextures;
 
         public List<GL33MeshHandle> _deletedMeshes;
@@ -403,7 +381,7 @@ namespace Render.GL33{
         private RenderSettings _settings;
         private NativeWindow _window;
 
-        private List<GL33Entity> _entities;
+        private List<GL33Entity?> _entities;
 
         private List<int> _freeEntitySlots;
 
@@ -414,5 +392,6 @@ namespace Render.GL33{
 
         private Stack<GL33Entity> _delayedEntities;
         private Stack<GL33Entity> _delayedEntityRemovals;
+        #pragma warning enable
     }
 }

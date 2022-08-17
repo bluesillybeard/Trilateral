@@ -9,7 +9,9 @@ using StbImageSharp;
 using libvmodel;
 namespace Render{
     public interface IRender{
+        #pragma warning disable //disable the null warning, since the CurrentRender will NEVER be null in any valid runtime.
         public static IRender CurrentRender;
+        #pragma warning enable
         public static ERenderType CurrentRenderType;
 
         //mixed bits
@@ -25,7 +27,7 @@ namespace Render{
         Entity components are automatically updated, 
         </summary>
         */
-        Action<double> OnUpdate {get; set;}
+        Action<double>? OnUpdate {get; set;}
 
         RenderSettings Settings{get;}
 
@@ -136,7 +138,7 @@ namespace Render{
         Note that there WILL be null elements. If an entity is 'null', it means that it has been removed.
         </summary>
         */
-        IEnumerable<IRenderEntity> GetEntities();
+        IEnumerable<IRenderEntity?> GetEntities();
         //camera
 
         RenderCamera SpawnCamera(Vector3 position, Vector3 rotation, float fovy);
