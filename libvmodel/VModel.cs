@@ -118,7 +118,7 @@ namespace libvmodel{
             img.Comp = ColorComponents.RedGreenBlue;
             img.Data = new byte[]{
                 255, 0  , 255, 0  , 0  , 0  ,
-                0, 0, 0  , 0  , 0  , 255, 0  , 255, //Don't ask me where the extra 2 bytes came from, I have no clue.
+                0, 0, 0  , 0  , 0  , 255, 0  , 255, //Don't ask me where the extra 2 bytes came from, for some reason it doesn't look right without them.
             };
             img.SourceComp = ColorComponents.RedGreenBlue;
             return img;

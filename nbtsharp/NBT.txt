@@ -30,6 +30,6 @@ y bytes: the actual data of the NBT element.
 For example, an NBT int with the name "anint" and value 7 would be serialized like so:
 0f 00 00 00  00  'a' 'n' 'i' 'n' 't' 00 07 00 00 00
 |  length  |type|          name        |   value  |
-Note that all the values are in little endian.
+Note that the length always has to be little endian, but the data contained in the elements 'payload' can be any format.
 
-This system of serialization allows an NBTFolder to haphazardly stack elements in front of each other, since it can read the length and know when the element ends.
+This system of serialization allows an NBTFolder to haphazardly stack elements in front of each other, since it can read the length to know when a given element ends.

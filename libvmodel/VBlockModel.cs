@@ -25,7 +25,6 @@ namespace libvmodel{
         </summary>
         */
         public VBlockModel(string folder, string file, out Dictionary<string, string>? vmf, out ICollection<string>? errors){
-            vmf = null;
             this.model = new VModel(folder, file, out vmf, out errors);
         }
 

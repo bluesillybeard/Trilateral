@@ -90,7 +90,7 @@ namespace Render.GL33{
         
         //Implementing this function was a huge pain.
         //Mostly since OpenGL doesn't do it for me.
-        public unsafe void AddData(float[] vertices, uint[] indices){
+        public void AddData(float[] vertices, uint[] indices){
             //modify the indices so we can haphazardly add them on.
             for(int i=0; i<indices.Length; i++){
                 indices[i] += (uint)_indexCount;

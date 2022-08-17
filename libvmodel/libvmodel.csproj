@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../VStbImageSharp/VStbImageSharp.csproj" />
+    <ProjectReference Include="../VStbImageSharp/VStbImageSharp.csproj" /> <!--for opening images-->
   </ItemGroup>
 
 </Project>

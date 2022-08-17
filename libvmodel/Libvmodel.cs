@@ -13,6 +13,7 @@ public static class Libvmodel
     */
     public static Dictionary<string, string> ParseListMap(string listContents, out ICollection<string>? errors){
         //TODO: write a better version that handles escape characters properly.
+        //TODO: use something 'proper' like a YAML loader or something.
         errors = null;
 
         //first, we split each non-empty line into it's own string.

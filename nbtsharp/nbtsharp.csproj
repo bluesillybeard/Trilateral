@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
   </PropertyGroup>
-
+  <!--My own custom library for representing, serializing, and deserializing NBT. The format is fundamentally different than Minecraft's system, although it takes heavy inspiration.-->
 </Project>

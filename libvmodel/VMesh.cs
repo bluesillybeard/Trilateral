@@ -3,12 +3,10 @@ using System;
 using System.Collections.Generic;
 namespace libvmodel{
     public class VMesh{
-        //These are nullable to stop C# from yelling at my face.
-        //They won't actually ever be null.
-        public float[]? vertices; //elements: xpos, ypos, zpos, xtex, ytex, xnorm, ynorm, znorm
-        public uint[]? indices;
+        public float[] vertices; //elements: xpos, ypos, zpos, xtex, ytex, xnorm, ynorm, znorm
+        public uint[] indices;
 
-        public byte[]? removableTriangles; //this one might actually be null, so don't expect good things to come out of it.
+        public byte[]? removableTriangles;
         //public byte blockedFaces; blocked faces are part of the vmf file, not the vbmesh.
 
         public VMesh(float[] vertices, uint[] indices){
@@ -18,7 +16,6 @@ namespace libvmodel{
         }
 
         public VMesh(string vmeshPath, out ICollection<string>? errors){
-            //Pipe down C#, the vertices and indices are written within the Error() method.
             errors = null;
             byte[] vmesh;
             try{
@@ -26,7 +23,7 @@ namespace libvmodel{
             } catch (Exception e){
                 errors = new List<string>();
                 errors.Add("Error loading vmesh file: " + e);
-                Error();
+                Error(out vertices, out indices);
                 return;
             }
             try{
@@ -55,7 +52,7 @@ namespace libvmodel{
             } catch (Exception){
                 errors = new List<string>();
                 errors.Add("Malformed vmesh file: " + vmeshPath);
-                Error();
+                Error(out vertices, out indices);
             }
         }
 
@@ -65,22 +62,20 @@ namespace libvmodel{
         </summary>
         */
         public VMesh(){
-            //Pipe down C#, the vertices and indices are written within the Error() method.
-            Error();
+            Error(out vertices, out indices);
         }
 
-        private void Error(){
-            this.vertices = new float[]{
+        private static void Error(out float[] vertices, out uint[] indices){
+            vertices = new float[]{
                 1,  1, 0, 1, 1, 0, 0, 0,
                 -1,  1, 0, 0, 1, 0, 0, 0,
                 1, -1, 0, 1, 0, 0, 0, 0,
                 -1, -1, 0, 0, 0, 0, 0, 0,
             };
-            this.indices = new uint[]{
+            indices = new uint[]{
                 0, 1, 2,
                 1, 2, 3,
             };
-            this.removableTriangles = null;
         }
     }
 }

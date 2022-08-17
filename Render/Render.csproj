@@ -2,16 +2,15 @@
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../libvmodel/libvmodel.csproj" />
-    <ProjectReference Include="../VStbImageSharp/VStbImageSharp.csproj" />
+    <ProjectReference Include="../libvmodel/libvmodel.csproj" /><!-- custom library to load custom model format-->
+    <ProjectReference Include="../VStbImageSharp/VStbImageSharp.csproj" /><!-- a modified version of STBImageSharp that supports qoi (open format) and vqoi (custom format for voxelesque)-->
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="OpenTK" Version="4.4.0" />
+    <PackageReference Include="OpenTK" Version="4.4.0" /> <!--OpenTK since this projects uses OpenTK to expose OpenGL functions and provide a windowing system-->
   </ItemGroup>
 
 </Project>
