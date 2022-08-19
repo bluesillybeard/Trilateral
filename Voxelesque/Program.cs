@@ -1,10 +1,7 @@
 ﻿using OpenTK.Mathematics;
-using OpenTK.Windowing.Common;
-using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 
 using Render;
-using Render.GL33;
 
 using System;
 
@@ -60,7 +57,7 @@ namespace Voxelesque.Game
                 Vector3.One
             ), shader, model.mesh, model.texture, true, null);
             ascii = render.LoadTexture("Resources/ASCII-Extended.png");
-            debugText = render.SpawnTextEntity(new EntityPosition(-Vector3.UnitX+Vector3.UnitY,Vector3.Zero,Vector3.One/30), "", false, false, cameralessShader, ascii, false, null);
+            debugText = render.SpawnTextEntity(new EntityPosition(-Vector3.UnitX+Vector3.UnitY,Vector3.Zero,Vector3.One/30), "", false, false, cameralessShader, ascii, true, null);
             grass = model.texture;
 
             camera = render.SpawnCamera(new Vector3(0, 0, 0), new Vector3(0, 0, 0), 90);

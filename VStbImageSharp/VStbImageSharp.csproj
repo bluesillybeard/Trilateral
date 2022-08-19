@@ -2,7 +2,6 @@
     <PropertyGroup>
         <TargetFrameworks>netstandard2.0;net45</TargetFrameworks>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-        <Nullable>enable</Nullable>
     </PropertyGroup>
     <!--Original creators of the library: https://github.com/StbSharp/StbImageSharp-->
 </Project>
