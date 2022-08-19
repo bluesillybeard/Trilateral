@@ -67,15 +67,7 @@ namespace Render
             PrintErr($"{message}\n");
         }
 
-        public static bool MeshCollides(VMesh mesh, Vector2 pos, Matrix4 transform, IRenderMesh? debugMesh){
-            List<float>? addVertices = null;
-            List<uint>? addIndices = null;
-            uint index = 1;
-            if(debugMesh != null){
-                addVertices = new List<float>();
-                addIndices = new List<uint>();
-            }
-            
+        public static bool MeshCollides(VMesh mesh, Vector2 pos, Matrix4 transform){
             pos.Y *= -1;
 
             //in the Java version, I used temporary variables since they are always on the Heap anyway, so cache locality was an unfixable problem.
@@ -97,21 +89,11 @@ namespace Render
                 
                 t = elements*indices[3*i+2];
                 Vector3 v3 = Vector3.TransformPerspective(new Vector3(vertices[t], vertices[t+1], vertices[t+2]), transform);
-                //if the triangle isn't behind the camera, and it touches the point, return true.'
-                if(debugMesh != null && addVertices != null && addIndices != null && v1.Z < 1.0f && v2.Z < 1.0f && v3.Z < 1.0f){
-                    addVertices.AddRange(new float[]{v1.X, v1.Y, v1.Z, 0.5f, 0.5f, 0, 0, 0});
-                    addVertices.AddRange(new float[]{v2.X, v2.Y, v2.Z, 0.5f, 0.5f, 0, 0, 0});
-                    addVertices.AddRange(new float[]{v3.X, v3.Y, v3.Z, 0.5f, 0.5f, 0, 0, 0});
-                    addIndices.Add(index++);
-                    addIndices.Add(index++);
-                    addIndices.Add(index++);
-                }
+                //if the triangle isn't behind the camera, and it touches the point, return true.
                 if(v1.Z < 1.0f && v2.Z < 1.0f && v3.Z < 1.0f && IsInside(v1.Xy, v2.Xy, v3.Xy, pos)) {
-                    if(debugMesh != null && addVertices != null && addIndices != null)debugMesh.AddData(addVertices.ToArray(), addIndices.ToArray());
                     return true;
                 }
             }
-            if(debugMesh != null && addVertices != null && addIndices != null)debugMesh.AddData(addVertices.ToArray(), addIndices.ToArray());
             return false;
         }
 
