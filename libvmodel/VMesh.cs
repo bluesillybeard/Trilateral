@@ -15,6 +15,9 @@ namespace libvmodel{
             removableTriangles = null;
         }
 
+        /**
+        Legacy constructor, for vmesh and vbmesh files with version 0
+        */
         public VMesh(string vmeshPath, out ICollection<string>? errors){
             errors = null;
             byte[] vmesh;
@@ -29,22 +32,23 @@ namespace libvmodel{
             try{
                 //copy the vertices one float at a time. The vmesh already has the attributes in the right order, so we don't have to worry about that.
                 vertices = new float[8 * BitConverter.ToInt32(vmesh, 0)];
+                int vertices4 = 4*vertices.Length;
                 for(int i=0; i<vertices.Length; i++){
                     vertices[i] = BitConverter.ToSingle(vmesh, i*4+12); //header is 12 bytes long
                 }
 
                 //do with the indices the same as the vertices.
-                indices = new uint[BitConverter.ToInt32(vmesh, 4)];
+                indices = new uint[BitConverter.ToInt32(vmesh, 4)*3];
 
                 for(int i=0; i<indices.Length; i++){
-                    indices[i] = BitConverter.ToUInt32(vmesh, 4*vertices.Length + 4*i + 12);
+                    indices[i] = BitConverter.ToUInt32(vmesh, vertices4 + 4*i + 12);
                 }
 
                 //if we have enough data for the removable triangles, we'll load them.
-                if(vmesh.Length >= 4*vertices.Length + 4*indices.Length + indices.Length/3 + 12){
+                if(vmesh.Length >= vertices4 + 4*indices.Length + indices.Length/3 + 12){
                     removableTriangles = new byte[indices.Length/3];
                     for(int i=0; i<removableTriangles.Length; i++){
-                        removableTriangles[i] = vmesh[4*vertices.Length + 4*indices.Length + 12 + i];
+                        removableTriangles[i] = vmesh[vertices4 + 4*indices.Length + 12 + i];
                     }
                 } else {
                     removableTriangles = null;

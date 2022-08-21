@@ -24,14 +24,16 @@ namespace Render.GL33{
     }
 
     class GL33Mesh: GL33Object, IRenderMesh, IDisposable{
-        bool _deleted;
-        private int _indexBuffer;
+        bool _deleted; //to tell if a mesh has been disposed of or not
+        private int _indexBuffer; //the OpenGL index buffer
 
-        private int _vertexBufferObject;
+        private int _vertexBufferObject; //the OpenGL vertex buffer
 
-        private int _indexCount;
+        //The vertex array object is in the _id property from IRenderObject.
 
-        private int _vertexCount;
+        private int _indexCount; //the number of indices in the mesh. In other words, the length of the index buffer.
+
+        private int _vertexFloats; //the number of total vertex ATTRIBUTES in the mesh - not the number of actual vertices. In other words, the length of the vertex buffer.
 
         public GL33Mesh(string vmeshPath){
             VMesh mesh = new VMesh(vmeshPath, out ICollection<string>? err);
@@ -74,7 +76,7 @@ namespace Render.GL33{
         
         public void ReData(float[] vertices, uint[] indices){
             _indexCount = indices.Length;
-            _vertexCount = vertices.Length;
+            _vertexFloats = vertices.Length;
             GL.BindVertexArray(_id);
 
             GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexBufferObject);
@@ -104,14 +106,14 @@ namespace Render.GL33{
                 //I'm so tired that leacking doesn't even look like a word anymore.
                 GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexBufferObject);
                 //load the buffer into memory
-                float[] bufferVertices = new float[_vertexCount + vertices.Length];
-                GL.GetBufferSubData(BufferTarget.ArrayBuffer, IntPtr.Zero, _vertexCount*sizeof(float), bufferVertices);
+                float[] bufferVertices = new float[_vertexFloats + vertices.Length];
+                GL.GetBufferSubData(BufferTarget.ArrayBuffer, IntPtr.Zero, _vertexFloats*sizeof(float), bufferVertices);
                 //add the new data
                 for(int i=0; i<vertices.Length; i++){
-                    bufferVertices[i+_vertexCount] = vertices[i];
+                    bufferVertices[i+_vertexFloats] = vertices[i];
                 }
                 //upload the new buffer.
-                GL.BufferData(BufferTarget.ArrayBuffer, ((_vertexCount+vertices.Length)*sizeof(float)), bufferVertices, BufferUsageHint.DynamicDraw);
+                GL.BufferData(BufferTarget.ArrayBuffer, ((_vertexFloats+vertices.Length)*sizeof(float)), bufferVertices, BufferUsageHint.DynamicDraw);
             }
             {
                 GL.BindBuffer(BufferTarget.ElementArrayBuffer, _indexBuffer);
@@ -126,12 +128,12 @@ namespace Render.GL33{
                 GL.BufferData(BufferTarget.ElementArrayBuffer, ((_indexCount+indices.Length)*sizeof(uint)), bufferIndices, BufferUsageHint.DynamicDraw);
             }
             _indexCount += indices.Length;
-            _vertexCount += vertices.Length;
+            _vertexFloats += vertices.Length;
         }
 
         private void LoadMesh(float[] vertices, uint[] indices, bool dynamic){
             _indexCount = indices.Length;
-            _vertexCount = vertices.Length;
+            _vertexFloats = vertices.Length;
             _id = GL.GenVertexArray();
             GL.BindVertexArray(_id);
 
@@ -162,7 +164,11 @@ namespace Render.GL33{
         }
 
         public int ElementCount(){
-            return _indexCount;
+            return _indexCount/3;
+        }
+
+        public int VertexCount(){
+            return _vertexFloats;
         }
 
         ~GL33Mesh(){

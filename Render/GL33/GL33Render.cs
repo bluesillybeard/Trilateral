@@ -398,7 +398,7 @@ namespace Render.GL33{
 
                 if(entity._depthTest)GL.Enable(EnableCap.DepthTest);
                 else GL.Disable(EnableCap.DepthTest);
-                GL.DrawElements(BeginMode.Triangles, entity._mesh.ElementCount(), DrawElementsType.UnsignedInt, 0);
+                GL.DrawElements(BeginMode.Triangles, entity._mesh.ElementCount()*3, DrawElementsType.UnsignedInt, 0);
             }
 
             _window.Context.SwapBuffers();

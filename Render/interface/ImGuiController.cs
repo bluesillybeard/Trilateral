@@ -1,4 +1,4 @@
-namespace Render;
+/*namespace Render;
 
 using OpenTK.Mathematics;
 using OpenTK.Windowing;
@@ -25,7 +25,7 @@ public class ImGuiController{
     //Rendering related objects
     private IRender _render;
 
-    private IRenderMesh _mesh;
+    /*private IRenderMesh _mesh;
     private Matrix4 _projectionMatrix;
 
     private IRenderTexture _fontTexture;
@@ -223,3 +223,4 @@ public class ImGuiController{
         }
     }
 }
+*/
