@@ -28,6 +28,6 @@ namespace Render{
 
         bool DepthTest{get; set;}
 
-        IEntityBehavior Behavior {get; set;}
+        IEntityBehavior? Behavior {get; set;}
     }
 }

@@ -3,6 +3,9 @@
 */obj/
 #vscode stuff
 .vscode/
+#"test" code, stuff that isn't actually related to the project, but rather for testing random stuff that nobody really cares about.
 tests/
 #any Java code, since I'll often use java code from the old codebase for reference writing the new code
 *.java
+#.yeetis files, since I need a way to ignore files on a case-by-case basis
+.yeetis

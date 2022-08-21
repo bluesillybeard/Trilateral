@@ -2,7 +2,7 @@ using OpenTK.Mathematics;
 
 namespace Render.GL33{
     class GL33Entity: GL33Object, IRenderEntity{
-        public GL33Entity(EntityPosition pos, GL33Mesh mesh, GL33Texture texture, GL33Shader shader, int id, bool depthTest, IEntityBehavior behavior){
+        public GL33Entity(EntityPosition pos, GL33Mesh mesh, GL33Texture texture, GL33Shader shader, int id, bool depthTest, IEntityBehavior? behavior){
             _position = pos;
             _mesh = mesh;
             _texture = texture;
@@ -141,12 +141,12 @@ namespace Render.GL33{
             set => _depthTest = value;
         }
 
-        public IEntityBehavior Behavior{
+        public IEntityBehavior? Behavior{
             get => _behavior;
             set {
                 if(_behavior != null)_behavior.Detach(this);
                 _behavior = value;
-                _behavior.Attach(this);
+                if(_behavior != null)_behavior.Attach(this);
             }
         }
 
@@ -166,6 +166,6 @@ namespace Render.GL33{
 
         public bool _depthTest;
 
-        private IEntityBehavior _behavior;
+        private IEntityBehavior? _behavior;
     }
 }

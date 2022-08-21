@@ -6,6 +6,7 @@ using OpenTK.Mathematics;
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 using StbImageSharp;
 
@@ -65,6 +66,7 @@ namespace Render.GL33{
             }
         }
         public Action<double>? OnUpdate {get; set;}
+        public Action<double>? OnRender {get; set;}
         public void Run(){
             //I implimented my own game loop, because OpenTKs GameWindow doesn't update the keyboard state properly for the external OnUpdate event.
             long lastRenderTime = DateTime.Now.Ticks;
@@ -129,6 +131,39 @@ namespace Render.GL33{
             return new GL33Texture(r, g, b, a);
         }
 
+        public IRenderTexture LoadTexture(IntPtr pixels, int width, int height, int channels){
+            ImageResult image = new ImageResult();
+            //first we marshall the data into an actual array
+            image.Data = new byte[width*height*channels];
+            Marshal.Copy(pixels, image.Data, 0, width*height*channels);
+
+            //Not gonna lie, Java's switch statements are a billion times better than what C# has. C#'s switches are barely any better than just using an if-else chain,
+            // Compared to Java which let you do much more advanced stuff like setting a value throug a switch like var x = switch(n){case 1 -> 3\n case 2->1}
+            // Java even has nice enumeration support, where if you're doing an enum you only have to type the name, not enum.name for every case.
+
+            /*This Java code don't work in C#
+            image.Comp = switch(channels){
+                case 1 -> ColorComponents.Grey;
+                case 2 -> ColorComponents.GreyAlpha;
+                case 3 -> ColorComponents.RedGreenBlue;
+                case 3 -> ColorComponents.RedGreenBlueAlpha;
+            }
+            */
+            //instead I have to do this monstrosity
+            switch(channels){
+                case 1:image.Comp = ColorComponents.Grey;break;
+                case 2:image.Comp = ColorComponents.GreyAlpha;break;
+                case 3:image.Comp = ColorComponents.RedGreenBlue;break;
+                case 4:image.Comp = ColorComponents.RedGreenBlueAlpha;break;   
+            }
+            //It's not actually that bad, but still worse than Java.
+
+            image.Height = height;
+            image.Width = width;
+            image.SourceComp = image.Comp;
+            return new GL33Texture(image);
+        }
+
         public void DeleteTexture(IRenderTexture texture){
             ((GL33Texture)texture).Dispose(); //any time this code is run, it can be safely cast to a GL33 object, since only GL33Objects can be created with a GL33Render.
         }
@@ -168,24 +203,24 @@ namespace Render.GL33{
             ((GL33Texture)model.texture).Dispose();
         }
         //entities
-        public IRenderEntity SpawnEntity(EntityPosition pos, IRenderShader shader, IRenderMesh mesh, IRenderTexture texture, bool depthTest, IEntityBehavior behavior){
+        public IRenderEntity SpawnEntity(EntityPosition pos, IRenderShader shader, IRenderMesh mesh, IRenderTexture texture, bool depthTest, IEntityBehavior? behavior){
             GL33Entity entity = new GL33Entity(pos, (GL33Mesh)mesh, (GL33Texture)texture, (GL33Shader)shader, 0, depthTest, behavior);
             _AddEntity(entity);
             return entity;
         }
 
-        public IRenderEntity SpawnEntityDelayed(EntityPosition pos, IRenderShader shader, IRenderMesh mesh, IRenderTexture texture, bool depthTest, IEntityBehavior behavior){
+        public IRenderEntity SpawnEntityDelayed(EntityPosition pos, IRenderShader shader, IRenderMesh mesh, IRenderTexture texture, bool depthTest, IEntityBehavior? behavior){
             GL33Entity entity = new GL33Entity(pos, (GL33Mesh)mesh, (GL33Texture)texture, (GL33Shader)shader, 0, depthTest, behavior);
             _delayedEntities.Push(entity);
             return entity;
         }
 
-        public IRenderTextEntity SpawnTextEntity(EntityPosition pos, string text, bool centerX, bool centerY, IRenderShader shader, IRenderTexture texture, bool depthTest, IEntityBehavior behavior){
+        public IRenderTextEntity SpawnTextEntity(EntityPosition pos, string text, bool centerX, bool centerY, IRenderShader shader, IRenderTexture texture, bool depthTest, IEntityBehavior? behavior){
             GL33TextEntity entity = new GL33TextEntity(pos, text, centerX, centerY, (GL33Texture)texture, (GL33Shader)shader, 0, depthTest, behavior);
             _AddEntity(entity);
             return entity;
         }
-        public IRenderTextEntity SpawnTextEntityDelayed(EntityPosition pos, string text, bool centerX, bool centerY, IRenderShader shader, IRenderTexture texture, bool depthTest, IEntityBehavior behavior){
+        public IRenderTextEntity SpawnTextEntityDelayed(EntityPosition pos, string text, bool centerX, bool centerY, IRenderShader shader, IRenderTexture texture, bool depthTest, IEntityBehavior? behavior){
             GL33TextEntity entity = new GL33TextEntity(pos, text, centerX, centerY, (GL33Texture)texture, (GL33Shader)shader, 0, depthTest, behavior);
             _delayedEntities.Push(entity);
             return entity;
@@ -317,8 +352,13 @@ namespace Render.GL33{
 
         }
         private void Render(long lastRender, long now){
-            _window.MakeCurrent(); //make sure the window context is current. Technically not required, but it makes it slightly easier for if/when I add multiwindowing
+            //we call the OnRender event first, in case meshes are modified.
+            // It doesn't matter that much, it just makes framerate-bound mesh updates feel more responsive.
+            // (such as the ImGui integration, which uses such mesh updates to be able to display GUI through the actual IRender interface rather than try and do its own thing)
             float delta = (now - _lastUpdateTime)/10_000_000.0f;
+            if(OnRender != null)OnRender.Invoke(delta);
+
+            _window.MakeCurrent(); //make sure the window context is current. Technically not required, but it makes it slightly easier for if/when I add multiwindowing
             float weight = (float) (delta/RenderUtils.UpdateTime); //0=only last, 1=fully current'
             float rweight = 1-weight;
             Matrix4 interpolatedCamera;

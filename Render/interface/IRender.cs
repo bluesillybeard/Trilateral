@@ -24,11 +24,12 @@ namespace Render{
         /**
         <summary>
         This action is called every update - 30 times each second.
-        Entity components are automatically updated, 
+        Entities are automatically updated.
+        In case it's not 30 times per second (laggy conditions for example), the double input is the delta time.
         </summary>
         */
         Action<double>? OnUpdate {get; set;}
-
+        Action<double>? OnRender {get; set;}
         RenderSettings Settings{get;}
 
         Vector2 WindowSize();
@@ -36,6 +37,8 @@ namespace Render{
         uint EntityCount();
 
         uint EntityCapacity();
+
+        //ImGuiController
 
         //meshes
         IRenderMesh LoadMesh(float[] vertices, uint[] indices);
@@ -68,6 +71,13 @@ namespace Render{
         IRenderTexture LoadTexture(ImageResult image);
 
         IRenderTexture LoadTexture(float r, float g, float b, float a);
+
+        /**
+        <summary>
+        loads a texture into the GPU from an array of RGBA pixels, and a width and height variable.
+        </summary>
+        */
+        IRenderTexture LoadTexture(IntPtr pixels, int width, int height, int channels);
 
         void DeleteTexture(IRenderTexture texture);
 
@@ -107,14 +117,14 @@ namespace Render{
 
         //entities
         
-        IRenderEntity SpawnEntity(EntityPosition pos, IRenderShader shader, IRenderMesh mesh, IRenderTexture texture, bool depthTest, IEntityBehavior behavior);
+        IRenderEntity SpawnEntity(EntityPosition pos, IRenderShader shader, IRenderMesh mesh, IRenderTexture texture, bool depthTest, IEntityBehavior? behavior);
         ///<summary>Waits until the end of the update cycle to spawn an entity </summary>
-        IRenderEntity SpawnEntityDelayed(EntityPosition pos, IRenderShader shader, IRenderMesh mesh, IRenderTexture texture, bool depthTest, IEntityBehavior behavior);
+        IRenderEntity SpawnEntityDelayed(EntityPosition pos, IRenderShader shader, IRenderMesh mesh, IRenderTexture texture, bool depthTest, IEntityBehavior? behavior);
 
         //text entities. A normal entity, but it has text mesh generation built-in.
-        IRenderTextEntity SpawnTextEntity(EntityPosition pos, string text, bool centerX, bool centerY, IRenderShader shader, IRenderTexture texture, bool depthTest, IEntityBehavior behavior);
+        IRenderTextEntity SpawnTextEntity(EntityPosition pos, string text, bool centerX, bool centerY, IRenderShader shader, IRenderTexture texture, bool depthTest, IEntityBehavior? behavior);
         ///<summary>Waits until the end of the update cycle to spawn an entity </summary>
-        IRenderTextEntity SpawnTextEntityDelayed(EntityPosition pos, string text, bool centerX, bool centerY, IRenderShader shader, IRenderTexture texture, bool depthTest, IEntityBehavior behavior);
+        IRenderTextEntity SpawnTextEntityDelayed(EntityPosition pos, string text, bool centerX, bool centerY, IRenderShader shader, IRenderTexture texture, bool depthTest, IEntityBehavior? behavior);
 
         //Entities are deleted using the same method as normal entities
         /**
