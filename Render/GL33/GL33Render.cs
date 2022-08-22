@@ -103,9 +103,8 @@ namespace Render.GL33{
         }
 
         //meshes
-
         public IRenderMesh LoadMesh(string path){
-            return new GL33Mesh(path);
+            return new GL33Mesh(path, 0); //we assume the blocked faces are 0 for now
         }
 
         public IRenderMesh LoadMesh(VMesh mesh){

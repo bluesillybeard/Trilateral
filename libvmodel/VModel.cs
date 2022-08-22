@@ -41,7 +41,20 @@ namespace libvmodel{
                     //If there is no shape, we use the complere error model.
                     throw new Exception($"Error loading vmesh from VMF: {fullPath} - no vmesh specified");
                 }
-                this.mesh = new VMesh(folder + "/" +  ts, out errors);
+                if(vmf.TryGetValue("blocks", out var blockedFacesString)){
+                    byte blockedFaces;
+                    if(blockedFacesString[0] == 'b'){
+                        if(errors == null)errors = new List<string>();
+                        errors.Add("LOL i haven't implemented binary blocked faces yet");
+                        //TODO: implement the functionality
+                        blockedFaces = 0;
+                    } else {
+                        blockedFaces = byte.Parse(blockedFacesString);
+                    }
+                    this.mesh = new VMesh(folder + "/" +  ts, out errors, blockedFaces);
+                }else {
+                    this.mesh = new VMesh(folder + "/" +  ts, out errors, 0);
+                }
 
                 if(!vmf.TryGetValue("texture", out ts)){
                     //if there is no texture, we use the error texture
@@ -80,7 +93,14 @@ namespace libvmodel{
                     //If there is no shape, we throw an exception to use the fully errored model.
                     throw new Exception($"Error loading vmesh from VMF: {fullPath} - no vmesh specified");
                 }
-                this.mesh = new VMesh(folder + "/" +  ts, out errors);
+
+                if(!vmf.TryGetValue("blocks", out ts)){
+                    blockedFaces = 0;
+                    //RenderUtils.printWarnLn($"No blocked faces specified: {fullPath}. Using default value '0'");
+                } else {
+                    blockedFaces = byte.Parse(ts);
+                }
+                this.mesh = new VMesh(folder + "/" +  ts, out errors, blockedFaces);
                 removableTriangles = mesh.removableTriangles;
 
                 if(!vmf.TryGetValue("texture", out ts)){
@@ -92,12 +112,6 @@ namespace libvmodel{
                     this.texture = ImageResult.FromMemory(File.ReadAllBytes(folder + "/" + ts));
                 }
 
-                if(!vmf.TryGetValue("blocks", out ts)){
-                    blockedFaces = 0;
-                    //RenderUtils.printWarnLn($"No blocked faces specified: {fullPath}. Using default value '0'");
-                } else {
-                    blockedFaces = byte.Parse(ts);
-                }
 
 
 

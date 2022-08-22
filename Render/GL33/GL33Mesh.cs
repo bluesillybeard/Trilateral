@@ -35,8 +35,8 @@ namespace Render.GL33{
 
         private int _vertexFloats; //the number of total vertex ATTRIBUTES in the mesh - not the number of actual vertices. In other words, the length of the vertex buffer.
 
-        public GL33Mesh(string vmeshPath){
-            VMesh mesh = new VMesh(vmeshPath, out ICollection<string>? err);
+        public GL33Mesh(string vmeshPath, byte blockedFaces){
+            VMesh mesh = new VMesh(vmeshPath, out ICollection<string>? err, blockedFaces);
             LoadMesh(mesh.vertices, mesh.indices, false);
             if(err != null){
                 RenderUtils.PrintErrLn(string.Join("\n\n", err));

@@ -7,11 +7,8 @@ namespace libvmodel{
 
         VModel model;
 
-        byte blockedFaces;
-
-        public VBlockModel(VModel model, byte blockedFaces){
+        public VBlockModel(VModel model){
             this.model = model;
-            this.blockedFaces = blockedFaces;
         }
 
         /**

@@ -35,7 +35,7 @@ public static class Libvmodel
         return dict;
     }
 
-    public static VMesh LoadMesh(string pathToVmesh, out ICollection<string>? errors){
-        return new VMesh(pathToVmesh, out errors);
+    public static VMesh LoadMesh(string pathToVmesh, out ICollection<string>? errors, byte blockedFaces){
+        return new VMesh(pathToVmesh, out errors, blockedFaces);
     }
 }

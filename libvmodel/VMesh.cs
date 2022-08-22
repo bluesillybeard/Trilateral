@@ -7,7 +7,7 @@ namespace libvmodel{
         public uint[] indices;
 
         public byte[]? removableTriangles;
-        //public byte blockedFaces; blocked faces are part of the vmf file, not the vbmesh.
+        public byte blockedFaces;
 
         public VMesh(float[] vertices, uint[] indices){
             this.vertices = vertices;
@@ -18,7 +18,7 @@ namespace libvmodel{
         /**
         Legacy constructor, for vmesh and vbmesh files with version 0
         */
-        public VMesh(string vmeshPath, out ICollection<string>? errors){
+        public VMesh(string vmeshPath, out ICollection<string>? errors, byte blockedFaces){
             errors = null;
             byte[] vmesh;
             try{
