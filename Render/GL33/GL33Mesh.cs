@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 
-using libvmodel;
+using vmodel;
 
 
 namespace Render.GL33{
@@ -35,12 +35,20 @@ namespace Render.GL33{
 
         private int _vertexFloats; //the number of total vertex ATTRIBUTES in the mesh - not the number of actual vertices. In other words, the length of the vertex buffer.
 
+        private EAttribute[] _attributes;
+
+        public EAttribute[] Attributes(){
+            return attributes;
+        }
+
         public GL33Mesh(string vmeshPath, byte blockedFaces){
-            VMesh mesh = new VMesh(vmeshPath, out ICollection<string>? err, blockedFaces);
-            LoadMesh(mesh.vertices, mesh.indices, false);
-            if(err != null){
+            VMesh? mesh = VModelUtils.LoadMesh(vmeshPath, out var err);
+            if(mesh is null){
                 RenderUtils.PrintErrLn(string.Join("\n\n", err));
+                VMesh ErrMesh = 
+                return;
             }
+            LoadMesh(mesh.vertices, mesh.indices, false);
         }
         public GL33Mesh(VMesh mesh){
             LoadMesh(mesh.vertices, mesh.indices, false);
@@ -130,6 +138,8 @@ namespace Render.GL33{
             _indexCount += indices.Length;
             _vertexFloats += vertices.Length;
         }
+
+
 
         private void LoadMesh(float[] vertices, uint[] indices, bool dynamic){
             _indexCount = indices.Length;

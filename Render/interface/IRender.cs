@@ -6,7 +6,7 @@ using OpenTK.Windowing.GraphicsLibraryFramework;
 
 using StbImageSharp;
 
-using libvmodel;
+using vmodel;
 namespace Render{
     public interface IRender{
         #pragma warning disable //disable the null warning, since the CurrentRender will NEVER be null in any valid runtime.
@@ -41,7 +41,7 @@ namespace Render{
         //ImGuiController
 
         //meshes
-        IRenderMesh LoadMesh(float[] vertices, uint[] indices);
+        IRenderMesh LoadMesh(float[] vertices, uint[] indices, EAttribute[] attributes);
 
         IRenderMesh LoadMesh(VMesh mesh);
 
