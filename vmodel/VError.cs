@@ -25,7 +25,9 @@ public struct VError{
     public override string ToString()
     {
         if(type == VErrorType.Exception){
+            #pragma warning disable //disable the null error since if the type is Exception then the Exception member will be set.
             return "Exception: \"" + message + "\" \n Stacktrace: " + exception.StackTrace;
+            #pragma warning enable
         }
         return type + ":\"" + message + "\"";
     }

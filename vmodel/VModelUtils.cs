@@ -80,7 +80,7 @@ public class VModelUtils{
                 index+=4;
             }
             //file size check
-            if(12/*header*/ + numAttributes*4 + totalAttributes*numVerts*4 + numInds*4 >= file.Length){
+            if(12/*header*/ + totalAttributes*numVerts*4 + numInds*4 + numAttributes*4 > file.Length){
                 error = new InvalidDataException("Invalid vmesh file: file too small");
                 return null;
             }
@@ -98,13 +98,13 @@ public class VModelUtils{
             }
             //removable triangles, if they exist:
             byte[]? removableTris = null;
-            //if(12/*header*/ + numAttributes*4 + totalAttributes*numVerts*4 + numInds*4 + numTris >= file.Length){
-            //    removableTris = new byte[numTris];
-            //    for(int i=0; i<numTris; i++){
-            //        removableTris[i] = file[index];
-            //        index++;
-            //    }
-            //}
+            if(12/*header*/ + totalAttributes*numVerts*4 + numInds*4 + numAttributes*4 > file.Length){
+                removableTris = new byte[numTris];
+                for(int i=0; i<numTris; i++){
+                    removableTris[i] = file[index];
+                    index++;
+                }
+            }
             //Construct the mesh with the data
             error = null;
             return new VMesh(vertices, indices, attributes, removableTris);
