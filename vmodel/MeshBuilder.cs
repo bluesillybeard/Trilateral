@@ -57,7 +57,7 @@ public class MeshBuilder{
             _indices.Add(oldVertex.index);
         } else {
             //If it doesn't exist, we set the new index
-            hashedVertex.index = (uint)_indices.Count-1;
+            hashedVertex.index = (uint)_indices.Count;
             //Add it to the vertex lookup
             _vertexLookup.Add(hashedVertex.hash, hashedVertex);
             //and add it to the final mesh data
@@ -76,7 +76,7 @@ public class MeshBuilder{
             _indices.Add(oldVertex.index);
         } else {
             //If it doesn't exist, we set the new index
-            hashedVertex.index = (uint)_indices.Count-1;
+            hashedVertex.index = (uint)_indices.Count;
             //Add it to the vertex lookup
             _vertexLookup.Add(hashedVertex.hash, hashedVertex);
             //and add it to the final mesh data

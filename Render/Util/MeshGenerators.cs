@@ -95,6 +95,7 @@ public class MeshGenerators{
             }
         }
         error = null;
-        return builder.ToMesh();
+        VMesh mesh = builder.ToMesh();
+        return mesh;
     }    
 }

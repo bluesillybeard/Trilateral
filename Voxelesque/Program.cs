@@ -58,7 +58,7 @@ namespace Voxelesque.Game
                 Vector3.One
             ), shader, model.mesh, model.texture, true, null);
             ascii = render.LoadTexture("Resources/ASCII-Extended.png");
-            debugText = render.SpawnTextEntity(new EntityPosition(-Vector3.UnitX+Vector3.UnitY,Vector3.Zero,Vector3.One/10), "HI", false, false, cameralessShader, ascii, true, null);
+            debugText = render.SpawnTextEntity(new EntityPosition(-Vector3.UnitX+Vector3.UnitY,Vector3.Zero,Vector3.One/30), "B", false, false, cameralessShader, ascii, true, null);
             grass = model.texture;
 
             camera = render.SpawnCamera(new Vector3(0, 0, 0), new Vector3(0, 0, 0), 90);
@@ -69,9 +69,9 @@ namespace Voxelesque.Game
         }
         static void update(double d){
             time += d;
-            //debugText.Text = "Entities: " + render.EntityCount() + "\n"
-            // + "Camera Position: " + camera.Position + "\n"
-            // + "Camera Rotation: " + camera.Rotation;
+            debugText.Text = "Entities: " + render.EntityCount() + "\n"
+             + "Camera Position: " + camera.Position + "\n"
+             + "Camera Rotation: " + camera.Rotation;
             KeyboardState keyboard = render.Keyboard();
             MouseState mouse = render.Mouse();
             //between -1 and 1
