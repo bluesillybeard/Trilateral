@@ -2,8 +2,6 @@ using OpenTK.Graphics.OpenGL;
 
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
-
 
 using vmodel;
 
@@ -38,45 +36,20 @@ namespace Render.GL33{
         private EAttribute[] _attributes;
 
         public EAttribute[] Attributes(){
-            return attributes;
+            return _attributes;
         }
 
-        public GL33Mesh(string vmeshPath, byte blockedFaces){
-            VMesh? mesh = VModelUtils.LoadMesh(vmeshPath, out var err);
-            if(mesh is null){
-                RenderUtils.PrintErrLn(string.Join("\n\n", err));
-                VMesh ErrMesh = 
-                return;
-            }
-            LoadMesh(mesh.vertices, mesh.indices, false);
-        }
         public GL33Mesh(VMesh mesh){
-            LoadMesh(mesh.vertices, mesh.indices, false);
+            _attributes = mesh.attributes;
+            LoadMesh(_attributes, mesh.vertices, mesh.indices, false);
         }
-        /**
-        <summary>
-            Creates a Mesh from an element array
-            Each vertec has 8 elements: X pos, y pos, z pos, x tex coord, y tex coord, x normal, y normal, z normal.
-            the X Y Z coordinates should be obvious.
-            the X Y tex coords are the X and Y texture coordinates, also often refered to as UV
-            the X Y Z normals form a cartesian vector of the surface normal.
-        </summary>
-        */
-        public GL33Mesh(float[] vertices, uint[] indices){
-            LoadMesh(vertices, indices, false);
+        public GL33Mesh(EAttribute[] attributes, float[] vertices, uint[] indices){
+            _attributes = attributes;
+            LoadMesh(attributes, vertices, indices, false);
         }
-
-        /**
-        <summary>
-            Creates a Mesh from an element array
-            Each vertec has 8 elements: X pos, y pos, z pos, x tex coord, y tex coord, x normal, y normal, z normal.
-            the X Y Z coordinates should be obvious.
-            the X Y tex coords are the X and Y texture coordinates, also often refered to as UV
-            the X Y Z normals form a cartesian vector of the surface normal.
-        </summary>
-        */
-        public GL33Mesh(float[] vertices, uint[] indices, bool dynamic){
-            LoadMesh(vertices, indices, dynamic);
+        public GL33Mesh(EAttribute[] attributes, float[] vertices, uint[] indices, bool dynamic){
+            _attributes = attributes;
+            LoadMesh(attributes, vertices, indices, dynamic);
         }
         public void ReData(VMesh mesh){
             ReData(mesh.vertices, mesh.indices);
@@ -141,7 +114,7 @@ namespace Render.GL33{
 
 
 
-        private void LoadMesh(float[] vertices, uint[] indices, bool dynamic){
+        private void LoadMesh(EAttribute[] attributes, float[] vertices, uint[] indices, bool dynamic){
             _indexCount = indices.Length;
             _vertexFloats = vertices.Length;
             _id = GL.GenVertexArray();
@@ -157,17 +130,18 @@ namespace Render.GL33{
             if(dynamic)GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(uint), indices, BufferUsageHint.StaticDraw);
             else GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(uint), indices, BufferUsageHint.DynamicDraw);
 
-            //coordinates
-            GL.EnableVertexAttribArray(0);
-            GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 8 * sizeof(float), 0);
+            int totalAttrib = 0;
+            foreach(EAttribute attrib in attributes){
+                totalAttrib += (int)attrib;
+            }
 
-            //texture coordinates
-            GL.EnableVertexAttribArray(1);
-            GL.VertexAttribPointer(1, 2, VertexAttribPointerType.Float, false, 8 * sizeof(float), 3 * sizeof(float));
-
-            //surface normals
-            GL.EnableVertexAttribArray(2);
-            GL.VertexAttribPointer(2, 3, VertexAttribPointerType.Float, false, 8 * sizeof(float), 5 * sizeof(float));
+            int runningTotalAttrib = 0;
+            for(int i=0; i<attributes.Length; i++){
+                EAttribute attrib = attributes[i];
+                GL.EnableVertexAttribArray(i);
+                GL.VertexAttribPointer(i, (int)attrib, VertexAttribPointerType.Float, false, totalAttrib*sizeof(float), runningTotalAttrib*sizeof(float));
+                runningTotalAttrib += (int)attrib;
+            }
         }
         public void Bind(){
             GL.BindVertexArray(_id);

@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 
 using StbImageSharp;
 
-using libvmodel;
+using vmodel;
 
 namespace Render.GL33{
     class GL33Render : IRender{
@@ -103,15 +103,17 @@ namespace Render.GL33{
         }
 
         //meshes
-        public IRenderMesh LoadMesh(string path){
-            return new GL33Mesh(path, 0); //we assume the blocked faces are 0 for now
+        public IRenderMesh? LoadMesh(string path, out Exception? err){
+            VMesh? mesh = VModelUtils.LoadMesh(path, out err);
+            if(mesh == null)return null;
+            return new GL33Mesh(mesh.Value);
         }
 
         public IRenderMesh LoadMesh(VMesh mesh){
             return new GL33Mesh(mesh);
         }
-        public IRenderMesh LoadMesh(float[] vertices, uint[] indices){
-            return new GL33Mesh(vertices, indices);
+        public IRenderMesh LoadMesh(float[] vertices, uint[] indices, EAttribute[] attributes){
+            return new GL33Mesh(attributes, vertices, indices);
         }
 
         public void DeleteMesh(IRenderMesh mesh){
@@ -153,7 +155,7 @@ namespace Render.GL33{
                 case 1:image.Comp = ColorComponents.Grey;break;
                 case 2:image.Comp = ColorComponents.GreyAlpha;break;
                 case 3:image.Comp = ColorComponents.RedGreenBlue;break;
-                case 4:image.Comp = ColorComponents.RedGreenBlueAlpha;break;   
+                case 4:image.Comp = ColorComponents.RedGreenBlueAlpha;break;
             }
             //It's not actually that bad, but still worse than Java.
 
@@ -168,8 +170,14 @@ namespace Render.GL33{
         }
         //shaders
 
-        public IRenderShader LoadShader(string shader){
-            return new GL33Shader(shader + "vertex.glsl", shader + "fragment.glsl");
+        public IRenderShader? LoadShader(string shader, out Exception? err){
+            try{
+                err = null;
+                return new GL33Shader(shader + "vertex.glsl", shader + "fragment.glsl");
+            }catch(Exception e){
+                err = e;
+                return null;
+            }
         }
 
         public void DeleteShader(IRenderShader shader){
@@ -177,12 +185,13 @@ namespace Render.GL33{
         }
 
         //models
-        public RenderEntityModel LoadModel(string folder, string file){
+        public RenderEntityModel? LoadModel(string file, out List<VError>? err){
             //load the model data
-            VModel model = new VModel(folder, file, out var ignored, out ICollection<string>? err);
+            VModel? model = VModelUtils.LoadModel(file, out err);//new VModel(folder, file, out var ignored, out ICollection<string>? err);
+            if(model == null)return null;
             //send it to the GPU
-            GL33Mesh mesh = new GL33Mesh(model.mesh);
-            GL33Texture texture = new GL33Texture(model.texture);
+            GL33Mesh mesh = new GL33Mesh(model.Value.mesh);
+            GL33Texture texture = new GL33Texture(model.Value.texture);
 
             if(err != null){
                 RenderUtils.PrintErrLn(string.Join("/n", err));

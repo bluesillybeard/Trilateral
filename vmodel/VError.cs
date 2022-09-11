@@ -24,6 +24,9 @@ public struct VError{
 
     public override string ToString()
     {
+        if(type == VErrorType.Exception){
+            return "Exception: \"" + message + "\" \n Stacktrace: " + exception.StackTrace;
+        }
         return type + ":\"" + message + "\"";
     }
 }

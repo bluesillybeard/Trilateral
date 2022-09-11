@@ -5,7 +5,7 @@ using Render;
 
 using System;
 
-using libvmodel;
+using vmodel;
 namespace Voxelesque.Game
 {
     public static class Program
@@ -44,20 +44,20 @@ namespace Voxelesque.Game
 
             //initial loading stuff here - move to update method and make asynchronous when loading bar is added
 
-            VModel cpuModel = new VModel("Resources/vmf/models", "GrassCube.vmf", out var ignored, out var errors);
-            cpuMesh = cpuModel.mesh;
+            VModel? grassCubeModel = VModelUtils.LoadModel("Resources/vmf/models/GrassCube.vmf", out var errors); //TODO: properly handle error
 
             if(errors != null)RenderUtils.PrintErrLn(string.Join("/n", errors));
-            model = render.LoadModel(cpuModel);
-            shader = render.LoadShader("Resources/Shaders/");
-            cameralessShader = render.LoadShader("Resources/Shaders/cameraless");
+            cpuMesh = grassCubeModel.Value.mesh;
+            model = render.LoadModel(grassCubeModel.Value);
+            shader = render.LoadShader("Resources/Shaders/", out _);
+            cameralessShader = render.LoadShader("Resources/Shaders/cameraless", out _); //TODO: handle errors
             render.SpawnEntity(new EntityPosition(
                 Vector3.Zero,
                 Vector3.Zero,
                 Vector3.One
             ), shader, model.mesh, model.texture, true, null);
             ascii = render.LoadTexture("Resources/ASCII-Extended.png");
-            debugText = render.SpawnTextEntity(new EntityPosition(-Vector3.UnitX+Vector3.UnitY,Vector3.Zero,Vector3.One/30), "", false, false, cameralessShader, ascii, true, null);
+            debugText = render.SpawnTextEntity(new EntityPosition(-Vector3.UnitX+Vector3.UnitY,Vector3.Zero,Vector3.One/30), "test boi", false, false, cameralessShader, ascii, true, null);
             grass = model.texture;
 
             camera = render.SpawnCamera(new Vector3(0, 0, 0), new Vector3(0, 0, 0), 90);

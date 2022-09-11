@@ -98,13 +98,13 @@ public class VModelUtils{
             }
             //removable triangles, if they exist:
             byte[]? removableTris = null;
-            if(12/*header*/ + numAttributes*4 + totalAttributes*numVerts*4 + numInds*4 + numTris >= file.Length){
-                removableTris = new byte[numTris];
-                for(int i=0; i<numTris; i++){
-                    removableTris[i] = file[index];
-                    index++;
-                }
-            }
+            //if(12/*header*/ + numAttributes*4 + totalAttributes*numVerts*4 + numInds*4 + numTris >= file.Length){
+            //    removableTris = new byte[numTris];
+            //    for(int i=0; i<numTris; i++){
+            //        removableTris[i] = file[index];
+            //        index++;
+            //    }
+            //}
             //Construct the mesh with the data
             error = null;
             return new VMesh(vertices, indices, attributes, removableTris);
@@ -182,7 +182,11 @@ public class VModelUtils{
             }
             var pathSep = SplitFolderAndFile(path);
             VMesh? mesh = LoadMesh(File.ReadAllBytes(pathSep.Item1 + meshStr), out var exception);
-            if(exception != null)throw exception;
+            if(exception != null){
+                if(errors==null)errors = new List<VError>(4);
+                errors.Add(new VError(exception));
+                return null;
+            }
             if(mesh == null){
                 throw new Exception("INVALID STATE: Mesh from LoadMesh shouldn't be null here under any circumstances!!");
             }
@@ -195,4 +199,16 @@ public class VModelUtils{
             return null;
         }
     }
+
+    public static float[] ConvertVertex(float[] vertex, params int[] mapping){
+        float[] ret = new float[mapping.Length];
+        for(int i=0; i<mapping.Length; i++){
+            int map = mapping[i];
+            if(map != -1){
+                ret[i] = vertex[map];
+            }
+        }
+        return ret;
+    }
+
 }

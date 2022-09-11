@@ -50,7 +50,7 @@ namespace Render{
           loads a vmesh file into a GPU-stored mesh.
          </summary>
         */
-        IRenderMesh LoadMesh(string VMFPath);
+        IRenderMesh? LoadMesh(string VMFPath, out Exception? err);
 
         void DeleteMesh(IRenderMesh mesh);
         //textures
@@ -91,7 +91,7 @@ namespace Render{
         </summary>
 
         */
-        IRenderShader LoadShader(string shaderPath);
+        IRenderShader? LoadShader(string shaderPath, out Exception? err);
 
         void DeleteShader(IRenderShader shader);
 
@@ -102,7 +102,7 @@ namespace Render{
         loads the mesh and texture from a vmf, vemf, or vbmf model
         </summary>
         */
-        RenderEntityModel LoadModel(string folder, string file);
+        RenderEntityModel? LoadModel(string file, out List<VError>? err);
 
         RenderEntityModel LoadModel(VModel model);
 

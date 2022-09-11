@@ -3,7 +3,7 @@ namespace Voxelesque.Game;
 using Render;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using OpenTK.Mathematics;
-using libvmodel;
+using vmodel;
 class RemoveOnTouchBehavior : IEntityBehavior{
     VMesh _mesh;
     public RemoveOnTouchBehavior(VMesh mesh){

@@ -2,7 +2,7 @@ using System;
 using System.Threading;
 using System.Collections.Generic;
 
-using libvmodel;
+using vmodel;
 using OpenTK.Mathematics;
 
 using Render.GL33;
@@ -68,6 +68,8 @@ namespace Render
         }
 
         public static bool MeshCollides(VMesh mesh, Vector2 pos, Matrix4 transform){
+            //TODO: modify for new mesh system. Technically it still works for 3-2-3 pos-tex-norm meshes, but anything else will either crash or have weird behavior.
+
             pos.Y *= -1;
 
             //in the Java version, I used temporary variables since they are always on the Heap anyway, so cache locality was an unfixable problem.
