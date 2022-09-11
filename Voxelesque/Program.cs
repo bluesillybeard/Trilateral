@@ -18,6 +18,7 @@ namespace Voxelesque.Game
         static IRenderShader shader;
         static IRenderShader cameralessShader;
         static IRenderTextEntity debugText;
+        static IRenderTextEntity sillyText;
 
         static IRenderTexture grass;
         static IRenderTexture ascii;
@@ -26,6 +27,8 @@ namespace Voxelesque.Game
         static RemoveOnTouchBehavior GrassCubeBehavior;
 
         static RenderCamera camera;
+
+        static int frames;
         private static void Main()
         {
             //Goes without saying, but the Main method here is an absolutely atrocious mess.
@@ -40,7 +43,8 @@ namespace Voxelesque.Game
 
             render.Init(new RenderSettings()); //todo: use something other than the default settings
 
-            render.OnUpdate += new System.Action<double>(update); //subscribe the the update event
+            render.OnUpdate += update; //subscribe the the update event
+            render.OnRender += Render;
 
             //initial loading stuff here - move to update method and make asynchronous when loading bar is added
 
@@ -59,19 +63,25 @@ namespace Voxelesque.Game
             ), shader, model.mesh, model.texture, true, null);
             ascii = render.LoadTexture("Resources/ASCII-Extended.png");
             debugText = render.SpawnTextEntity(new EntityPosition(-Vector3.UnitX+Vector3.UnitY,Vector3.Zero,Vector3.One/30), "B", false, false, cameralessShader, ascii, true, null);
+            sillyText = render.SpawnTextEntity(EntityPosition.Zero, "3D test", true, true, shader, ascii, true, null);
             grass = model.texture;
 
             camera = render.SpawnCamera(new Vector3(0, 0, 0), new Vector3(0, 0, 0), 90);
 
             GrassCubeBehavior = new RemoveOnTouchBehavior(cpuMesh);
+            frames = 0;
             render.SetCamera(camera);
             render.Run();
         }
         static void update(double d){
             time += d;
             debugText.Text = "Entities: " + render.EntityCount() + "\n"
-             + "Camera Position: " + camera.Position + "\n"
-             + "Camera Rotation: " + camera.Rotation;
+             + "Camera Position: " + camera.Position + '\n'
+             + "Camera Rotation: " + camera.Rotation + '\n'
+             + "FPS: " + (int)(frames/d);
+            frames = 0;
+
+            sillyText.RotationY += (float)(Math.Sin(time*2)*Math.Sin(time*3));
             KeyboardState keyboard = render.Keyboard();
             MouseState mouse = render.Mouse();
             //between -1 and 1
@@ -112,6 +122,10 @@ namespace Voxelesque.Game
             if (render.CursorLocked || mouse.IsButtonDown(MouseButton.Right)) {
                 camera.Rotation += new Vector3((mouse.Y - mouse.PreviousY) * sensitivity, (mouse.X - mouse.PreviousX) * sensitivity, 0);
             }
+        }
+
+        static void Render(double d){
+            frames++;
         }
     }
 }

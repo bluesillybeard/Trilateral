@@ -49,8 +49,12 @@ namespace Render.GL33{
 
                 //the NativeWindow class has no way to do this, so we directly ask GLFW for it
                 //(Setting the swap interval to 0.)
-                //TODO: make this a setting
-                OpenTK.Windowing.GraphicsLibraryFramework.GLFW.SwapInterval(0);
+                if(!settings.VSync){
+                    OpenTK.Windowing.GraphicsLibraryFramework.GLFW.SwapInterval(0);
+                } else{
+                    OpenTK.Windowing.GraphicsLibraryFramework.GLFW.SwapInterval(1);
+                }
+                
 
                 _window.Resize += new Action<ResizeEventArgs>(OnResize);
                 GL.Enable(EnableCap.DepthTest);

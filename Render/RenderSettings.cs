@@ -12,7 +12,9 @@ namespace Render{
         public float Fov = 90*RenderUtils.DegreesToRadiansf;
 
         ///<summary> how long each frame should take. Frames may take shorter or longer. Defaults to 1/30 </summary>
-        public double TargetFrameTime = 1.0/30.0;
+        public double TargetFrameTime = 1.0/120.0;
+
+        public bool VSync = true;
 
         public string WindowTitle = "Voxelesque window";
     

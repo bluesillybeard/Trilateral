@@ -28,7 +28,7 @@ class GL33TextEntity : GL33Entity, IRenderTextEntity{
         #pragma warning enable
         _CenterX = centerX;
         _CenterY = centerY;
-        _mesh = new GL33Mesh(new EAttribute[]{EAttribute.vec2, EAttribute.vec2}, new float[24], new uint[3]);
+        _mesh = new GL33Mesh(new EAttribute[]{EAttribute.vec3, EAttribute.vec2}, new float[24], new uint[3]);
         Text = text; //keep in mind the also calls the _mesh.ReData method
     }
 }
