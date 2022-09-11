@@ -81,7 +81,7 @@ namespace Voxelesque.Game
              + "FPS: " + (int)(frames/d);
             frames = 0;
 
-            sillyText.RotationY += (float)(Math.Sin(time*2)*Math.Sin(time*3));
+            sillyText.RotationY += (float)(Math.Sin(time*2/10)*Math.Sin(time*3/10))/20;
             KeyboardState keyboard = render.Keyboard();
             MouseState mouse = render.Mouse();
             //between -1 and 1

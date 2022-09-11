@@ -8,8 +8,8 @@ class GL33TextEntity : GL33Entity, IRenderTextEntity{
         set {
             _text = value;
             VMesh? newMesh = MeshGenerators.BasicText(_text, _CenterX, _CenterY, _mesh.Attributes(), 0, 1, out var err);
-            if(newMesh == null)RenderUtils.PrintErrLn(err);
-            _mesh.ReData(newMesh.Value);
+            if(err != null)RenderUtils.PrintErrLn("Error updating text entity:" + err);
+            if(newMesh != null)_mesh.ReData(newMesh.Value);
         }
     }
 
