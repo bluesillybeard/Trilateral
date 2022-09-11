@@ -81,6 +81,9 @@ public class MeshGenerators{
                 float iYStart = YStart-i;
                 float UVXPosition = column*0.0625f;
                 float UVYPosition = row*0.0625f; //get the actual UV coordinates of the top left corner
+                //Calculate vertices
+                float[] topLeft  = new float[]{iXStart  , iYStart  , UVXPosition        , UVYPosition        };
+                float[] topRight = new float[]{iXStart+1, iYStart  , UVXPosition+0.0625f, UVYPosition        };
                 //FIRST TRIANGLE
                 builder.AddVertex(mapping, iXStart  , iYStart  , UVXPosition        , UVYPosition        ); //top left
                 builder.AddVertex(mapping, iXStart+1, iYStart  , UVXPosition+0.0625f, UVYPosition        ); //top right
