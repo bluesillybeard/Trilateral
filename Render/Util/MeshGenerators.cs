@@ -69,7 +69,7 @@ public class MeshGenerators{
         mapping[texAttribOffset  ] = 2;
         mapping[texAttribOffset+1] = 3;
 
-        MeshBuilder builder = new MeshBuilder(attributes, totalAttrib, numCharacters*4*totalAttrib, numCharacters*6);
+        MeshBuilder builder = new MeshBuilder(numCharacters*4*totalAttrib, numCharacters*6);
         float YStart = centerY ? -lines.Count/2f : 0; //the farthest up coordinate of the text.
         for(int i=0; i < lines.Count; i++){
             float XStart = centerX ? -lines[i].Count/2f : 0; //the farthest left coordinate of the text.
@@ -84,18 +84,20 @@ public class MeshGenerators{
                 //Calculate vertices
                 float[] topLeft  = new float[]{iXStart  , iYStart  , UVXPosition        , UVYPosition        };
                 float[] topRight = new float[]{iXStart+1, iYStart  , UVXPosition+0.0625f, UVYPosition        };
+                float[] bottomLeft = new float[]{iXStart  , iYStart-1, UVXPosition        , UVYPosition+0.0625f};
+                float[] bottomRight = new float[]{iXStart+1, iYStart-1, UVXPosition+0.0625f, UVYPosition+0.0625f};
                 //FIRST TRIANGLE
-                builder.AddVertex(mapping, iXStart  , iYStart  , UVXPosition        , UVYPosition        ); //top left
-                builder.AddVertex(mapping, iXStart+1, iYStart  , UVXPosition+0.0625f, UVYPosition        ); //top right
-                builder.AddVertex(mapping, iXStart  , iYStart-1, UVXPosition        , UVYPosition+0.0625f); //bottom left
+                builder.AddVertex(mapping, topLeft); //top left
+                builder.AddVertex(mapping, topRight); //top right
+                builder.AddVertex(mapping, bottomLeft); //bottom left
                 //SECOND TRIANGLE
-                builder.AddVertex(mapping, iXStart+1, iYStart  , UVXPosition+0.0625f, UVYPosition        ); //top right
-                builder.AddVertex(mapping, iXStart  , iYStart-1, UVXPosition        , UVYPosition+0.0625f); //bottom left
-                builder.AddVertex(mapping, iXStart+1, iYStart-1, UVXPosition+0.0625f, UVYPosition+0.0625f); //bottom right
+                builder.AddVertex(mapping, topRight); //top right
+                builder.AddVertex(mapping, bottomLeft); //bottom left
+                builder.AddVertex(mapping, bottomRight); //bottom right
             }
         }
         error = null;
-        VMesh mesh = builder.ToMesh();
+        VMesh mesh = builder.ToMesh(attributes);
         return mesh;
     }    
 }

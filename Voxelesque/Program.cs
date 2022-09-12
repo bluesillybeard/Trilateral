@@ -63,7 +63,9 @@ namespace Voxelesque.Game
             ), shader, model.mesh, model.texture, true, null);
             ascii = render.LoadTexture("Resources/ASCII-Extended.png");
             debugText = render.SpawnTextEntity(new EntityPosition(-Vector3.UnitX+Vector3.UnitY,Vector3.Zero,Vector3.One/30), "B", false, false, cameralessShader, ascii, true, null);
-            sillyText = render.SpawnTextEntity(EntityPosition.Zero, "3D test", true, true, shader, ascii, true, null);
+            sillyText = render.SpawnTextEntity(new EntityPosition(-Vector3.Zero,Vector3.Zero,Vector3.One/15),"!\"#$%&'()*+,-./\n0123456789:;<=>?\n@ABCDEFGHIJKLMNO\nPQRSTUVWXYZ[\\]^\n_`abcdefghijklmn\nopqrstuvwxyz{|}~\n€‚ƒ„…†‡ˆ‰Š‹Œ Ž‘’\n“”•–—˜™š›œžŸ¡¢£¤\n¥¦§¨©ª«¬®¯°±²³´µ\n¶·¸¹º»¼½¾¿ÀÁÂÃÄÅ\nÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕ\nÖ×ØÙÚÛÜÝÞßàáâãäå\næçèéêëìíîïðñòóôõ\nö÷øùúûüýnþÿ",false, true, shader, ascii, true, null);
+            RenderUtils.PrintLn(sillyText.Mesh.VertexCount());
+            
             grass = model.texture;
 
             camera = render.SpawnCamera(new Vector3(0, 0, 0), new Vector3(0, 0, 0), 90);
@@ -81,7 +83,7 @@ namespace Voxelesque.Game
              + "FPS: " + (int)(frames/d);
             frames = 0;
 
-            sillyText.RotationY += (float)(Math.Sin(time*2/10)*Math.Sin(time*3/10))/20;
+            //sillyText.RotationY += (float)(Math.Sin(time*2/10)*Math.Sin(time*3/10))/20;
             KeyboardState keyboard = render.Keyboard();
             MouseState mouse = render.Mouse();
             //between -1 and 1

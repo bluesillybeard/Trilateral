@@ -14,7 +14,7 @@ namespace Render{
         ///<summary> how long each frame should take. Frames may take shorter or longer. Defaults to 1/30 </summary>
         public double TargetFrameTime = 1.0/120.0;
 
-        public bool VSync = true;
+        public bool VSync = false;
 
         public string WindowTitle = "Voxelesque window";
     
