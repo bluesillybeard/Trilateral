@@ -3,6 +3,7 @@ using System.Collections.Generic;
 
 using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
+using OpenTK.Windowing.Common;
 
 using StbImageSharp;
 
@@ -30,6 +31,11 @@ namespace Render{
         */
         Action<double>? OnUpdate {get; set;}
         Action<double>? OnRender {get; set;}
+
+        Action<KeyboardKeyEventArgs>? OnKeyDown {get; set;}
+        Action<KeyboardKeyEventArgs>? OnKeyUp {get; set;}
+        Action<MouseButtonEventArgs>? OnMouseDown {get; set;}
+        Action<MouseButtonEventArgs>? OnMouseUp {get; set;}
         RenderSettings Settings{get;}
 
         Vector2 WindowSize();
@@ -42,8 +48,9 @@ namespace Render{
 
         //meshes
         IRenderMesh LoadMesh(float[] vertices, uint[] indices, EAttribute[] attributes);
-
+        IRenderMesh LoadMesh(float[] vertices, uint[] indices, EAttribute[] attributes, bool dynamic);
         IRenderMesh LoadMesh(VMesh mesh);
+        IRenderMesh LoadMesh(VMesh mesh, bool dynamic);
 
         /**
          <summary> 

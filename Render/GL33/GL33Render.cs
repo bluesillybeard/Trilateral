@@ -48,7 +48,6 @@ namespace Render.GL33{
                 _window.MakeCurrent();
 
                 //the NativeWindow class has no way to do this, so we directly ask GLFW for it
-                //(Setting the swap interval to 0.)
                 if(!settings.VSync){
                     OpenTK.Windowing.GraphicsLibraryFramework.GLFW.SwapInterval(0);
                 } else{
@@ -56,7 +55,12 @@ namespace Render.GL33{
                 }
                 
 
-                _window.Resize += new Action<ResizeEventArgs>(OnResize);
+                _window.Resize += OnResize;
+
+                _window.KeyDown += OnKeyDownFunc;
+                _window.KeyUp += OnKeyUpFunc;
+                _window.MouseDown += OnMouseDownFunc;
+                _window.MouseUp += OnMouseUpFunc;
                 GL.Enable(EnableCap.DepthTest);
                 //GL.Enable(EnableCap.CullFace); //Sadly, OpenGLs face culling system was designed to be extremely simple and not easily worked with.
                 //My culling system is based on surface normals, so this simply won't do.
@@ -71,6 +75,25 @@ namespace Render.GL33{
         }
         public Action<double>? OnUpdate {get; set;}
         public Action<double>? OnRender {get; set;}
+
+        public Action<KeyboardKeyEventArgs>? OnKeyDown {get; set;}
+        public Action<KeyboardKeyEventArgs>? OnKeyUp {get; set;}
+        public Action<MouseButtonEventArgs>? OnMouseDown {get; set;}
+        public Action<MouseButtonEventArgs>? OnMouseUp {get; set;}
+
+        private void OnKeyDownFunc(KeyboardKeyEventArgs args){
+            if(OnKeyDown != null)OnKeyDown.Invoke(args);
+        }
+        private void OnKeyUpFunc(KeyboardKeyEventArgs args){
+            if(OnKeyUp != null)OnKeyUp.Invoke(args);
+        }
+        private void OnMouseDownFunc(MouseButtonEventArgs args){
+            if(OnMouseDown != null)OnMouseDown.Invoke(args);
+        }
+        private void OnMouseUpFunc(MouseButtonEventArgs args){
+            if(OnMouseUp != null)OnMouseUp.Invoke(args);
+        }
+        
         public void Run(){
             //I implimented my own game loop, because OpenTKs GameWindow doesn't update the keyboard state properly for the external OnUpdate event.
             long lastRenderTime = DateTime.Now.Ticks;
@@ -113,11 +136,24 @@ namespace Render.GL33{
             return new GL33Mesh(mesh.Value);
         }
 
+        public IRenderMesh? LoadMesh(string path, bool dynamic, out Exception? err){
+            VMesh? mesh = VModelUtils.LoadMesh(path, out err);
+            if(mesh == null)return null;
+            return new GL33Mesh(mesh.Value, dynamic);
+        }
+
         public IRenderMesh LoadMesh(VMesh mesh){
             return new GL33Mesh(mesh);
         }
+        public IRenderMesh LoadMesh(VMesh mesh, bool dynamic){
+            return new GL33Mesh(mesh, dynamic);
+        }
         public IRenderMesh LoadMesh(float[] vertices, uint[] indices, EAttribute[] attributes){
             return new GL33Mesh(attributes, vertices, indices);
+        }
+
+        public IRenderMesh LoadMesh(float[] vertices, uint[] indices, EAttribute[] attributes, bool dynamic){
+            return new GL33Mesh(attributes, vertices, indices, dynamic);
         }
 
         public void DeleteMesh(IRenderMesh mesh){

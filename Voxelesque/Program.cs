@@ -1,6 +1,8 @@
 ﻿using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 
+using ImGuiNET;
+
 using Render;
 
 using System;
@@ -29,6 +31,8 @@ namespace Voxelesque.Game
         static RenderCamera camera;
 
         static int frames;
+
+        static RenderImGuiController imGuiController;
         private static void Main()
         {
             //Goes without saying, but the Main method here is an absolutely atrocious mess.
@@ -43,19 +47,21 @@ namespace Voxelesque.Game
 
             render.Init(new RenderSettings()); //todo: use something other than the default settings
 
-            render.OnUpdate += update; //subscribe the the update event
-            render.OnRender += Render;
+
 
             //initial loading stuff here - move to update method and make asynchronous when loading bar is added
 
-            VModel? grassCubeModel = VModelUtils.LoadModel("Resources/vmf/models/GrassCube.vmf", out var errors); //TODO: properly handle error
+            VModel? grassCubeModel = VModelUtils.LoadModel("Resources/vmf/models/GrassCube.vmf", out var errors);
 
             if(errors != null)RenderUtils.PrintErrLn(string.Join("/n", errors));
             cpuMesh = grassCubeModel.Value.mesh;
             model = render.LoadModel(grassCubeModel.Value);
-            shader = render.LoadShader("Resources/Shaders/", out _);
-            cameralessShader = render.LoadShader("Resources/Shaders/cameraless", out var err); //TODO: handle errors
+            shader = render.LoadShader("Resources/Shaders/", out var err0);
+            if(err0 != null)RenderUtils.PrintErrLn(err0);
+            cameralessShader = render.LoadShader("Resources/Shaders/cameraless", out var err);
             if(err != null)RenderUtils.PrintErrLn(err);
+            IRenderShader ImShader = render.LoadShader("Resources/Shaders/imgui", out var err2);
+            if(err2 != null)RenderUtils.PrintErrLn(err2);
             render.SpawnEntity(new EntityPosition(
                 Vector3.Zero,
                 Vector3.Zero,
@@ -73,6 +79,11 @@ namespace Voxelesque.Game
             GrassCubeBehavior = new RemoveOnTouchBehavior(cpuMesh);
             frames = 0;
             render.SetCamera(camera);
+
+            imGuiController = new RenderImGuiController(render, ImShader);
+            render.OnUpdate += update; //subscribe the the update event
+            render.OnRender += Render;
+
             render.Run();
         }
         static void update(double d){
@@ -128,6 +139,11 @@ namespace Voxelesque.Game
 
         static void Render(double d){
             frames++;
+            ImGui.ShowDemoWindow();
+            ImGui.Begin("testy boi");
+            ImGui.Text("YO IM TEXT BOI");
+            ImGui.End();
+            imGuiController.Render(d);
         }
     }
 }

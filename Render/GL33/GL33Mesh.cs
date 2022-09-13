@@ -43,6 +43,11 @@ namespace Render.GL33{
             _attributes = mesh.attributes;
             LoadMesh(_attributes, mesh.vertices, mesh.indices, false);
         }
+
+        public GL33Mesh(VMesh mesh, bool dynamic){
+            _attributes = mesh.attributes;
+            LoadMesh(_attributes, mesh.vertices, mesh.indices, dynamic);
+        }
         public GL33Mesh(EAttribute[] attributes, float[] vertices, uint[] indices){
             _attributes = attributes;
             LoadMesh(attributes, vertices, indices, false);
@@ -50,6 +55,14 @@ namespace Render.GL33{
         public GL33Mesh(EAttribute[] attributes, float[] vertices, uint[] indices, bool dynamic){
             _attributes = attributes;
             LoadMesh(attributes, vertices, indices, dynamic);
+        }
+        public GL33Mesh(EAttribute[] attributes, IntPtr vertices, int verticesSizeBytes, IntPtr indices, int indicesSizeBytes){
+            _attributes = attributes;
+            LoadMesh(attributes, vertices, verticesSizeBytes, indices, indicesSizeBytes, false);
+        }
+        public GL33Mesh(EAttribute[] attributes, IntPtr vertices, int verticesSizeBytes, IntPtr indices, int indicesSizeBytes, bool dynamic){
+            _attributes = attributes;
+            LoadMesh(attributes, vertices, verticesSizeBytes, indices, indicesSizeBytes, dynamic);
         }
         public void ReData(VMesh mesh){
             ReData(mesh.vertices, mesh.indices);
@@ -61,10 +74,22 @@ namespace Render.GL33{
             GL.BindVertexArray(_id);
 
             GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexBufferObject);
-            GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * sizeof(float), vertices, BufferUsageHint.StaticDraw);
+            GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * sizeof(float), vertices, BufferUsageHint.DynamicDraw);
 
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, _indexBuffer);
-            GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(uint), indices, BufferUsageHint.StaticDraw);
+            GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(uint), indices, BufferUsageHint.DynamicDraw);
+        }
+
+        public void ReData(IntPtr vertices, int verticesSizeBytes, IntPtr indices, int indicesSizeBytes){
+            _indexCount = indicesSizeBytes / sizeof(uint);
+            _vertexFloats = verticesSizeBytes / sizeof(float);
+            GL.BindVertexArray(_id);
+
+            GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexBufferObject);
+            GL.BufferData(BufferTarget.ArrayBuffer, verticesSizeBytes, vertices, BufferUsageHint.DynamicDraw);
+
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, _indexBuffer);
+            GL.BufferData(BufferTarget.ElementArrayBuffer, indicesSizeBytes, indices, BufferUsageHint.DynamicDraw);
         }
 
         public void AddData(VMesh mesh){
@@ -80,11 +105,10 @@ namespace Render.GL33{
             }
             //The fact that OpenGL has no built-in way to expand the size of a buffer without overriding it is annoying.
             
-            //TODO: finish implimenting this surprisingly complicated method.
             GL.BindVertexArray(_id);
             {
-                //This is in a separate block to keep the stack from leacking.
-                //I'm so tired that leacking doesn't even look like a word anymore.
+                //This is in a separate block to keep the stack from leaking.
+                //I'm so tired that leaking doesn't even look like a word anymore.
                 GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexBufferObject);
                 //load the buffer into memory
                 float[] bufferVertices = new float[_vertexFloats + vertices.Length];
@@ -129,6 +153,35 @@ namespace Render.GL33{
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, _indexBuffer);
             if(dynamic)GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(uint), indices, BufferUsageHint.StaticDraw);
             else GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(uint), indices, BufferUsageHint.DynamicDraw);
+
+            int totalAttrib = 0;
+            foreach(EAttribute attrib in attributes){
+                totalAttrib += (int)attrib;
+            }
+
+            int runningTotalAttrib = 0;
+            for(int i=0; i<attributes.Length; i++){
+                EAttribute attrib = attributes[i];
+                GL.EnableVertexAttribArray(i);
+                GL.VertexAttribPointer(i, (int)attrib, VertexAttribPointerType.Float, false, totalAttrib*sizeof(float), runningTotalAttrib*sizeof(float));
+                runningTotalAttrib += (int)attrib;
+            }
+        }
+        private void LoadMesh(EAttribute[] attributes, IntPtr vertexBuffer, int vertexBufferLength, IntPtr indexBuffer, int indexBufferLength, bool dynamic){
+            _indexCount = indexBufferLength;
+            _vertexFloats = vertexBufferLength;
+            _id = GL.GenVertexArray();
+            GL.BindVertexArray(_id);
+
+            _vertexBufferObject = GL.GenBuffer();
+            GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexBufferObject);
+            if(dynamic)GL.BufferData(BufferTarget.ArrayBuffer, vertexBufferLength, vertexBuffer, BufferUsageHint.DynamicDraw);
+            else GL.BufferData(BufferTarget.ArrayBuffer, vertexBufferLength, vertexBuffer, BufferUsageHint.StaticDraw);
+
+            _indexBuffer = GL.GenBuffer();
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, _indexBuffer);
+            if(dynamic)GL.BufferData(BufferTarget.ElementArrayBuffer, indexBufferLength, indexBuffer, BufferUsageHint.DynamicDraw);
+            else GL.BufferData(BufferTarget.ElementArrayBuffer, indexBufferLength, indexBuffer, BufferUsageHint.StaticDraw);
 
             int totalAttrib = 0;
             foreach(EAttribute attrib in attributes){
