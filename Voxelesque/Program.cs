@@ -1,8 +1,6 @@
 ﻿using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 
-using ImGuiNET;
-
 using Render;
 
 using System;
