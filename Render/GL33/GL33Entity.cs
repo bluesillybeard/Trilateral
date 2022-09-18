@@ -15,14 +15,18 @@ namespace Render.GL33{
 
         public Matrix4 GetTransform(){
             if(_modified){
-                _currentTransform = Matrix4.Identity *
-                Matrix4.CreateScale(_position.scale) *
-                Matrix4.CreateRotationX(_position.rotation.X) *
-                Matrix4.CreateRotationY(_position.rotation.Y) *
-                Matrix4.CreateRotationZ(_position.rotation.Z) *
-                Matrix4.CreateTranslation(_position.location);
+                _currentTransform = GenerateTransform(_position);
             }
             return _currentTransform;
+        }
+
+        public static Matrix4 GenerateTransform(EntityPosition pos){
+            return Matrix4.Identity *
+                Matrix4.CreateScale(pos.scale) *
+                Matrix4.CreateRotationX(pos.rotation.X) *
+                Matrix4.CreateRotationY(pos.rotation.Y) *
+                Matrix4.CreateRotationZ(pos.rotation.Z) *
+                Matrix4.CreateTranslation(pos.location);
         }
 
         public Matrix4 lastTransform; //modified and read externally (in the Render implimentation). Yes it's spaghetti code, but I can't think of a better way to do it.

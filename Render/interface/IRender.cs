@@ -156,6 +156,13 @@ namespace Render{
         </summary>
         */
         IEnumerable<IRenderEntity?> GetEntities();
+
+        /**
+        Directly render a mesh + texure + shader.
+        Only call during the OnRender event.
+        Will always render BEFORE any entities are rendered, since the OnRender event happens at the beginning of a frame cycle.
+        */
+        void RenderMeshDirect(EntityPosition pos, IRenderShader shader, IRenderMesh mesh, IRenderTexture texture, bool depthTest);
         //camera
 
         RenderCamera SpawnCamera(Vector3 position, Vector3 rotation, float fovy);

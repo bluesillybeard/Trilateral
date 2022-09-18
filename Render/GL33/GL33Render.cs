@@ -27,6 +27,7 @@ namespace Render.GL33{
                 _settings = settings;
                 _deletedMeshes = new List<GL33MeshHandle>();
                 _deletedTextures = new List<GL33TextureHandle>();
+                _directEntities = new List<GL33Entity>();
                 _entities = new List<GL33Entity?>();
                 _freeEntitySlots = new List<int>();
 
@@ -308,6 +309,11 @@ namespace Render.GL33{
         public IEnumerable<IRenderEntity?> GetEntities(){
             return _entities;
         }
+
+        public void RenderMeshDirect(EntityPosition pos, IRenderShader shader, IRenderMesh mesh, IRenderTexture texture, bool depthTest){
+            _directEntities.Add(new GL33Entity(pos, (GL33Mesh)mesh, (GL33Texture)texture, (GL33Shader)shader, -1, depthTest, null)); //lazy solution, I don't care.
+        }
+
         //camera
         public RenderCamera SpawnCamera(Vector3 position, Vector3 rotation, float fovy){
             return new RenderCamera(position, rotation, fovy, _window.ClientSize);
@@ -397,7 +403,6 @@ namespace Render.GL33{
                 DeleteEntity(_delayedEntityRemovals.Pop());
             }
             //RenderUtils.printLn("update");
-
         }
         private void Render(long lastRender, long now){
             //we call the OnRender event first, in case meshes are modified.
@@ -422,7 +427,30 @@ namespace Render.GL33{
                 interpolatedCamera = Matrix4.Identity;
             }
 
+            //Render entities from the RenderEntityDirect method
+            foreach(GL33Entity entity in _directEntities){
+                entity._mesh.Bind();
+                entity._texture.Use(TextureUnit.Texture0);
+                entity._shader.Use();
 
+                entity._shader.SetInt("tex", 0, true);
+
+                Matrix4 currentView = entity.GetTransform();
+                Matrix4 interpolatedEntityView = new Matrix4(
+                    currentView.Row0*weight + entity.lastTransform.Row0*rweight,
+                    currentView.Row1*weight + entity.lastTransform.Row1*rweight,
+                    currentView.Row2*weight + entity.lastTransform.Row2*rweight,
+                    currentView.Row3*weight + entity.lastTransform.Row3*rweight
+                );
+
+                entity._shader.SetMatrix4("model", interpolatedEntityView, false);
+                entity._shader.SetMatrix4("camera", interpolatedCamera, false);
+
+                if(entity._depthTest)GL.Enable(EnableCap.DepthTest);
+                else GL.Disable(EnableCap.DepthTest);
+                GL.DrawElements(BeginMode.Triangles, entity._mesh.ElementCount()*3, DrawElementsType.UnsignedInt, 0);
+            }
+            _directEntities.Clear();
 
             foreach(GL33Entity? entity in _entities){
                 if(entity is null)continue;
@@ -441,9 +469,7 @@ namespace Render.GL33{
                 );
 
                 entity._shader.SetMatrix4("model", interpolatedEntityView, false);
-                if(_camera != null)entity._shader.SetMatrix4("camera", interpolatedCamera, false);
-                else entity._shader.SetMatrix4("camera", Matrix4.Identity, false);
-
+                entity._shader.SetMatrix4("camera", interpolatedCamera, false);
                 if(entity._depthTest)GL.Enable(EnableCap.DepthTest);
                 else GL.Disable(EnableCap.DepthTest);
                 GL.DrawElements(BeginMode.Triangles, entity._mesh.ElementCount()*3, DrawElementsType.UnsignedInt, 0);
@@ -468,6 +494,7 @@ namespace Render.GL33{
 
         private RenderSettings _settings;
         private NativeWindow _window;
+        private List<GL33Entity> _directEntities;
 
         private List<GL33Entity?> _entities;
 

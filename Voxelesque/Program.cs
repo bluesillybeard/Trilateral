@@ -31,8 +31,6 @@ namespace Voxelesque.Game
         static RenderCamera camera;
 
         static int frames;
-
-        static RenderImGuiController imGuiController;
         private static void Main()
         {
             //Goes without saying, but the Main method here is an absolutely atrocious mess.
@@ -80,7 +78,6 @@ namespace Voxelesque.Game
             frames = 0;
             render.SetCamera(camera);
 
-            imGuiController = new RenderImGuiController(render, ImShader);
             render.OnUpdate += update; //subscribe the the update event
             render.OnRender += Render;
 
@@ -139,11 +136,6 @@ namespace Voxelesque.Game
 
         static void Render(double d){
             frames++;
-            ImGui.ShowDemoWindow();
-            ImGui.Begin("testy boi");
-            ImGui.Text("YO IM TEXT BOI");
-            ImGui.End();
-            imGuiController.Render(d);
         }
     }
 }
