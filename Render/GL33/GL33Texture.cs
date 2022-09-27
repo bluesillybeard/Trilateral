@@ -10,7 +10,7 @@ using StbImageSharp;
 
 namespace Render.GL33{
 
-    //This is used to clean up leacked textures from the GPU.
+    //This is used to clean up leaked textures from the GPU.
     struct GL33TextureHandle{
         public GL33TextureHandle(int id){
             this.id = id;
