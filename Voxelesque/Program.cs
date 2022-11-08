@@ -18,8 +18,6 @@ namespace Voxelesque.Game
         static IRenderShader shader;
         static IRenderShader cameralessShader;
         static IRenderTextEntity debugText;
-        static IRenderTextEntity sillyText;
-
         static IRenderTexture grass;
         static IRenderTexture ascii;
         static Random random;
@@ -56,15 +54,9 @@ namespace Voxelesque.Game
             if(err0 != null)RenderUtils.PrintErrLn(err0);
             cameralessShader = render.LoadShader("Resources/Shaders/cameraless", out var err);
             if(err != null)RenderUtils.PrintErrLn(err);
-            render.SpawnEntity(new EntityPosition(
-                Vector3.Zero,
-                Vector3.Zero,
-                Vector3.One
-            ), shader, model.mesh, model.texture, true, null);
             ascii = render.LoadTexture("Resources/ASCII-Extended.png");
             debugText = render.SpawnTextEntity(new EntityPosition(-Vector3.UnitX+Vector3.UnitY,Vector3.Zero,Vector3.One/30), "B", false, false, cameralessShader, ascii, true, null);
-            sillyText = render.SpawnTextEntity(new EntityPosition(-Vector3.Zero,Vector3.Zero,Vector3.One/15),"!\"#$%&'()*+,-./\n0123456789:;<=>?\n@ABCDEFGHIJKLMNO\nPQRSTUVWXYZ[\\]^\n_`abcdefghijklmn\nopqrstuvwxyz{|}~\n€‚ƒ„…†‡ˆ‰Š‹Œ Ž‘’\n“”•–—˜™š›œžŸ¡¢£¤\n¥¦§¨©ª«¬®¯°±²³´µ\n¶·¸¹º»¼½¾¿ÀÁÂÃÄÅ\nÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕ\nÖ×ØÙÚÛÜÝÞßàáâãäå\næçèéêëìíîïðñòóôõ\nö÷øùúûüýnþÿ",false, true, shader, ascii, true, null);
-            RenderUtils.PrintLn(sillyText.Mesh.VertexCount());
+
             
             grass = model.texture;
 
@@ -92,7 +84,12 @@ namespace Voxelesque.Game
             MouseState mouse = render.Mouse();
             //between -1 and 1
             if(keyboard.IsKeyDown(Keys.F)){
-                render.SpawnEntity(new EntityPosition(camera.Position - Vector3.UnitY, new Vector3(random.NextSingle(), random.NextSingle(), random.NextSingle()), Vector3.One), shader, model.mesh, model.texture, true, GrassCubeBehavior); 
+                EntityPosition pos = new EntityPosition(
+                    camera.Position - Vector3.UnitY,
+                    Vector3.Zero,
+                    Vector3.One
+                );
+                render.SpawnEntity(pos, shader, model.mesh, model.texture, true, GrassCubeBehavior); 
             }
             
             if (keyboard.IsKeyReleased(Keys.C))
