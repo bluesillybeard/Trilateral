@@ -23,9 +23,7 @@ namespace Render.GL33{
         public static Matrix4 GenerateTransform(EntityPosition pos){
             return Matrix4.Identity *
                 Matrix4.CreateScale(pos.scale) *
-                Matrix4.CreateRotationX(pos.rotation.X) *
-                Matrix4.CreateRotationY(pos.rotation.Y) *
-                Matrix4.CreateRotationZ(pos.rotation.Z) *
+                Matrix4.CreateFromQuaternion(new Quaternion(pos.rotation)) * 
                 Matrix4.CreateTranslation(pos.location);
         }
 

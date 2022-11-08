@@ -83,7 +83,7 @@ namespace Voxelesque.Game
             KeyboardState keyboard = render.Keyboard();
             MouseState mouse = render.Mouse();
             //between -1 and 1
-            if(keyboard.IsKeyDown(Keys.F)){
+            if(keyboard.IsKeyPressed(Keys.F)){
                 EntityPosition vel = new EntityPosition(
                     Vector3.Zero,
                     new Vector3(random.NextSingle(), random.NextSingle(), random.NextSingle()) * 5,

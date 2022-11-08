@@ -161,7 +161,7 @@ namespace Render
             m31 = MathF.FusedMultiplyAdd(m01, -_position.X, MathF.FusedMultiplyAdd(m11, -_position.Y, MathF.FusedMultiplyAdd(m21, -_position.Z, m31)));
             m32 = MathF.FusedMultiplyAdd(m02, -_position.X, MathF.FusedMultiplyAdd(m12, -_position.Y, MathF.FusedMultiplyAdd(m22, -_position.Z, m32)));
             m33 = MathF.FusedMultiplyAdd(m03, -_position.X, MathF.FusedMultiplyAdd(m13, -_position.Y, MathF.FusedMultiplyAdd(m23, -_position.Z, m33)));
-            //actually finally, set our matrix to the new values, and multiply by the persoective transform.
+            //actually finally, set our matrix to the new values, and multiply by the perspective transform.
             _transform = new Matrix4(
                 m00, m01, m02, m03,
                 m10, m11, m12, m13,
@@ -169,6 +169,7 @@ namespace Render
                 m30, m31, m32, m33
             ) * Matrix4.CreatePerspectiveFieldOfView(_fovy, _aspect, 1.0f/256.0f, 8192f);
             //OK but seriously: whose idea was it to use matrices? because it's the most idiotic stupid thing ever, and it's genius.
+            // Most normal people would just use ordinary math.
         }
     }
 }
