@@ -56,8 +56,6 @@ namespace Voxelesque.Game
             if(err0 != null)RenderUtils.PrintErrLn(err0);
             cameralessShader = render.LoadShader("Resources/Shaders/cameraless", out var err);
             if(err != null)RenderUtils.PrintErrLn(err);
-            IRenderShader ImShader = render.LoadShader("Resources/Shaders/imgui", out var err2);
-            if(err2 != null)RenderUtils.PrintErrLn(err2);
             render.SpawnEntity(new EntityPosition(
                 Vector3.Zero,
                 Vector3.Zero,
