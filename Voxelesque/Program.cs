@@ -84,12 +84,18 @@ namespace Voxelesque.Game
             MouseState mouse = render.Mouse();
             //between -1 and 1
             if(keyboard.IsKeyDown(Keys.F)){
+                EntityPosition vel = new EntityPosition(
+                    Vector3.Zero,
+                    new Vector3(random.NextSingle(), random.NextSingle(), random.NextSingle()) * 5,
+                    Vector3.Zero
+
+                );
                 EntityPosition pos = new EntityPosition(
                     camera.Position - Vector3.UnitY,
                     Vector3.Zero,
-                    Vector3.One
+                    new Vector3(random.NextSingle(), random.NextSingle(), random.NextSingle()) * 5
                 );
-                render.SpawnEntity(pos, shader, model.mesh, model.texture, true, GrassCubeBehavior); 
+                render.SpawnEntity(pos, shader, model.mesh, model.texture, true, new CrazyMovementBehavior(vel)); 
             }
             
             if (keyboard.IsKeyReleased(Keys.C))

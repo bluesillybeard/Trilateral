@@ -10,7 +10,7 @@ namespace Render.GL33{
             _id = id;
             _modified = true;
             _depthTest = depthTest;
-            _behavior = behavior;
+            Behavior = behavior;
         }
 
         public Matrix4 GetTransform(){
