@@ -1,12 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../VStbImageSharp/VStbImageSharp.csproj" /> <!--for opening images-->
+    <PackageReference Include="stbimagesharp" Version="2.27.13" /><!--to open images-->
   </ItemGroup>
-
 </Project>
