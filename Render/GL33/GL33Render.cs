@@ -14,13 +14,9 @@ using vmodel;
 
 namespace Render.GL33{
     class GL33Render : IRender{
-        public RenderSettings Settings {get => _settings;}
 
-        public bool DebugRendering{
-            get => _debugRendering;
-            set => _debugRendering = value;
-        }
-        public bool Init(RenderSettings settings){
+        public GL33Render(RenderSettings settings)
+        {
             try{
                 _delayedEntities = new Stack<GL33Entity>();
                 _delayedEntityRemovals = new Stack<GL33Entity>();
@@ -68,12 +64,17 @@ namespace Render.GL33{
 
                 IRender.CurrentRender = this;
                 IRender.CurrentRenderType = ERenderType.GL33;
-                return true;
             } catch (Exception e){
-                Console.WriteLine("Error creating OpenGL 3.3 (GL33) window.\n\n" + e.StackTrace);
-                return false;
-            }
+                throw new Exception("Error creating OpenGL 3.3 (GL33) window.\n\n" + e.StackTrace);
+            }        
         }
+        public RenderSettings Settings {get => _settings;}
+
+        public bool DebugRendering{
+            get => _debugRendering;
+            set => _debugRendering = value;
+        }
+
         public Action<double>? OnUpdate {get; set;}
         public Action<double>? OnRender {get; set;}
 
@@ -179,26 +180,7 @@ namespace Render.GL33{
             image.Data = new byte[width*height*channels];
             Marshal.Copy(pixels, image.Data, 0, width*height*channels);
 
-            //Not gonna lie, Java's switch statements are a billion times better than what C# has. C#'s switches are barely any better than just using an if-else chain,
-            // Compared to Java which let you do much more advanced stuff like setting a value throug a switch like var x = switch(n){case 1 -> 3\n case 2->1}
-            // Java even has nice enumeration support, where if you're doing an enum you only have to type the name, not enum.name for every case.
-
-            /*This Java code don't work in C#
-            image.Comp = switch(channels){
-                case 1 -> ColorComponents.Grey;
-                case 2 -> ColorComponents.GreyAlpha;
-                case 3 -> ColorComponents.RedGreenBlue;
-                case 3 -> ColorComponents.RedGreenBlueAlpha;
-            }
-            */
-            //instead I have to do this monstrosity
-            switch(channels){
-                case 1:image.Comp = ColorComponents.Grey;break;
-                case 2:image.Comp = ColorComponents.GreyAlpha;break;
-                case 3:image.Comp = ColorComponents.RedGreenBlue;break;
-                case 4:image.Comp = ColorComponents.RedGreenBlueAlpha;break;
-            }
-            //It's not actually that bad, but still worse than Java.
+            image.Comp = (ColorComponents)channels;
 
             image.Height = height;
             image.Width = width;
@@ -250,6 +232,41 @@ namespace Render.GL33{
         public void DeleteModel(RenderEntityModel model){
             ((GL33Mesh)model.mesh).Dispose();
             ((GL33Texture)model.texture).Dispose();
+        }
+        //special draw commands.
+        /*
+        <summary>
+        Directly sets a pixel within the render buffer after the next render call.
+        These draw calls write to a temporary texture on the CPU, then at the end of rendering it's uploaded to the GPU and drawn.
+        Since it only interacts with the GPU once every frame, performance shouldn't be an issue unless for extraordinary circumstances.
+        </summary>
+        */
+        public void WritePixelDirect(uint color, int x, int y)
+        {
+            _directTexture.WritePixel(x, y, color);
+        }
+        /*
+        <summary>
+        Directly draws a texture within the render buffer after the next render call.
+        These draw calls write to a temporary texture on the CPU, then at the end of rendering it's uploaded to the GPU and drawn.
+        Since it only interacts with the GPU once every frame, performance shouldn't be an issue unless for extraordinary circumstances.
+        </summary>
+        */
+        public void DrawTextureDirect(RenderImage image, int x, int y, int width, int height, int srcx, int srcy, int srcwidth, int srcheight)
+        {
+            //This method might get just a little complicated.
+            //For each pixel in the OUTPUT area
+            for(int xi=0; xi<width; xi++)
+            {
+                for(int yi=0; yi<height; yi++)
+                {
+                    //Take one sample of the source and call it a day. Ideally we would get a list of the overlapping pixels, but that's complicated.
+                    int readX = xi*width/srcwidth+srcx;
+                    int readY = yi*height/srcheight+srcy;
+                    uint color = image.ReadPixel(readX, readY);
+                    _directTexture.WritePixel(xi+x, yi+y, color);
+                }
+            }
         }
         //entities
         public IRenderEntity SpawnEntity(EntityPosition pos, IRenderShader shader, IRenderMesh mesh, IRenderTexture texture, bool depthTest, IEntityBehavior? behavior){
@@ -321,7 +338,7 @@ namespace Render.GL33{
         public void SetCamera(RenderCamera camera){
             _camera = camera;
         }
-        public RenderCamera GetCamera(){
+        public RenderCamera? GetCamera(){
             return _camera;
         }
         public void DeleteCamera(RenderCamera camera){
@@ -500,13 +517,24 @@ namespace Render.GL33{
 
         private List<int> _freeEntitySlots;
 
-        private RenderCamera _camera;
+        private RenderCamera? _camera;
 
         private bool _cursorLocked;
         private bool _debugRendering;
 
         private Stack<GL33Entity> _delayedEntities;
         private Stack<GL33Entity> _delayedEntityRemovals;
+        private RenderImage _directTexture;
         #pragma warning enable
     }
+
+
+
+
+
+
+
+
+
+
 }

@@ -23,10 +23,10 @@ public sealed class ColorOutlineRectElement : AbstractElementNode
         int xf = x + width;
 		for (int offset = 0; offset < thickness; offset++)
 		{
-			display.drawHorizontalLine(x + offset, xf - offset, y + offset, rgba);
-			display.drawHorizontalLine(x + offset-1, xf - offset, yf - offset, rgba);
-			display.drawVerticalLine  (x + offset, y + offset, yf - offset, rgba);
-			display.drawVerticalLine  (xf - offset, y + offset, yf - offset, rgba);
+			display.DrawHorizontalLine(x + offset, xf - offset, y + offset, rgba);
+			display.DrawHorizontalLine(x + offset-1, xf - offset, yf - offset, rgba);
+			display.DrawVerticalLine  (x + offset, y + offset, yf - offset, rgba);
+			display.DrawVerticalLine  (xf - offset, y + offset, yf - offset, rgba);
 		}
     }
 }

@@ -16,7 +16,6 @@ namespace Render{
         public static ERenderType CurrentRenderType;
 
         //mixed bits
-        bool Init(RenderSettings settings);
 
         void Run();
 
@@ -120,10 +119,24 @@ namespace Render{
         */
 
         void DeleteModel(RenderEntityModel model);
-        
-
+        //special draw commands.
+        /*
+        <summary>
+        Directly sets a pixel within the render buffer after the next render call.
+        These draw calls write to a temporary texture on the CPU, then at the end of rendering it's uploaded to the GPU and drawn.
+        Since it only interacts with the GPU once every frame, performance shouldn't be an issue unless for extraordinary circumstances.
+        </summary>
+        */
+        void WritePixelDirect(uint color, int x, int y);
+        /*
+        <summary>
+        Directly draws a texture within the render buffer after the next render call.
+        These draw calls write to a temporary texture on the CPU, then at the end of rendering it's uploaded to the GPU and drawn.
+        Since it only interacts with the GPU once every frame, performance shouldn't be an issue unless for extraordinary circumstances.
+        </summary>
+        */
+        void DrawTextureDirect(RenderImage image, int x, int y, int width, int height, int srcx, int srcy, int srcwidth, int srcheight);
         //entities
-        
         IRenderEntity SpawnEntity(EntityPosition pos, IRenderShader shader, IRenderMesh mesh, IRenderTexture texture, bool depthTest, IEntityBehavior? behavior);
         ///<summary>Waits until the end of the update cycle to spawn an entity </summary>
         IRenderEntity SpawnEntityDelayed(EntityPosition pos, IRenderShader shader, IRenderMesh mesh, IRenderTexture texture, bool depthTest, IEntityBehavior? behavior);
@@ -168,7 +181,7 @@ namespace Render{
         RenderCamera SpawnCamera(Vector3 position, Vector3 rotation, float fovy);
 
         void SetCamera(RenderCamera camera);
-        RenderCamera GetCamera();
+        RenderCamera? GetCamera();
         void DeleteCamera(RenderCamera camera);
 
         //input

@@ -117,8 +117,19 @@ namespace Render
             //I changed it to >= because floats cannot be trusted to hold perfectly accurate data,
         }
 
-        public static IRender CreateIdealRender(){
-            return new GL33Render();
+        public static IRender? CreateIdealRender(RenderSettings settings, out bool success, out Exception? e){
+            //Not the best code, but not the worse.
+            try{
+                success = true;
+                e = null;
+                return new GL33Render(settings);
+            }
+            catch (Exception ex)
+            {
+                success = false;
+                e = ex;
+                return null;
+            }
             //TODO: update when adding new Render implementations
         }
     }

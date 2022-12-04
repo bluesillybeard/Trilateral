@@ -36,12 +36,22 @@ namespace Voxelesque.Game
 
             
             random = new Random((int)DateTime.Now.Ticks);
-
-            render = RenderUtils.CreateIdealRender();
-
-            render.Init(new RenderSettings()); //todo: use something other than the default settings
-
-
+            {
+                IRender? renderQuestionmark = RenderUtils.CreateIdealRender(new RenderSettings(), out var success, out var exceptionQuestionMark) ?? null;
+                string message = exceptionQuestionMark==null ? string.Empty : exceptionQuestionMark.Message;
+                //that's a heap of syntax, so here's a little explanation.
+                // If exceptionQuestio.. is null, then it's "". If it isn't then it's equal to Exce..->StackTrace. if StackTrace is null, then it's ""
+                // Nullables are a pain, but at least I won't have any more null reference exceptions. I still have to clean up the rest of this function though.
+                string stackTrace = exceptionQuestionMark is null ? string.Empty : exceptionQuestionMark.StackTrace ?? string.Empty;
+                if(!success || renderQuestionmark is null)
+                {
+                    System.Console.Error.WriteLine("Error initializing Render: " + message + stackTrace);
+                }
+                else 
+                {
+                    render = renderQuestionmark;
+                }
+            }
 
             //initial loading stuff here - move to update method and make asynchronous when loading bar is added
 

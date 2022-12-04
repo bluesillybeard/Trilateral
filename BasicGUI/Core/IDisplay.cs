@@ -23,9 +23,9 @@ public interface IDisplay
     //DRAW METHODS
     void DrawPixel(int x, int y, uint rgb, byte depth = 0);
     void FillRect(int x0, int y0, int x1, int y1, uint rgb, byte depth = 0);
-    void drawLine(int x1, int y1, int x2, int y2, uint rgb, byte depth = 0);
-    void drawVerticalLine(int x, int y1, int y2, uint rgb, byte depth = 0);
-    void drawHorizontalLine(int x1, int x2, int y, uint rgb, byte depth = 0);
+    void DrawLine(int x1, int y1, int x2, int y2, uint rgb, byte depth = 0);
+    void DrawVerticalLine(int x, int y1, int y2, uint rgb, byte depth = 0);
+    void DrawHorizontalLine(int x1, int x2, int y, uint rgb, byte depth = 0);
     void DrawImage(object image, int x, int y, byte depth = 0);
     //This method is no joke.
     void DrawImage(object image, int x, int y, int width, int height, int srcx, int srcy, int srcwidth, int srcheight, byte depth = 0);

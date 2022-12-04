@@ -2,7 +2,14 @@ using OpenTK.Mathematics;
 
 
 namespace Render{
-    public class RenderSettings{
+    public struct RenderSettings{
+        //default
+        public RenderSettings()
+        {
+
+        }
+
+        //Make any non-default value using the curly brace syntax.
 
         public Vector2i Size = new Vector2i(800, 600);
 

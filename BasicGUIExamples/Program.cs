@@ -1,7 +1,12 @@
-﻿public sealed class Program
+﻿using BasicGUI;
+using BasicGUI.Core;
+
+public sealed class Program
 {
     private static readonly string[] exampleNames = {"basic"};
     private static readonly Action[] exampleFunctions = {Basic};
+
+    private static IDisplay display;
     public static void Main()
     {
         System.Console.WriteLine("Please choose an example to run. Options:");
@@ -20,6 +25,9 @@
             if(index < 0){System.Console.WriteLine("You gonna gimme a positive index");error=true;continue;}
             if(index >exampleNames.Length-1){System.Console.WriteLine("Out of bounds");error=true;continue;}
         }while(error);
+
+        //first we set up stuff that all of the examples use.
+
         exampleFunctions[index]();
     }
 
