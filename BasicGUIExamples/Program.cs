@@ -5,8 +5,6 @@ public sealed class Program
 {
     private static readonly string[] exampleNames = {"basic"};
     private static readonly Action[] exampleFunctions = {Basic};
-
-    private static IDisplay display;
     public static void Main()
     {
         System.Console.WriteLine("Please choose an example to run. Options:");

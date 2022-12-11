@@ -527,14 +527,4 @@ namespace Render.GL33{
         private RenderImage _directTexture;
         #pragma warning enable
     }
-
-
-
-
-
-
-
-
-
-
 }

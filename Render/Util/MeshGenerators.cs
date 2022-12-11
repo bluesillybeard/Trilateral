@@ -4,15 +4,28 @@ using vmodel;
 
 using System.Collections.Generic;
 public class MeshGenerators{
-
-    //TODO: create a mesh generator class that can be used to append vertices to a final mesh, rather than doing the nonsense you currently have.
+    //position (2d), texture coordinate
+    public static readonly EAttribute[] defaultTextAttributes = new EAttribute[]{EAttribute.vec2, EAttribute.vec2};
+    public const int defaultTextPosAttrib = 1;
+    public const int defaultTextTexAttrib = 2;
+    //Creates a text mesh using the default attributes - see 'defaultTextAttributes'
+    //text is the text to convert
+    //centerx and centery tell weather or not to center in certain directions
+    //error is a string that tells what went wrong if this function returns null
+    public static VMesh? BasicText(string text, bool centerX, bool centerY, out string? error)
+    {
+        // Im a little lazy, but you have to consider that the BasicText function below took at least 10 hours to develop in total.
+        //Plus, you need to consider that this makes changing the default attributes waaaay easier.
+        return BasicText(text, centerX, centerY, defaultTextAttributes, defaultTextPosAttrib, defaultTextTexAttrib, out error);
+    }
 
     //text is the text to convert
     //centerx and centery tell weather or not to center in certain directions
     //attributes are the output attributes of the mesh.
     //posAttrib and texAttrib are the indices of the position and texture coordinate attributes respectively
     //error is a string that tells what went wrong if this function returns null
-    public static VMesh? BasicText(string text, bool centerX, bool centerY, EAttribute[] attributes, int posAttrib, int texAttrib, out string? error){
+    public static VMesh? BasicText(string text, bool centerX, bool centerY, EAttribute[] attributes, int posAttrib, int texAttrib, out string? error)
+    {
         //NOTE: This was copied verbatim (and modified for the different way vertices are stored) from my old Java codebase (the 'proof of concept' if you will)
         //that means, this is pretty inneficient and bad code. It will be replaced once I get SDFs to work. (which, let's be honest, is never)
 
