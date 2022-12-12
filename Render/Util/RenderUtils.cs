@@ -117,20 +117,29 @@ namespace Render
             //I changed it to >= because floats cannot be trusted to hold perfectly accurate data,
         }
 
-        public static IRender? CreateIdealRender(RenderSettings settings, out bool success, out Exception? e){
-            //Not the best code, but not the worse.
+        public static IRender? CreateIdealRender(RenderSettings settings, out Exception? e){
             try{
-                success = true;
                 e = null;
                 return new GL33Render(settings);
             }
             catch (Exception ex)
             {
-                success = false;
                 e = ex;
                 return null;
             }
             //TODO: update when adding new Render implementations
+        }
+        public static IRender CreateIdealRenderOrDie(RenderSettings settings){
+            IRender? render = CreateIdealRender(settings, out var e);
+            if(render is null)
+            {
+                if(e is null)
+                {
+                    throw new Exception("null Render, no error, much confused");
+                }
+                throw new Exception("Your render didn't get made properly.", e);
+            }
+            return render;
         }
     }
 }

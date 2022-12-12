@@ -1,16 +1,15 @@
-﻿using BasicGUI;
-using BasicGUI.Core;
-
+﻿using System.Reflection;
 public sealed class Program
 {
-    private static readonly string[] exampleNames = {"basic"};
-    private static readonly Action[] exampleFunctions = {Basic};
     public static void Main()
     {
+        //This is quite the line of code xD
+        
+        MethodInfo[] methods = typeof(ExampleFunctions).GetMethods().Where((method) => {return method.IsStatic;}).ToArray();
         System.Console.WriteLine("Please choose an example to run. Options:");
-        for(int i=0; i<exampleNames.Length; i++)
+        for(int i=0; i<methods.Length; i++)
         {
-            System.Console.WriteLine("\t" + i + ": " + exampleNames[i]);
+            System.Console.WriteLine("\t" + i + ": " + methods[i].Name);
         }
         bool error = false;
         int index = -1;
@@ -21,16 +20,8 @@ public sealed class Program
             error = !int.TryParse(text, out index);
             if(error){System.Console.WriteLine("Not a number apparently");error=true;continue;}
             if(index < 0){System.Console.WriteLine("You gonna gimme a positive index");error=true;continue;}
-            if(index >exampleNames.Length-1){System.Console.WriteLine("Out of bounds");error=true;continue;}
+            if(index >methods.Length-1){System.Console.WriteLine("Out of bounds");error=true;continue;}
         }while(error);
-
-        //first we set up stuff that all of the examples use.
-
-        exampleFunctions[index]();
-    }
-
-    private static void Basic()
-    {
-        System.Console.WriteLine("Runninc basic example");
+        methods[index].Invoke(null, null);
     }
 }
