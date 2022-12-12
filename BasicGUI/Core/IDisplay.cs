@@ -44,7 +44,7 @@ public interface IDisplay
     IEnumerable<KeyCode> DownKeys();
     bool keyPressed(KeyCode key);
     IEnumerable<KeyCode> PressedKeys();
-    bool keyReleased(KeyCode key);
+    bool KeyReleased(KeyCode key);
     IEnumerable<KeyCode> ReleasedKeys();
     bool LeftMouseDown();
     bool LeftMousePressed();

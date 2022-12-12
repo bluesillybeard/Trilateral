@@ -356,6 +356,16 @@ namespace Render.GL33{
             return _window.MouseState;
         }
 
+        public string GetClipboard()
+        {
+            return _window.ClipboardString;
+        }
+
+        public void SetClipboard(string clip)
+        {
+            _window.ClipboardString = clip;
+        }
+
         public bool CursorLocked{
             get => _cursorLocked;
             set{

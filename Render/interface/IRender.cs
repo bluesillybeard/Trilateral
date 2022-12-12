@@ -37,6 +37,7 @@ namespace Render{
         Action<MouseButtonEventArgs>? OnMouseUp {get; set;}
         RenderSettings Settings{get;}
 
+        //in pixels
         Vector2 WindowSize();
 
         uint EntityCount();
@@ -188,6 +189,9 @@ namespace Render{
         KeyboardState Keyboard();
 
         MouseState Mouse();
+
+        string GetClipboard();
+        void SetClipboard(string clip);
 
         bool CursorLocked{get; set;}
     }

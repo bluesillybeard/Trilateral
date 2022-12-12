@@ -199,16 +199,4 @@ public class VModelUtils{
             return null;
         }
     }
-
-    public static float[] ConvertVertex(float[] vertex, params int[] mapping){
-        float[] ret = new float[mapping.Length];
-        for(int i=0; i<mapping.Length; i++){
-            int map = mapping[i];
-            if(map != -1){
-                ret[i] = vertex[map];
-            }
-        }
-        return ret;
-    }
-
 }

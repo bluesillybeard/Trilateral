@@ -62,6 +62,9 @@ public enum KeyCode
     y = 89,
     z = 90,
     //Super keys are the unix name for the so-called "windows buttons"
+    //Why on the face of this earth where keyboards have one super are there two here,
+    // but when there are two shifts and two alts and two ctrls it only has one?
+    //Javascript, why are your key codes so borked lol
     superLeft = 91,
     superRight = 92,
     select = 93,
@@ -112,5 +115,4 @@ public enum KeyCode
     backSlash = 220,
     bracketRight = 221,
     quote = 222,
-
 }

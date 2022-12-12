@@ -35,7 +35,7 @@ public sealed class MeshBuilder{
     }
 
     public void AddVertex(int[] mapping, params float[] vert){
-        vert = VModelUtils.ConvertVertex(vert, mapping);
+        vert = ConvertVertex(vert, mapping);
         AddVertex(vert);
     }
 
@@ -45,6 +45,17 @@ public sealed class MeshBuilder{
             vertices.AddRange(_vertices[i].vert);
         }
         return new VMesh(vertices.ToArray(), _indices.ToArray(), attributes, null);
+    }
+
+    public static float[] ConvertVertex(float[] vertex, params int[] mapping){
+        float[] ret = new float[mapping.Length];
+        for(int i=0; i<mapping.Length; i++){
+            int map = mapping[i];
+            if(map != -1){
+                ret[i] = vertex[map];
+            }
+        }
+        return ret;
     }
 
     struct Vertex{
