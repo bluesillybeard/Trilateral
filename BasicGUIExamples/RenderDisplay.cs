@@ -32,6 +32,18 @@ public sealed class RenderDisplay : IDisplay
     }
     public void FillRect(int x0, int y0, int x1, int y1, uint rgb, byte depth = 0)
     {
+        if(x0 > x1)
+        {
+            int temp = x0;
+            x0 = x1;
+            x1 = temp;
+        }
+        if(y0 > y1)
+        {
+            int temp = y0;
+            y0 = y1;
+            y1 = temp;
+        }
         for(int xi=x0; xi<x1; xi++)
         {
             for(int yi=y0; yi<y1; yi++)

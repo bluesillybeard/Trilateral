@@ -45,10 +45,11 @@ namespace Examples;
 using BasicGUI;
 using BasicGUI.Core;
 using Render;
+using OpenTK.Mathematics;
 public sealed class ExampleMockup
 {
     const int fontSize = 30;
-    public static void Main()
+    public static void Run()
     {
         //initing stuff
         IRender render = RenderUtils.CreateIdealRenderOrDie(new RenderSettings());
@@ -83,6 +84,19 @@ public sealed class ExampleMockup
             FillTable(table, font, display);
         }
         //Render handles the looperoni. Thankfully my past self included a nice little callback for just this kind of occasion.
+        // I'm still deciding if using static variables or passing it like this is better.
+        // obviously separating it to be entirely object based would be ideal in this case.
+        render.OnRender += (delta) => {frame(delta, render, display, plane);};
+        render.Run();
+    }
+
+    private static void frame(double delta, IRender render, IDisplay display, BasicGUIPlane plane)
+    {
+        //the RenderDisplay talks to the Render for us.
+        Vector2 size = render.WindowSize();
+        plane.SetSize((int)size.X, (int)size.Y);
+        plane.Iterate();
+        plane.Draw();
     }
 
     private static void FillTable(TableContainer table, RenderFont font, IDisplay disp)

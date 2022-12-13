@@ -15,25 +15,45 @@ namespace Render.GL33{
         public GL33Shader(string vertPath, string fragPath)
         {
             _name = vertPath + "|" + fragPath;
-
             // Load vertex shader and compile
-            string shaderSource = File.ReadAllText(vertPath);
-            int vertexShader = MakeShader(ShaderType.VertexShader, shaderSource);
-
+            string vertexShader = File.ReadAllText(vertPath);
             // We do the same for the fragment shader.
-            shaderSource = File.ReadAllText(fragPath);
-            int fragmentShader = MakeShader(ShaderType.FragmentShader, shaderSource);
+            string fragmentShader = File.ReadAllText(fragPath);
+            LoadShader(vertexShader, fragmentShader, _name, out _id, out _uniformLocations);
+        }
+        public GL33Shader(string vertex, string fragment, bool direct)
+        {
+            if(!direct)
+            {
+                _name = vertex + "|" + fragment;
+                // Load vertex shader and compile
+                string vertexShader = File.ReadAllText(vertex);
+                // We do the same for the fragment shader.
+                string fragmentShader = File.ReadAllText(fragment);
+                LoadShader(vertexShader, fragmentShader, _name, out _id, out _uniformLocations);
+                return;
+            }
+            _name = "direct#" + vertex.GetHashCode() + "." + fragment.GetHashCode();
+            LoadShader(vertex, fragment, _name, out _id, out _uniformLocations);
 
-            _id = GL.CreateProgram();
+        }
+        // If only I could call other constructors to avoid nulables, instead of using copious amounts of out variables.
+        private static void LoadShader(string vertexSource, string fragmentSource, string name, out int id, out Dictionary<string, int> uniforms)
+        {
 
-            GL.AttachShader(_id, vertexShader);
-            GL.AttachShader(_id, fragmentShader);
-            LinkProgram(_id);
+            int vertexShader = MakeShader(ShaderType.VertexShader, vertexSource);
+            int fragmentShader = MakeShader(ShaderType.FragmentShader, fragmentSource);
+
+            id = GL.CreateProgram();
+
+            GL.AttachShader(id, vertexShader);
+            GL.AttachShader(id, fragmentShader);
+            LinkProgram(id, name);
 
             // When the shader program is linked, it no longer needs the individual shaders attached to it; the compiled code is copied into the shader program.
             // Detach them, and then delete them.
-            GL.DetachShader(_id, vertexShader);
-            GL.DetachShader(_id, fragmentShader);
+            GL.DetachShader(id, vertexShader);
+            GL.DetachShader(id, fragmentShader);
             GL.DeleteShader(fragmentShader);
             GL.DeleteShader(vertexShader);
 
@@ -42,22 +62,22 @@ namespace Render.GL33{
             // later.
 
             // First, we have to get the number of active uniforms in the shader.
-            GL.GetProgram(_id, GetProgramParameterName.ActiveUniforms, out int numberOfUniforms);
+            GL.GetProgram(id, GetProgramParameterName.ActiveUniforms, out int numberOfUniforms);
 
             // Next, allocate the dictionary to hold the locations.
-            _uniformLocations = new Dictionary<string, int>();
+            uniforms = new Dictionary<string, int>();
 
             // Loop over all the uniforms,
             for (int i = 0; i < numberOfUniforms; i++)
             {
                 // get the name of this uniform,
-                string key = GL.GetActiveUniform(_id, i, out _, out _);
+                string key = GL.GetActiveUniform(id, i, out _, out _);
 
                 // get the location,
-                int location = GL.GetUniformLocation(_id, key);
+                int location = GL.GetUniformLocation(id, key);
 
                 // and then add it to the dictionary.
-                _uniformLocations.Add(key, location);
+                uniforms.Add(key, location);
             }
         }
 
@@ -82,7 +102,7 @@ namespace Render.GL33{
             return shader;
         }
 
-        private void LinkProgram(int program)
+        private static void LinkProgram(int program, string name)
         {
             // We link the program
             GL.LinkProgram(program);
@@ -93,7 +113,7 @@ namespace Render.GL33{
             {
                 // We can use `GL.GetProgramInfoLog(program)` to get information about the error.
                 string infoLog = GL.GetProgramInfoLog(program);
-                throw new Exception($"ERROR: unable to link Program({program}).\n\n{infoLog}\n\n{this._name}");
+                throw new Exception($"ERROR: unable to link Program({program}).\n\n{infoLog}\n\n{name}");
             }
         }
 

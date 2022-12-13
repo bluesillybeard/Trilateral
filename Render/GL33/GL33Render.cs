@@ -26,6 +26,7 @@ namespace Render.GL33{
                 _directEntities = new List<GL33Entity>();
                 _entities = new List<GL33Entity?>();
                 _freeEntitySlots = new List<int>();
+                _directTexture = new RenderImage((uint)settings.Size.X, (uint)settings.Size.Y);
 
 
                 _window = new NativeWindow(
@@ -43,6 +44,9 @@ namespace Render.GL33{
                 );
 
                 _window.MakeCurrent();
+                EAttribute[] directAttributes = new EAttribute[]{EAttribute.vec2};
+                _directShader = new GL33Shader(dvsc, dfsc, true);
+                _directMesh = new GL33Mesh(directAttributes, new float[]{1f, 1f, 1f, -1f, -1f, 1f, -1f, -1f}, new uint[]{0, 1, 2, 3});
 
                 //the NativeWindow class has no way to do this, so we directly ask GLFW for it
                 if(!settings.VSync){
@@ -494,13 +498,25 @@ namespace Render.GL33{
                     currentView.Row2*weight + entity.lastTransform.Row2*rweight,
                     currentView.Row3*weight + entity.lastTransform.Row3*rweight
                 );
-
                 entity._shader.SetMatrix4("model", interpolatedEntityView, false);
                 entity._shader.SetMatrix4("camera", interpolatedCamera, false);
                 if(entity._depthTest)GL.Enable(EnableCap.DepthTest);
                 else GL.Disable(EnableCap.DepthTest);
                 GL.DrawElements(BeginMode.Triangles, entity._mesh.ElementCount()*3, DrawElementsType.UnsignedInt, 0);
             }
+            //Now render the direct texture, usually used to render GUI elements
+            //Why was this deprecated? I don't understand why they would deprecate this function, 
+            // as it is quite useful and can be used to effectively REDUCE GPU overhead when CPU rendering is the only option.
+            //GL.DrawPixels((int)_directTexture.width, (int)_directTexture.height, PixelFormat.Rgba, PixelType.UnsignedByte, _directTexture.pixels);
+            {
+                GL33Texture tex = new GL33Texture(_directTexture);
+                _directMesh.Bind();
+                tex.Use(TextureUnit.Texture0);
+                _directShader.Use();
+                _directShader.SetInt("tex", 0, true);
+                GL.DrawElements(BeginMode.Triangles, 6, DrawElementsType.UnsignedInt, 0);
+            }
+
 
             _window.Context.SwapBuffers();
             GL.ClearColor(0.5f, 0.5f, 0.5f, 1);
@@ -512,7 +528,6 @@ namespace Render.GL33{
             //this._window.Size
         }
 
-        #pragma warning disable //the null checks are pointless here, since the initialization doesn't happen in the constructor.
         public List<GL33TextureHandle> _deletedTextures;
 
         public List<GL33MeshHandle> _deletedMeshes;
@@ -535,6 +550,25 @@ namespace Render.GL33{
         private Stack<GL33Entity> _delayedEntities;
         private Stack<GL33Entity> _delayedEntityRemovals;
         private RenderImage _directTexture;
-        #pragma warning enable
+        //vertex thingy for rendering direct texture. Yep. You aren't blind, this is possibly the simplest vertex shader possible.
+        // I need to do this because OpenGL 3.3 deprecated some (very useful imo) functions for interoping CPU and GPU rendering.
+        private const string dvsc = @"
+        #version 330 core
+        layout (location=0) in vec2 pos;
+        void main(){
+            gl_Position = vec4(pos, 1.0, 1.0);
+        }
+        ";
+        private const string dfsc = @"
+        #version 330 core
+        uniform sampler2D tex;
+        void main(){
+            outputColor = texture(tex, texCoord);
+            if(outputColor.a < .5)discard;
+        }
+        ";
+
+        private GL33Shader _directShader;
+        private GL33Mesh _directMesh;
     }
 }

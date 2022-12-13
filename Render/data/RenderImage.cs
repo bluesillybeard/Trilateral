@@ -5,6 +5,12 @@ using StbImageSharp;
 
 public struct RenderImage
 {
+    public RenderImage(uint width, uint height)
+    {
+        pixels = new uint[width*height];
+        this.width = width;
+        this.height = height;
+    }
     public static void ColorFromUint(out byte r, out byte g, out byte b, out byte a, uint rgba)
     {
         r = (byte)((rgba>>24)&0xFF);
@@ -35,7 +41,7 @@ public struct RenderImage
     public bool WritePixel(int x, int y, uint color)
     {
         int index = (int)(x*height + y);
-        if(index > pixels.Length || index < 0) return false;
+        if(index >= pixels.Length || index < 0) return false;
         pixels[index] = color;
         return true;
     }

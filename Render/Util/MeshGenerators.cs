@@ -6,8 +6,8 @@ using System.Collections.Generic;
 public class MeshGenerators{
     //position (2d), texture coordinate
     public static readonly EAttribute[] defaultTextAttributes = new EAttribute[]{EAttribute.vec2, EAttribute.vec2};
-    public const int defaultTextPosAttrib = 1;
-    public const int defaultTextTexAttrib = 2;
+    public const int defaultTextPosAttrib = 0;
+    public const int defaultTextTexAttrib = 1;
     //Creates a text mesh using the default attributes - see 'defaultTextAttributes'
     //text is the text to convert
     //centerx and centery tell weather or not to center in certain directions
