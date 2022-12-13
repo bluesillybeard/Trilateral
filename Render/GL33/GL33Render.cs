@@ -46,8 +46,9 @@ namespace Render.GL33{
                 _window.MakeCurrent();
                 EAttribute[] directAttributes = new EAttribute[]{EAttribute.vec2};
                 _directShader = new GL33Shader(dvsc, dfsc, true);
-                _directMesh = new GL33Mesh(directAttributes, new float[]{1f, 1f, 1f, -1f, -1f, 1f, -1f, -1f}, new uint[]{0, 1, 2, 3});
-
+                _directMesh = new GL33Mesh(directAttributes, new float[]{1f, 1f, 1f, -1f, -1f, 1f, -1f, -1f}, new uint[]{0, 1, 2, 1, 2, 3});
+                _directTextureGPU = new GL33Texture(_directTexture);
+                SpawnEntity(EntityPosition.Zero, _directShader, _directMesh, _directTextureGPU, false, null);
                 //the NativeWindow class has no way to do this, so we directly ask GLFW for it
                 if(!settings.VSync){
                     OpenTK.Windowing.GraphicsLibraryFramework.GLFW.SwapInterval(0);
@@ -69,7 +70,7 @@ namespace Render.GL33{
                 IRender.CurrentRender = this;
                 IRender.CurrentRenderType = ERenderType.GL33;
             } catch (Exception e){
-                throw new Exception("Error creating OpenGL 3.3 (GL33) window.\n\n" + e.StackTrace);
+                throw new Exception("Error creating OpenGL 3.3 (GL33) window.\n\n", e);
             }        
         }
         public RenderSettings Settings {get => _settings;}
@@ -442,6 +443,7 @@ namespace Render.GL33{
             float delta = (now - _lastUpdateTime)/10_000_000.0f;
             if(OnRender != null)OnRender.Invoke(delta);
 
+            _directTextureGPU.Reload(_directTexture);
             _window.MakeCurrent(); //make sure the window context is current. Technically not required, but it makes it slightly easier for if/when I add multiwindowing
             float weight = (float) (delta/RenderUtils.UpdateTime); //0=only last, 1=fully current'
             float rweight = 1-weight;
@@ -504,20 +506,6 @@ namespace Render.GL33{
                 else GL.Disable(EnableCap.DepthTest);
                 GL.DrawElements(BeginMode.Triangles, entity._mesh.ElementCount()*3, DrawElementsType.UnsignedInt, 0);
             }
-            //Now render the direct texture, usually used to render GUI elements
-            //Why was this deprecated? I don't understand why they would deprecate this function, 
-            // as it is quite useful and can be used to effectively REDUCE GPU overhead when CPU rendering is the only option.
-            //GL.DrawPixels((int)_directTexture.width, (int)_directTexture.height, PixelFormat.Rgba, PixelType.UnsignedByte, _directTexture.pixels);
-            {
-                GL33Texture tex = new GL33Texture(_directTexture);
-                _directMesh.Bind();
-                tex.Use(TextureUnit.Texture0);
-                _directShader.Use();
-                _directShader.SetInt("tex", 0, true);
-                GL.DrawElements(BeginMode.Triangles, 6, DrawElementsType.UnsignedInt, 0);
-            }
-
-
             _window.Context.SwapBuffers();
             GL.ClearColor(0.5f, 0.5f, 0.5f, 1);
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
@@ -525,7 +513,7 @@ namespace Render.GL33{
         private void OnResize(ResizeEventArgs args){
             GL.Viewport(0, 0, args.Width, args.Height);
             if(_camera != null)_camera.Aspect = (float)args.Width/(float)args.Height;
-            //this._window.Size
+            _directTexture = new RenderImage((uint)args.Width, (uint)args.Height);
         }
 
         public List<GL33TextureHandle> _deletedTextures;
@@ -550,6 +538,7 @@ namespace Render.GL33{
         private Stack<GL33Entity> _delayedEntities;
         private Stack<GL33Entity> _delayedEntityRemovals;
         private RenderImage _directTexture;
+        private GL33Texture _directTextureGPU;
         //vertex thingy for rendering direct texture. Yep. You aren't blind, this is possibly the simplest vertex shader possible.
         // I need to do this because OpenGL 3.3 deprecated some (very useful imo) functions for interoping CPU and GPU rendering.
         private const string dvsc = @"
@@ -562,8 +551,9 @@ namespace Render.GL33{
         private const string dfsc = @"
         #version 330 core
         uniform sampler2D tex;
+        out vec4 outputColor;
         void main(){
-            outputColor = texture(tex, texCoord);
+            outputColor = texelFetch(tex, ivec2(gl_FragCoord.x, gl_FragCoord.y), 0);
             if(outputColor.a < .5)discard;
         }
         ";

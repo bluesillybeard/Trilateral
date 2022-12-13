@@ -28,11 +28,25 @@ namespace Render.GL33{
         }
 
         public GL33Texture(ImageResult image){
-            LoadTexture(image);        
+            LoadTexture(image);
         }
 
         public GL33Texture(RenderImage image){
-            LoadTexture(image);        
+            LoadTexture(image);
+        }
+
+        public void Reload(string path)
+        {
+            ImageResult img = ImageResult.FromMemory(File.ReadAllBytes(path));
+            LoadTexture(img);
+        }
+
+        public void Reload(ImageResult image){
+            LoadTexture(image);
+        }
+
+        public void Reload(RenderImage image){
+            LoadTexture(image);
         }
         public GL33Texture(float r, float g, float b, float a){
             // Generate handle
