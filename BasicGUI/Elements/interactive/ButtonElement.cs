@@ -65,11 +65,15 @@ public sealed class ButtonElement : IContainerNode
         clicked = false; //reset variables
         if(Bounds.ContainsPoint(display.GetMouseX(), display.GetMouseY()))
         {
-            if(hover is not null)hover(this);
             hovered = true;
+            //it's either clicked or hovered, not both.
             if(display.LeftMouseDown()){
                 clicked = true;
                 if(click is not null)click(this);
+            }
+            else
+            {
+                if(hover is not null)hover(this);
             }
         }
     }
