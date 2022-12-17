@@ -507,8 +507,12 @@ namespace Render.GL33{
                 GL.DrawElements(BeginMode.Triangles, entity._mesh.ElementCount()*3, DrawElementsType.UnsignedInt, 0);
             }
             _window.Context.SwapBuffers();
-            GL.ClearColor(0.5f, 0.5f, 0.5f, 1);
+            //darn Color no RGBA, only ARGB, Dingus Dongis. why.
+            // also, no bitwise rotation operators isn't great...
+            RenderImage.ColorFromRGBA(out byte r, out byte g, out byte b, out byte a, _settings.BackgroundColor);
+            GL.ClearColor(r/256f, g/256f, b/256f, a/256f);
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+            Array.Fill<uint>(_directTexture.pixels, 0x000000FF);
         }
         private void OnResize(ResizeEventArgs args){
             GL.Viewport(0, 0, args.Width, args.Height);
@@ -553,7 +557,7 @@ namespace Render.GL33{
         uniform sampler2D tex;
         out vec4 outputColor;
         void main(){
-            outputColor = texelFetch(tex, ivec2(gl_FragCoord.x, gl_FragCoord.y), 0);
+            outputColor = texelFetch(tex, ivec2(gl_FragCoord.xy), 0);
             if(outputColor.a < .5)discard;
         }
         ";

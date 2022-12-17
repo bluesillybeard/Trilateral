@@ -122,7 +122,8 @@ namespace Render.GL33{
                 (int)img.height,
                 0,
                 PixelFormat.Rgba,
-                PixelType.UnsignedByte,
+                //haha endianess go BRRRRRRR
+                PixelType.UnsignedInt8888,
                 img.pixels);
 
             SetParametersAndGenerateMipmaps();

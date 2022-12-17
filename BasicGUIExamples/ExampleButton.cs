@@ -8,7 +8,13 @@ public class ExampleButton
 {
     public static void Run()
     {
-        IRender render = RenderUtils.CreateIdealRenderOrDie(new RenderSettings());
+        RenderSettings settings = new RenderSettings()
+        {
+            Size = new Vector2i(800, 600),
+            WindowTitle = "I am a button. Press me.",
+            BackgroundColor = 0x000000FF,
+        };
+        IRender render = RenderUtils.CreateIdealRenderOrDie(settings);
         IDisplay display = new RenderDisplay();
         BasicGUIPlane plane = new BasicGUIPlane(800, 600, display);
         //We also need to load a font, which requires a shader and a texture.
@@ -19,8 +25,7 @@ public class ExampleButton
 
         CenterContainer container = new CenterContainer(plane.GetRoot());
         ButtonElement button = new ButtonElement(container, ButtonHover, ButtonClick, ButtonFrame);
-        ColorRectElement rect = new ColorRectElement(button, 0xFF66FFFF, 600, 600);
-        button.drawable = rect;
+        ColorRectElement rect = new ColorRectElement(button, 0xFF66FFFF, 120, 100);
         //Render handles the looperoni. Thankfully my past self included a nice little callback for just this kind of occasion.
         // I'm still deciding if using static variables or passing it like this is better.
         // obviously separating it to be entirely object based would be ideal in this case.
@@ -39,17 +44,29 @@ public class ExampleButton
     static void ButtonFrame(ButtonElement button)
     {
         ColorRectElement? rect = button.drawable as ColorRectElement;
-        if(rect is not null) rect.rgba = 0xFF66FFFF;
+        if(rect is not null)
+        {
+            rect.rgba = 0xFFFF66FF;
+        }
     }
     static void ButtonHover(ButtonElement button)
     {
         ColorRectElement? rect = button.drawable as ColorRectElement;
-        if(rect is not null) rect.rgba = 0x666666FF;
+        if(rect is not null){
+            rect.rgba = 0x666666FF;
+            rect.Width = 50;
+            rect.Height = 50;
+        }
     }
     static void ButtonClick(ButtonElement button)
     {
         ColorRectElement? rect = button.drawable as ColorRectElement;
-        if(rect is not null) rect.rgba = 0xFF2222FF;
+        if(rect is not null)
+        {
+            rect.rgba = 0xFF2222FF;
+            rect.Width += 1;
+            rect.Height += 1;
+        }
     }
 }
 

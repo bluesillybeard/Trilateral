@@ -6,24 +6,32 @@ namespace Render{
         //default
         public RenderSettings()
         {
-
+            Size = new Vector2i(800, 600);
+            Dir = "Resources/";
+            Fov = 90*RenderUtils.DegreesToRadiansf;
+            TargetFrameTime = 1.0/60.0;
+            VSync = false;
+            WindowTitle = "Voxelesque window";
+            BackgroundColor = 0x666666ff;
         }
 
         //Make any non-default value using the curly brace syntax.
 
-        public Vector2i Size = new Vector2i(800, 600);
+        public Vector2i Size;
 
         ///<summary>contains the starting assets directory</summary>
-        public string Dir = "Resources/";
+        public string Dir;
 
-        public float Fov = 90*RenderUtils.DegreesToRadiansf;
+        public float Fov;
 
-        ///<summary> how long each frame should take. Frames may take shorter or longer. Defaults to 1/30 </summary>
-        public double TargetFrameTime = 1.0/120.0;
+        ///<summary> how long each frame should take. Frames may take shorter or longer. Defaults to 1/60 </summary>
+        public double TargetFrameTime;
 
-        public bool VSync = false;
+        public bool VSync;
 
-        public string WindowTitle = "Voxelesque window";
+        public string WindowTitle;
+
+        public uint BackgroundColor; //RGBA clear color.
     
     }
 }

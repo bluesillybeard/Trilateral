@@ -11,22 +11,41 @@ public struct RenderImage
         this.width = width;
         this.height = height;
     }
-    public static void ColorFromUint(out byte r, out byte g, out byte b, out byte a, uint rgba)
+    
+    public static void ColorFromRGBA(out byte r, out byte g, out byte b, out byte a, uint rgba)
     {
         r = (byte)((rgba>>24)&0xFF);
         g = (byte)((rgba>>16)&0xFF);
         b = (byte)((rgba>>8)&0xFF);
         a = (byte)(rgba&0xFF);
     }
-    public static uint UintFromColor(byte r, byte g, byte b, byte a)
+    public static uint RGBAFromColor(byte r, byte g, byte b, byte a)
     {
         uint rgba = 0;
-        rgba |= (uint)r;
-        rgba |= (uint)(g>>8);
-        rgba |= (uint)(b>>16);
-        rgba |= (uint)(a>>24);
+        rgba |= (uint)(r>>24);
+        rgba |= (uint)(g>>16);
+        rgba |= (uint)(b>>8);
+        rgba |= (uint)a;
         return rgba;
     }
+    public static void ColorFromARGB(out byte r, out byte g, out byte b, out byte a, uint argb)
+    {
+        a = (byte)((argb>>24)&0xFF);
+        r = (byte)((argb>>16)&0xFF);
+        g = (byte)((argb>>8)&0xFF);
+        b = (byte)(argb&0xFF);
+    }
+    //Apparently ARGB is common too, so these functions help with that
+    public static uint ARGBFromColor(byte r, byte g, byte b, byte a)
+    {
+        uint rgba = 0;
+        rgba |= (uint)(a>>24);
+        rgba |= (uint)(r>>16);
+        rgba |= (uint)(g>>8);
+        rgba |= (uint)b;
+        return rgba;
+    }
+    //RGBA values.
     public uint[] pixels;
     public uint width;
     public uint height;
@@ -40,7 +59,7 @@ public struct RenderImage
 
     public bool WritePixel(int x, int y, uint color)
     {
-        int index = (int)(x*height + y);
+        int index = (int)(y*width + x);
         if(index >= pixels.Length || index < 0) return false;
         pixels[index] = color;
         return true;

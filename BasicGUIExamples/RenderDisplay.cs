@@ -202,11 +202,11 @@ public sealed class RenderDisplay : IDisplay
     //INPUTS AND OUTPUTS
     public int GetMouseX()
     {
-        return (int)(IRender.CurrentRender.Mouse().X * IRender.CurrentRender.WindowSize().X);
+        return (int)(IRender.CurrentRender.Mouse().X);
     }
     public int GetMouseY()
     {
-        return (int)(IRender.CurrentRender.Mouse().Y * IRender.CurrentRender.WindowSize().Y);
+        return (int)(IRender.CurrentRender.Mouse().Y);
     }
     public string GetClipboard()
     {
