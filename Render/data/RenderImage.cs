@@ -52,14 +52,14 @@ public struct RenderImage
 
     public uint ReadPixel(int x, int y)
     {
-        int index = (int)(x*height + y);
+        int index = (int)((height-y)*width + x);
         if(index > pixels.Length || index < 0) return 0;
         return pixels[index];
     }
 
     public bool WritePixel(int x, int y, uint color)
     {
-        int index = (int)(y*width + x);
+        int index = (int)((height-y)*width + x);
         if(index >= pixels.Length || index < 0) return false;
         pixels[index] = color;
         return true;
