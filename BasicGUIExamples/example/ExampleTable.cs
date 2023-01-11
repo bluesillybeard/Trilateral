@@ -24,7 +24,7 @@ public class ExampleTable
         }
         RenderFont font = new RenderFont(render.LoadTexture("ascii.png"), shader);
 
-        //Create the thing that connects BasicGUI and Raylib together so they can talk to each other.
+        //Create the thing that connects BasicGUI and Render together so they can talk to each other.
         IDisplay display = new RenderDisplay();
         //a BasicGUIPlane is the main class responsible for, well, BasicGUI. You could make a RootNode directly, but I advise against it.
         BasicGUIPlane plane = new BasicGUIPlane(800, 600, display);
@@ -50,7 +50,7 @@ public class ExampleTable
         CenterContainer center = new CenterContainer(plane.GetRoot());
         new TextElement(center, 0xff3366ff, fontSize, "Mysteriously Centered Text", font, display);
 
-    render.OnRender += (delta) => {frame(delta, render, display, plane);};
+        render.OnRender += (delta) => {frame(delta, render, display, plane);};
         render.Run();
     }
 

@@ -17,4 +17,9 @@ public static class ExampleFunctions
     {
         Examples.ExampleTable.Run();
     }
+
+    public static void Typing()
+    {
+        Examples.ExampleTyping.Run();
+    }
 }
