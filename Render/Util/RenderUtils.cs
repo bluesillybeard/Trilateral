@@ -129,6 +129,7 @@ namespace Render
             }
             //TODO: update when adding new Render implementations
         }
+        //This method is a faster way for people who don't give a crap about error handling.
         public static IRender CreateIdealRenderOrDie(RenderSettings settings){
             IRender? render = CreateIdealRender(settings, out var e);
             if(render is null)

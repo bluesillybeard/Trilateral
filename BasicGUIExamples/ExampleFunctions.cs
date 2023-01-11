@@ -9,4 +9,8 @@ public static class ExampleFunctions
     {
         Examples.ExampleButton.Run();
     }
+    public static void Text()
+    {
+        Examples.ExampleText.Run();
+    }
 }

@@ -21,6 +21,7 @@ public sealed class BasicGUIPlane
     public void Draw()
     {
         _root.Draw(_display);
+        _display.EndFrame();
     }
 
     public RootContainer GetRoot(){

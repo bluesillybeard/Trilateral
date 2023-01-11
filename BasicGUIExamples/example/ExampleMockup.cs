@@ -52,6 +52,13 @@ public sealed class ExampleMockup
     public static void Run()
     {
         //initing stuff
+        RenderSettings settings = new RenderSettings()
+        {
+            Size = new Vector2i(800, 600),
+            WindowTitle = "I am a button. Press me.",
+            BackgroundColor = 0x000000FF,            
+        };
+
         IRender render = RenderUtils.CreateIdealRenderOrDie(new RenderSettings());
         IDisplay display = new RenderDisplay();
         BasicGUIPlane plane = new BasicGUIPlane(800, 600, display);
@@ -60,6 +67,7 @@ public sealed class ExampleMockup
         if(shader is null)throw new Exception("shader no do thing", error);
         var texture = render.LoadTexture("ascii.png"); //hmm, seems I still haven't error-proofed this one yet.
         RenderFont font = new RenderFont(texture, shader);
+        RenderDisplay.defaultFont = font;
 
         IContainerNode root = plane.GetRoot();
         //Now for the hard part, actually building it out lol.

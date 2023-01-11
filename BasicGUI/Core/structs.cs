@@ -19,6 +19,11 @@ public struct NodeBounds
         int yf = Y+H ?? 0;
         return xp > x0 && xp < xf && yp > y0 && yp < yf;
     }
+
+    public override string ToString()
+    {
+        return $"({X},{Y},{W},{H})";
+    }
 }
 
 public static class KeyConverter

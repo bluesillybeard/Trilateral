@@ -3,7 +3,7 @@ using Render;
 using Render.Util;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
-
+using System.Collections.Generic;
 //a Texture and Shader for rendering a font.
 public class RenderFont
 {
@@ -22,9 +22,12 @@ public sealed class RenderDisplay : IDisplay
     public static RenderFont defaultFont;
     #nullable enable
 
-    private static Vector2 ConvertPixelsToRender(int x, int y, Vector2 size)
+    private List<IRenderTextEntity?> texts = new List<IRenderTextEntity?>();
+    int textIndex = 0;
+
+    public void EndFrame()
     {
-        return new Vector2((2/size.X)+1, (-2/size.Y)+1);
+        textIndex = 0;
     }
     public void DrawPixel(int x, int y, uint rgb, byte depth = 0)
     {
@@ -149,21 +152,8 @@ public sealed class RenderDisplay : IDisplay
     //Draw using a default font
     public void DrawText(int fontSize, string text, NodeBounds bounds, uint rgba)
     {
-        IRender render = IRender.CurrentRender;
-        Vector2 size = render.WindowSize();
-        Vector3 textScales = new Vector3(1/size.X, -1/size.Y, 0);
-        Vector3 pos = new Vector3(ConvertPixelsToRender(bounds.X ?? 0, bounds.Y ?? 0, size));
-        EntityPosition entityPos = new EntityPosition(pos, Vector3.Zero, textScales);
-        //TODO: don't completely regenerate and reupload the text mesh every frame
-        var textMesh = MeshGenerators.BasicText(text, false, false, out var error);
-        //THIS is how error handling should be done! Screw exceptions!
-        if(textMesh is null)
-        {
-            System.Console.WriteLine(error);
-            return;
-        }
-        var renderTextMesh = render.LoadMesh(textMesh.Value);
-        render.RenderMeshDirect(entityPos, defaultFont.shader, renderTextMesh, defaultFont.texture, false);
+        //Draw text with default font.
+        DrawText(defaultFont, fontSize, text, bounds, rgba);
     }
     //set the rendered size of a text element using the default font.
     public void TextBounds(int fontSize, string text, out int width, out int height)
@@ -178,19 +168,44 @@ public sealed class RenderDisplay : IDisplay
         RenderFont rFont = (RenderFont) font;
         IRender render = IRender.CurrentRender;
         Vector2 size = render.WindowSize();
-        Vector3 textScales = new Vector3(1/size.X, -1/size.Y, 0);
-        Vector3 pos = new Vector3(ConvertPixelsToRender(bounds.X ?? 0, bounds.Y ?? 0, size));
-        EntityPosition entityPos = new EntityPosition(pos, Vector3.Zero, textScales);
-        //TODO: don't completely regenerate and reupload the text mesh every frame
-        var textMesh = MeshGenerators.BasicText(text, false, false, out var error);
-        //THIS is how error handling should be done! Screw exceptions!
-        if(textMesh is null)
+        //This sure took a LOOONG time.
+        // I eventually gave up doing it in my head and made a Desmos graph to help me out.
+        // here is the link if you're curious:https://www.desmos.com/calculator/gezhhwxq3y
+        Vector3 scale = new Vector3(1/size.X, 1/size.Y, 0);
+        //find the location
+        Vector3 location = new Vector3(
+            2*scale.X*(bounds.X??0)-1,
+            -2*scale.Y*(bounds.Y??0)+1,
+            0
+        );
+        //and the actual scale
+        Vector3 renderScale = new Vector3(
+            2*fontSize*scale.X,
+            2*fontSize*scale.Y,
+            1
+        );
+        //put all that into an EntityPosition for the IRender.
+        EntityPosition pos = new EntityPosition(
+            location,
+            Vector3.Zero,
+            renderScale
+        );
+        if(texts.Count == textIndex)texts.Add(null);
+        if(texts[textIndex] is not null)
         {
-            System.Console.WriteLine(error);
-            return;
+            //override an existing text element
+            // Manually disable nullables because the compiler isn't smart enough to see that it's not null.
+            #nullable disable
+            texts[textIndex].Text = text;
+            texts[textIndex].Position = pos;
+            #nullable enable
         }
-        var renderTextMesh = render.LoadMesh(textMesh.Value);
-        render.RenderMeshDirect(entityPos, rFont.shader, renderTextMesh, rFont.texture, false);
+        else
+        {
+            texts[textIndex] = render.SpawnTextEntity(pos, text, false, false, rFont.shader, rFont.texture, false, null);
+        }
+
+        textIndex++;
     }
     public void TextBounds(object font, int fontSize, string text, out int width, out int height)
     {

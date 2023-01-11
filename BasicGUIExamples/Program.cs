@@ -15,7 +15,7 @@ public sealed class Program
         int index = -1;
         do
         {
-            string? text = System.Console.ReadLine();
+            string? text = "2";///System.Console.ReadLine();
             if(text is null){System.Console.WriteLine("null line!");error=true;continue;}
             error = !int.TryParse(text, out index);
             if(error){System.Console.WriteLine("Not a number apparently");error=true;continue;}

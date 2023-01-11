@@ -48,27 +48,12 @@ namespace Render.GL33{
         public void Reload(RenderImage image){
             LoadTexture(image);
         }
-        public GL33Texture(float r, float g, float b, float a){
-            // Generate handle
-            _id = GL.GenTexture();
-
-            // Bind the handle
-            GL.ActiveTexture(TextureUnit.Texture0);
-            GL.BindTexture(TextureTarget.Texture2D, _id);
-            //upload the "texture" (single color)
-            GL.TexImage2D(TextureTarget.Texture2D,
-                0,
-                PixelInternalFormat.Rgba,
-                2,
-                2,
-                0,
-                PixelFormat.Rgba,
-                PixelType.UnsignedByte,
-                new float[]{r, g, b, a, r, g, b, a, r, g, b, a, r, g, b, a, });
-
-            SetParametersAndGenerateMipmaps();        
+        public GL33Texture(float r, float g, float b, float a)
+        {
+            RenderImage image = new RenderImage(20, 20);
+            image.WritePixel(0, 0, RenderImage.RGBAFromColor((byte)(r*256),(byte)(g*256),(byte)(b*256),(byte)(a*256)));
+            LoadTexture(image);
         }
-
         private void LoadTexture(ImageResult img){
             // Generate handle
             _id = GL.GenTexture();

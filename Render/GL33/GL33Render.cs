@@ -462,6 +462,7 @@ namespace Render.GL33{
 
             //Render entities from the RenderEntityDirect method
             foreach(GL33Entity entity in _directEntities){
+                if(entity is null)continue;
                 entity._mesh.Bind();
                 entity._texture.Use(TextureUnit.Texture0);
                 entity._shader.Use();
@@ -475,10 +476,8 @@ namespace Render.GL33{
                     currentView.Row2*weight + entity.lastTransform.Row2*rweight,
                     currentView.Row3*weight + entity.lastTransform.Row3*rweight
                 );
-
                 entity._shader.SetMatrix4("model", interpolatedEntityView, false);
                 entity._shader.SetMatrix4("camera", interpolatedCamera, false);
-
                 if(entity._depthTest)GL.Enable(EnableCap.DepthTest);
                 else GL.Disable(EnableCap.DepthTest);
                 GL.DrawElements(BeginMode.Triangles, entity._mesh.ElementCount()*3, DrawElementsType.UnsignedInt, 0);

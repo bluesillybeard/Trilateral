@@ -20,6 +20,7 @@ public interface IDisplay
         rgba |= (uint)(a>>24);
         return rgba;
     }
+    void EndFrame();
     //DRAW METHODS
     void DrawPixel(int x, int y, uint rgb, byte depth = 0);
     void FillRect(int x0, int y0, int x1, int y1, uint rgb, byte depth = 0);
