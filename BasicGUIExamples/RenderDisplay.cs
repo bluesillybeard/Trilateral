@@ -211,7 +211,7 @@ public sealed class RenderDisplay : IDisplay
     {
         //For the time being, Voxelesque's text rendering is extremely simplistic - every character is a square.
         // The rendered size of text in pixels is fairly simple to compute.
-        width = text.Length*fontSize;
+        width = (text.Length-1)*fontSize;
         height = fontSize;
     }
     //INPUTS AND OUTPUTS

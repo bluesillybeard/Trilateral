@@ -48,7 +48,7 @@ using Render;
 using OpenTK.Mathematics;
 public sealed class ExampleMockup
 {
-    const int fontSize = 30;
+    const int fontSize = 15;
     public static void Run()
     {
         //initing stuff
@@ -56,7 +56,8 @@ public sealed class ExampleMockup
         {
             Size = new Vector2i(800, 600),
             WindowTitle = "I am a button. Press me.",
-            BackgroundColor = 0x000000FF,            
+            BackgroundColor = 0x000000FF,
+            TargetFrameTime = 1/60f,
         };
 
         IRender render = RenderUtils.CreateIdealRenderOrDie(new RenderSettings());

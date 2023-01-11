@@ -13,4 +13,8 @@ public static class ExampleFunctions
     {
         Examples.ExampleText.Run();
     }
+    public static void Table()
+    {
+        Examples.ExampleTable.Run();
+    }
 }
