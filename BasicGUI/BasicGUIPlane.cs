@@ -20,6 +20,7 @@ public sealed class BasicGUIPlane
 
     public void Draw()
     {
+        _display.BeginFrame();
         _root.Draw(_display);
         _display.EndFrame();
     }

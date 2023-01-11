@@ -55,12 +55,13 @@ public sealed class ExampleMockup
         RenderSettings settings = new RenderSettings()
         {
             Size = new Vector2i(800, 600),
-            WindowTitle = "I am a button. Press me.",
+            WindowTitle = "a GUI mockup example",
             BackgroundColor = 0x000000FF,
             TargetFrameTime = 1/60f,
+            VSync = false,
         };
 
-        IRender render = RenderUtils.CreateIdealRenderOrDie(new RenderSettings());
+        IRender render = RenderUtils.CreateIdealRenderOrDie(settings);
         IDisplay display = new RenderDisplay();
         BasicGUIPlane plane = new BasicGUIPlane(800, 600, display);
         //We also need to load a font, which requires a shader and a texture.

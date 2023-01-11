@@ -20,6 +20,9 @@ public interface IDisplay
         rgba |= (uint)(a>>24);
         return rgba;
     }
+    //call before ANYTHING gets rendered
+    void BeginFrame();
+    //call after drawing everything.
     void EndFrame();
     //DRAW METHODS
     void DrawPixel(int x, int y, uint rgb, byte depth = 0);

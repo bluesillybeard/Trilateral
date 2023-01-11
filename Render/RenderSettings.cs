@@ -14,9 +14,6 @@ namespace Render{
             WindowTitle = "Voxelesque window";
             BackgroundColor = 0x666666ff;
         }
-
-        //Make any non-default value using the curly brace syntax.
-
         public Vector2i Size;
 
         ///<summary>contains the starting assets directory</summary>

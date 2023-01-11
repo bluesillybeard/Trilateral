@@ -24,10 +24,17 @@ public sealed class RenderDisplay : IDisplay
 
     private List<IRenderTextEntity?> texts = new List<IRenderTextEntity?>();
     int textIndex = 0;
-
-    public void EndFrame()
+    public void BeginFrame()
     {
         textIndex = 0;
+        //scale the texts into nothing, so they don't reside in view if they stop being rendered/overriden.
+        foreach(IRenderTextEntity? text in texts)
+        {
+            if(text is not null)text.Scale = Vector3.Zero;
+        }
+    }
+    public void EndFrame()
+    {
     }
     public void DrawPixel(int x, int y, uint rgb, byte depth = 0)
     {
@@ -211,8 +218,19 @@ public sealed class RenderDisplay : IDisplay
     {
         //For the time being, Voxelesque's text rendering is extremely simplistic - every character is a square.
         // The rendered size of text in pixels is fairly simple to compute.
-        width = text.Length*fontSize;
-        height = fontSize;
+        
+        // This only works for text elements that are one line.
+        //width = text.Length*fontSize;
+        //height = fontSize;
+        width = 0;
+        height = 0;
+        string[] lines = text.Split('\n');
+        height = lines.Length*fontSize;
+        foreach(string line in lines)
+        {
+            int lineWidth = line.Length * fontSize;
+            if(lineWidth > width)width = lineWidth;
+        }
     }
     //INPUTS AND OUTPUTS
     public int GetMouseX()
@@ -437,7 +455,7 @@ public sealed class RenderDisplay : IDisplay
             case KeyCode.backSlash: return Keys.Backslash;
             case KeyCode.bracketRight: return Keys.RightBracket;
             case KeyCode.quote: return Keys.Apostrophe;
-            default: return Keys.Unknown;
+            default: return 0; //I would return Keys.Unknown, however OpenTK doesn't handle that case.
         }
     }
 }

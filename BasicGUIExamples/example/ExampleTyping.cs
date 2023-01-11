@@ -28,20 +28,25 @@ public class ExampleTyping
 
         BasicGUIPlane plane = new BasicGUIPlane(800, 600, display);
         CenterContainer container = new CenterContainer(plane.GetRoot());
-        TextBoxElement textBox = new TextBoxElement(container, 40, 0xffffffff, font, display);
+        TextBoxElement textBox = new TextBoxElement(container, 20, 0xffffffff, font, display);
 
         //main loop.
         render.OnRender += (delta) => {frame(delta, render, display, plane);};
+        render.OnUpdate += (delta) => {Update(delta, render, display, plane);};
         render.Run();
     }
 
     private static void frame(double delta, IRender render, IDisplay display, BasicGUIPlane plane)
     {
-        //the RenderDisplay talks to the Render for us.
+        //draw the stuff
+        plane.Draw();
+    }
+    private static void Update(double delta, IRender render, IDisplay display, BasicGUIPlane plane)
+    {
+        //Update things.
         Vector2 size = render.WindowSize();
         plane.SetSize((int)size.X, (int)size.Y);
         plane.Iterate();
-        plane.Draw();
     }
     static void ButtonFrame(ButtonElement button)
     {

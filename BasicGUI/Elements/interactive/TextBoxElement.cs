@@ -7,6 +7,7 @@ using System.Text;
 using System;
 
 //This class represents a text box.
+// It's a container since it needs to hold a TextElement and a background.
 public sealed class TextBoxElement : IContainerNode
 {
     public INode? back; //This is the element that actually gets drawn as the text background.
@@ -64,9 +65,9 @@ public sealed class TextBoxElement : IContainerNode
             char? c = KeyConverter.KeyDown(key, caps, shift, num);
             if(c is not null)
             {
-                System.Console.Write(c);
-                System.Console.Write(' ');
-                System.Console.WriteLine((int)c);
+                //System.Console.Write(c);
+                //System.Console.Write(' ');
+                //System.Console.WriteLine((int)c);
                 switch(c)
                 {
                     case '\b':
