@@ -169,8 +169,14 @@ namespace Render.GL33{
         }
         //textures
 
-        public IRenderTexture LoadTexture(string path){
-            return new GL33Texture(path);
+        public IRenderTexture? LoadTexture(string path, out Exception? error){
+            try{
+                error = null;
+                return new GL33Texture(path);
+            } catch (Exception e){
+                error = e;
+                return null;
+            }
         }
 
         public IRenderTexture LoadTexture(ImageResult image){

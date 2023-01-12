@@ -22,7 +22,9 @@ public class ExampleTyping
         if(shader is null){
             throw new Exception("lol shader no work", err);
         }
-        RenderFont font = new RenderFont(render.LoadTexture("ascii.png"), shader);
+        var texture = render.LoadTexture("ascii.png", out err);
+        if(texture is null)throw new Exception("can't load ascii.png", err);
+        RenderFont font = new RenderFont(texture, shader);
         //Create the thing that connects BasicGUI and Render together so they can talk to each other.
         IDisplay display = new RenderDisplay();
 

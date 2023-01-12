@@ -64,7 +64,8 @@ namespace Voxelesque.Game
             if(err0 != null)RenderUtils.PrintErrLn(err0);
             cameralessShader = render.LoadShader("Resources/Shaders/cameraless", out var err);
             if(err != null)RenderUtils.PrintErrLn(err);
-            ascii = render.LoadTexture("Resources/ASCII-Extended.png");
+            ascii = render.LoadTexture("Resources/ASCII-Extended.png", out err);
+            if(err != null)RenderUtils.PrintErrLn(err);
             debugText = render.SpawnTextEntity(new EntityPosition(-Vector3.UnitX+Vector3.UnitY,Vector3.Zero,Vector3.One/30), "B", false, false, cameralessShader, ascii, true, null);
 
             

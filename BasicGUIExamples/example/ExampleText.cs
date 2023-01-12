@@ -20,8 +20,9 @@ public class ExampleText
         //We also need to load a font, which requires a shader and a texture.
         var shader = render.LoadShader("gui", out var error);
         if(shader is null)throw new Exception("shader no do thing", error);
-        var texture = render.LoadTexture("ascii.png"); //hmm, seems I still haven't error-proofed this one yet.
-        RenderFont font = new RenderFont(texture, shader);
+        var texture = render.LoadTexture("ascii.png", out error);
+        if(texture is null)throw new Exception("can't load ascii.png", error);
+                RenderFont font = new RenderFont(texture, shader);
 
         CenterContainer container = new CenterContainer(plane.GetRoot());
         TextElement text = new TextElement(container, 0xFFFFFF, 20, "I am text. Aren't I great?", font, display);

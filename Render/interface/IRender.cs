@@ -68,7 +68,7 @@ namespace Render{
         Supports png, jpg, jpeg, qoi, vqoi
         </summary>
         */
-        IRenderTexture LoadTexture(string filePath);
+        IRenderTexture? LoadTexture(string filePath, out Exception? error);
 
         /**
         <summary>
