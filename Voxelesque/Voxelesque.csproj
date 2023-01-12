@@ -8,7 +8,7 @@
 
   <ItemGroup>
   <!--Libraries that I created or modified for use in this project on;y-->
-    <ProjectReference Include="../vmodel/vmodel.csproj" /> <!-- custom library to load custom model format-->
+    <ProjectReference Include="../VModel/VModel.csproj" /> <!-- custom library to load custom model format-->
     <ProjectReference Include="../Render/Render.csproj" /> <!--Voxelesque's custom rendering API. It's not really an engine as much as it is a graphics library.-->
   </ItemGroup>
 

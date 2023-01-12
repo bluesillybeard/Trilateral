@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../vmodel/vmodel.csproj" /><!-- custom library to load custom model format-->
+    <ProjectReference Include="../VModel/VModel.csproj" /><!-- custom library to load custom model format-->
   </ItemGroup>
 
   <ItemGroup>
