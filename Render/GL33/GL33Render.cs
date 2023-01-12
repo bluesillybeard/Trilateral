@@ -109,7 +109,6 @@ namespace Render.GL33{
                 bool didSomething = false;
                 long time = DateTime.Now.Ticks; //10.000 ticks is 1ms. 10.000.000 ticks is 1s.
                 if(time - lastRenderTime > 10_000_000*_settings.TargetFrameTime){
-                    System.Console.WriteLine("frame");
                     Render(lastRenderTime, time);
                     lastRenderTime = time;
                     didSomething = true;
