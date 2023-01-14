@@ -209,7 +209,7 @@ public sealed class RenderDisplay : IDisplay
         }
         else
         {
-            texts[textIndex] = render.SpawnTextEntity(pos, text, false, false, rFont.shader, rFont.texture, false, null);
+            texts[textIndex] = render.SpawnTextEntity(pos, text, false, false, rFont.shader, rFont.texture, true, null);
         }
 
         textIndex++;
