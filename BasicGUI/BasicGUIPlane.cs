@@ -36,4 +36,8 @@ public sealed class BasicGUIPlane
     }
     private RootContainer _root;
     private IDisplay _display;
+    public IDisplay GetDisplay()
+    {
+        return _display;
+    }
 }

@@ -8,6 +8,9 @@ using VRender;
 using System;
 
 using vmodel;
+
+using BasicGUI;
+using BasicGUI.Core;
 public sealed class Voxelesque
 {
 
@@ -17,7 +20,6 @@ public sealed class Voxelesque
     VMesh cpuMesh;
     IRenderShader shader;
     IRenderShader cameralessShader;
-    IRenderTextEntity debugText;
     IRenderTexture grass;
     IRenderTexture ascii;
     Random random;
@@ -26,6 +28,8 @@ public sealed class Voxelesque
 
     RenderCamera camera;
 
+    BasicGUIPlane gui;
+    TextElement debug;
     int frames;
     public Voxelesque()
     {
@@ -57,9 +61,7 @@ public sealed class Voxelesque
         IRenderTexture? ascii = render.LoadTexture("Resources/ASCII-Extended.png", out e);
         if(ascii is null)throw new Exception("Could noat load ascii texture", e);
         this.ascii = ascii;
-        debugText = render.SpawnTextEntity(new EntityPosition(-Vector3.UnitX+Vector3.UnitY,Vector3.Zero,Vector3.One/30), "B", false, false, cameralessShader, ascii, true, null);
 
-        
         grass = model.texture;
 
         camera = render.SpawnCamera(new Vector3(0, 0, 0), new Vector3(0, 0, 0), 90);
@@ -70,6 +72,14 @@ public sealed class Voxelesque
 
         render.OnUpdate += update; //subscribe the the update event
         render.OnRender += Render;
+        RenderDisplay.defaultFont = new RenderFont(ascii, cameralessShader);
+        gui = new BasicGUIPlane(settings.Size.X, settings.Size.Y, new RenderDisplay());
+
+        LayoutContainer tl = new LayoutContainer(gui.GetRoot(), VAllign.top, HAllign.left);
+        gui.AddContainer(tl);
+        debug = new TextElement(tl, 0xFFFFFFFF, 15, "", RenderDisplay.defaultFont, gui.GetDisplay());
+        tl.AddChild(debug);
+
     }
 
     public void Run()
@@ -78,10 +88,10 @@ public sealed class Voxelesque
     }
     void update(double d){
         time += d;
-        debugText.Text = "Entities: " + render.EntityCount() + "\n"
+        debug.SetText("Entities: " + render.EntityCount() + "\n"
             + "Camera Position: " + camera.Position + '\n'
             + "Camera Rotation: " + camera.Rotation + '\n'
-            + "FPS: " + (int)(frames/d);
+            + "FPS: " + (int)(frames/d));
         frames = 0;
 
         //sillyText.RotationY += (float)(Math.Sin(time*2/10)*Math.Sin(time*3/10))/20;
@@ -136,9 +146,13 @@ public sealed class Voxelesque
         if (render.CursorLocked || mouse.IsButtonDown(MouseButton.Right)) {
             camera.Rotation += new Vector3((mouse.Y - mouse.PreviousY) * sensitivity, (mouse.X - mouse.PreviousX) * sensitivity, 0);
         }
+        gui.Iterate();
+        Vector2i size = render.WindowSize();
+        gui.SetSize(size.X, size.Y);
     }
 
     void Render(double d){
+        gui.Draw();
         frames++;
     }
 }
