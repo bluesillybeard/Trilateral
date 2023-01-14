@@ -1,6 +1,6 @@
 #compiled code
-*/bin/
-*/obj/
+**/bin/
+**/obj/
 #vscode stuff
 .vscode/
 #"test" code, stuff that isn't actually related to the project, but rather for testing random stuff that nobody really cares about.

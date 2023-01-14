@@ -1,3 +1,6 @@
 [submodule "VModel"]
 	path = VModel
 	url = https://github.com/bluesillybeard/VModel
+[submodule "VRender"]
+	path = VRender
+	url = https://github.com/bluesillybeard/VRender
