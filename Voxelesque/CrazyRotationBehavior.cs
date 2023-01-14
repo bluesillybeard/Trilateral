@@ -1,6 +1,6 @@
 namespace Voxelesque.Game;
 
-using Render;
+using VRender;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using OpenTK.Mathematics;
 using vmodel;

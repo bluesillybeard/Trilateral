@@ -2,7 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\BasicGUI\BasicGUI.csproj" />
-    <ProjectReference Include="..\Render\Render.csproj" />
+    <ProjectReference Include="..\VRender\VRender.csproj" />
   </ItemGroup>
 
   <ItemGroup>

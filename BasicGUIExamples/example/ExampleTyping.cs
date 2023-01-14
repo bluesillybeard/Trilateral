@@ -3,7 +3,7 @@
 using BasicGUI;
 using BasicGUI.Core;
 
-using Render;
+using VRender;
 
 using OpenTK.Mathematics;
 public class ExampleTyping

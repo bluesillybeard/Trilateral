@@ -1,6 +1,6 @@
 using BasicGUI.Core;
-using Render;
-using Render.Util;
+using VRender;
+using VRender.Util;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using System.Collections.Generic;
