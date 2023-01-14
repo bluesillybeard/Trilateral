@@ -11,9 +11,4 @@
     <ProjectReference Include="../VModel/VModel.csproj" /> <!-- custom library to load custom model format-->
     <ProjectReference Include="../VRender/VRender.csproj" /> <!--Voxelesque's custom rendering API. It's not really an engine as much as it is a graphics library.-->
   </ItemGroup>
-
-  <ItemGroup>
-    <!--Libraries that I am using for this project.-->
-    <PackageReference Include="OpenTK" Version="4.4.0" /> <!--Voxelesque Render isn't an all-encompassing library. It requires certain classes and structs from OpenTK to function.-->
-  </ItemGroup>
 </Project>
