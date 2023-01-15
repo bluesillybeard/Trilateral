@@ -6,4 +6,4 @@
 	url = https://github.com/bluesillybeard/VRender
 [submodule "BasicGUI"]
 	path = BasicGUI
-	url = https://github.com/bluesillybeard/JustBasicGUI
+	url = https://github.com/bluesillybeard/BasicGUI
