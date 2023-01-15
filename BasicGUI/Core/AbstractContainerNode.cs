@@ -5,12 +5,15 @@ using System.Numerics;
 public abstract class AbstractContainerNode : IContainerNode
 {
     public AbstractContainerNode(IContainerNode parent) : this(parent, new List<INode>()){}
-    public AbstractContainerNode(IContainerNode parent, List<INode> children)
+    public AbstractContainerNode(IContainerNode parent, bool shrink) : this(parent, new List<INode>(), shrink){}
+    public AbstractContainerNode(IContainerNode parent, List<INode> children, bool shrink = true)
     {
         _children = children;
         _parent = parent;
+        this.shrink = shrink;
         parent.AddChild(this);
     }
+    public bool shrink; //weather or not to shrink the bounds of this container to the elements it contains.
     //IMPORTANT: Custom nodes that use this class as a base MUST implement this function. No exceptions.
     protected abstract void PositionChildren();
     public IContainerNode GetParent() => _parent;
@@ -53,7 +56,7 @@ public abstract class AbstractContainerNode : IContainerNode
             }
         }
         PositionChildren(); //This is implemented by subclasses.
-        DetermineBounds();
+        if(shrink)DetermineBounds();
     }
 
     public virtual void Absolutize()

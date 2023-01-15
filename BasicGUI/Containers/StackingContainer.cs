@@ -3,7 +3,7 @@ namespace BasicGUI;
 
 using BasicGUI.Core;
 
-//Similar to Godot's HBoxContainer or VBoxContainer, except the direction is a variable rather than a completely separate class.
+//Similar to Godots HBoxContainer or VBoxContainer, except the direction is a variable rather than a completely separate class.
 public enum StackDirection
 {
     up, left, down, right
@@ -62,8 +62,6 @@ public sealed class StackingContainer : AbstractContainerNode
                 }
                 break;
             }
-            //Don't you just love a good pile of brackets? xD
-            {{{{{}}}}}{{}{{{{}}}}{{{}{{}}{{}{{{{}{}}}}{{}}}}{{{}}}}}{{{}}{{}{{}}}{{{{{}}{}{}{{{}{}{}{}{}}{}{{}}{}{}{}{}{}{{}}}}}}{{}}}
         }
     }
 }
