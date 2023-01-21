@@ -1,9 +1,12 @@
-using BasicGUI.Core;
 using VRender;
+using VRender.Util;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
-using System;
 using System.Collections.Generic;
+using System;
+using BasicGUI;
+
+namespace Voxelesque;
 //a Texture and Shader for rendering a font.
 public class RenderFont
 {
@@ -18,9 +21,12 @@ public class RenderFont
 
 public sealed class RenderDisplay : IDisplay
 {
-    #nullable disable
-    public static RenderFont defaultFont;
-    #nullable enable
+
+    public RenderDisplay(RenderFont defaultFont)
+    {
+        this.defaultFont = defaultFont;
+    }
+    public RenderFont defaultFont;
 
     private List<IRenderTextEntity?> texts = new List<IRenderTextEntity?>();
     int textIndex = 0;
@@ -54,6 +60,7 @@ public sealed class RenderDisplay : IDisplay
             y0 = y1;
             y1 = temp;
         }
+        
         for(int xi=x0; xi<x1; xi++)
         {
             for(int yi=y0; yi<y1; yi++)
@@ -157,10 +164,10 @@ public sealed class RenderDisplay : IDisplay
         IRender.CurrentRender.DrawTextureDirect(renderImage, x, y, width, height, srcx, srcy, srcwidth, srcheight);
     }
     //Draw using a default font
-    public void DrawText(int fontSize, string text, NodeBounds bounds, uint rgba)
+    public void DrawText(int fontSize, string text, NodeBounds bounds, uint rgba, byte depth)
     {
         //Draw text with default font.
-        DrawText(defaultFont, fontSize, text, bounds, rgba);
+        DrawText(defaultFont, fontSize, text, bounds, rgba, depth);
     }
     //set the rendered size of a text element using the default font.
     public void TextBounds(int fontSize, string text, out int width, out int height)
@@ -170,7 +177,7 @@ public sealed class RenderDisplay : IDisplay
         width = text.Length*fontSize;
         height = fontSize;
     }
-    public void DrawText(object font, int fontSize, string text, NodeBounds bounds, uint rgba)
+    public void DrawText(object font, int fontSize, string text, NodeBounds bounds, uint rgba, byte depth)
     {
         RenderFont rFont = (RenderFont) font;
         IRender render = IRender.CurrentRender;
@@ -209,7 +216,7 @@ public sealed class RenderDisplay : IDisplay
         }
         else
         {
-            texts[textIndex] = render.SpawnTextEntity(pos, text, false, false, rFont.shader, rFont.texture, true, null);
+            texts[textIndex] = render.SpawnTextEntity(pos, text, false, false, rFont.shader, rFont.texture, false, null);
         }
 
         textIndex++;

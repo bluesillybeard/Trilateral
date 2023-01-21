@@ -10,7 +10,6 @@ using System;
 using vmodel;
 
 using BasicGUI;
-using BasicGUI.Core;
 public sealed class Voxelesque
 {
 
@@ -72,12 +71,12 @@ public sealed class Voxelesque
 
         render.OnUpdate += update; //subscribe the the update event
         render.OnRender += Render;
-        RenderDisplay.defaultFont = new RenderFont(ascii, cameralessShader);
-        gui = new BasicGUIPlane(settings.Size.X, settings.Size.Y, new RenderDisplay());
+        RenderFont font = new RenderFont(ascii, cameralessShader);
+        gui = new BasicGUIPlane(settings.Size.X, settings.Size.Y, new RenderDisplay(font));
 
         LayoutContainer tl = new LayoutContainer(gui.GetRoot(), VAllign.top, HAllign.left);
         gui.AddContainer(tl);
-        debug = new TextElement(tl, 0xFFFFFFFF, 15, "", RenderDisplay.defaultFont, gui.GetDisplay());
+        debug = new TextElement(tl, 0xFFFFFFFF, 15, "", font, gui.GetDisplay(), 0);
         tl.AddChild(debug);
 
     }
