@@ -40,14 +40,14 @@ public sealed class Voxelesque
 
         //initial loading stuff here - move to update method and make asynchronous when loading bar is added
 
-        VModel? grassCubeModel = VModelUtils.LoadModel("Resources/vmf/models/GrassCube.vmf", out var errors);
+        VModel? grassCubeModel = VModelUtils.LoadModel("Resources/containerizedModels/raptor/model.vmf", out var errors);
 
         if(grassCubeModel is null)
         {
             string errories;
             if(errors is not null) errories = string.Join("/n", errors);
             else errories = "";
-            throw new Exception("Error loading grass cube model:" + errories);
+            throw new Exception("Error loading model:" + errories);
         }
         cpuMesh = grassCubeModel.Value.mesh;
         model = render.LoadModel(grassCubeModel.Value);

@@ -1,0 +1,3 @@
+type: entity
+mesh: mesh.vmesh
+texture: texture.png
