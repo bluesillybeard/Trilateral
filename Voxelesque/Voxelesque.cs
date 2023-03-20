@@ -16,11 +16,11 @@ using vmodel;
 using BasicGUI;
 public sealed class Voxelesque
 {
-
     DateTime time;
     IRenderTexture ascii;
     Random random;
     Camera camera;
+    Matrix4 previousCameraTransform;
     BasicGUIPlane gui;
     TextElement debug;
     int frames;
@@ -49,15 +49,28 @@ public sealed class Voxelesque
             + "FPS: " + (int)(frames/(delta.Ticks)/10_000_000d));
         frames = 0;
 
+        UpdateCamera(delta);
+        gui.Iterate();
+        Vector2i size = VRenderLib.Render.WindowSize();
+        gui.SetSize(size.X, size.Y);
+    }
+
+    void Render(TimeSpan delta){
+        VRenderLib.Render.BeginRenderQueue();
+        gui.Draw();
+        VRenderLib.Render.EndRenderQueue();
+        frames++;
+    }
+
+    void UpdateCamera(TimeSpan delta)
+    {
+        previousCameraTransform = camera.GetTransform();
         KeyboardState keyboard = VRenderLib.Render.Keyboard();
         MouseState mouse = VRenderLib.Render.Mouse();
-
-        
         if (keyboard.IsKeyReleased(Keys.C))
         {
             VRenderLib.Render.CursorLocked  = !VRenderLib.Render.CursorLocked;
         }
-
         Vector3 cameraInc = new Vector3();
         if (keyboard.IsKeyDown(Keys.W)) {
             cameraInc.Z = -1;
@@ -77,24 +90,11 @@ public sealed class Voxelesque
         // Update camera position
         float cameraSpeed = 1f / 6f;
         if(keyboard.IsKeyDown(Keys.LeftShift)) cameraSpeed = 1f;
-
         camera.Move(cameraInc * cameraSpeed);
-
-        // Update camera baseda on mouse
+        // Update camera based on mouse
         float sensitivity = 0.5f;
-
         if (VRenderLib.Render.CursorLocked || mouse.IsButtonDown(MouseButton.Right)) {
             camera.Rotation += new Vector3((mouse.Y - mouse.PreviousY) * sensitivity, (mouse.X - mouse.PreviousX) * sensitivity, 0);
         }
-        gui.Iterate();
-        Vector2i size = VRenderLib.Render.WindowSize();
-        gui.SetSize(size.X, size.Y);
-    }
-
-    void Render(TimeSpan delta){
-        VRenderLib.Render.BeginRenderQueue();
-        gui.Draw();
-        VRenderLib.Render.EndRenderQueue();
-        frames++;
     }
 }
