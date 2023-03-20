@@ -1,149 +1,152 @@
 using VRender;
-using VRender.Util;
+using VRender.Interface;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
-using System.Collections.Generic;
 using System;
+using System.Linq;
+using System.Collections.Generic;
 using BasicGUI;
+using vmodel;
 
 namespace Voxelesque;
-//a Texture and Shader for rendering a font.
-public class RenderFont
-{
-    public RenderFont(IRenderTexture fontTexture, IRenderShader fontShader)
-    {
-        texture = fontTexture;
-        shader  = fontShader;
-    }
-    public IRenderTexture texture;
-    public IRenderShader shader;
-}
 
 public sealed class RenderDisplay : IDisplay
 {
 
-    public RenderDisplay(RenderFont defaultFont)
+    public RenderDisplay(IRenderTexture defaultFontTexture)
     {
-        this.defaultFont = defaultFont;
+        this.defaultFont = defaultFontTexture;
+        //position, textureCoords, color, blend between using the texture and using the color
+        mesh = new MeshBuilder(new Attributes(new EAttribute[]{EAttribute.position, EAttribute.textureCoords, EAttribute.rgbaColor, EAttribute.scalar}));
+        //first shader, for drawing colored objects
+        shader = VRenderLib.Render.GetShader(
+            //vertex shader code
+            @"
+            #version 330 core
+            layout (location=0) in vec3 position;
+            layout (location=1) in vec2 texCoords;
+            layout (location=2) in vec4 rgba;
+            layout (location=3) in float blend;
+            //we don't apply any transform at all
+            out vec4 fragColor;
+            out vec2 texCoordsOut;
+            out float fragBlend;
+            void main()
+            {
+                fragBlend = blend;
+                fragColor = rgba;
+                texCoordsOut = texCoords;
+                gl_Position = vec4(position, 1.0);
+            }
+            ",
+            //fragment shader code - this is where some stuff happens
+            @"
+            #version 330 core
+            out vec4 pixelOut;
+            in vec4 fragColor;
+            in vec2 texCoordsOut;
+            in float fragBlend;
+            uniform sampler2D tex;
+            void main()
+            {
+                vec4 texColor = texture(tex, texCoordsOut);
+                //blend between the two colors
+                pixelOut = mix(texColor, fragColor, fragBlend);
+                if(pixelOut.a < 0.9)discard; //discard pixels with any level of transparency at all.
+            }
+            ",
+            mesh.attributes
+            );
     }
-    public RenderFont defaultFont;
+    //default font for text rendering
+    public IRenderTexture defaultFont;
 
-    private List<IRenderTextEntity?> texts = new List<IRenderTextEntity?>();
-    int textIndex = 0;
+    private MeshBuilder mesh;
+    private IRenderShader shader;
+    private IRenderMesh? renderMesh;
     public void BeginFrame()
     {
-        textIndex = 0;
-        //scale the texts into nothing, so they don't reside in view if they stop being rendered/overriden.
-        foreach(IRenderTextEntity? text in texts)
-        {
-            if(text is not null)text.Scale = Vector3.Zero;
-        }
+        mesh.Clear();
+        if(renderMesh != null)renderMesh.Dispose();
     }
     public void EndFrame()
     {
+        //TODO: reuse mesh buffer
+        //TODO: ability to use non-default font
+        var vmesh = mesh.ToMesh();
+        if(vmesh.vertices.Length % mesh.attributes.TotalAttributes() != 0)
+        {
+            System.Console.Error.WriteLine("bro this aint right");
+        }
+        renderMesh = VRenderLib.Render.LoadMesh(vmesh);
+        VRenderLib.Render.Draw(
+            defaultFont, renderMesh, shader, Enumerable.Empty<KeyValuePair<string, object>>(), false
+        );
+
     }
     public void DrawPixel(int x, int y, uint rgb, byte depth = 0)
     {
-        IRender.CurrentRender.WritePixelDirect(rgb, x, y);
+        (var glX, var glY) = PixelToGL(x, y);
+        (var glXp, var glYp) = PixelToGL(x+1, y+1);
+        VRenderLib.ColorFromRGBA(out var r, out byte g, out byte b, out byte a, rgb);
+        //We can get away with drawing a single triangle
+        mesh.AddVertex(glX, glY, 0, 0, 0.5f, r/256f, g/256f, b/256f, a/256f, 1);
+        mesh.AddVertex(glX, glYp, 0, 0, 0.5f, r/256f, g/256f, b/256f, a/256f, 1);
+        mesh.AddVertex(glXp, glY, 0, 0, 0.5f, r/256f, g/256f, b/256f, a/256f, 1);
     }
     public void FillRect(int x0, int y0, int x1, int y1, uint rgb, byte depth = 0)
     {
-        if(x0 > x1)
-        {
-            int temp = x0;
-            x0 = x1;
-            x1 = temp;
-        }
-        if(y0 > y1)
-        {
-            int temp = y0;
-            y0 = y1;
-            y1 = temp;
-        }
-        
-        for(int xi=x0; xi<x1; xi++)
-        {
-            for(int yi=y0; yi<y1; yi++)
-            {
-                DrawPixel(xi, yi, rgb);
-            }
-        }
+        //Filling a rectangle is SUPER easy lol.
+        (var glX0, var glY0) = PixelToGL(x0, y0);
+        (var glX1, var glY1) = PixelToGL(x1, y1);
+        VRenderLib.ColorFromRGBA(out var r, out byte g, out byte b, out byte a, rgb);
+
+        //TODO: depth
+        //pos(3), texcoord(2), color(4)
+        //triangle one
+        mesh.AddVertex(glX0, glY0, 0, 0, 0.5f, r/256f, g/256f, b/256f, a/256f, 1);
+        mesh.AddVertex(glX1, glY1, 0, 0, 0.5f, r/256f, g/256f, b/256f, a/256f, 1);
+        mesh.AddVertex(glX0, glY1, 0, 0, 0.5f, r/256f, g/256f, b/256f, a/256f, 1);
+        //triangle two
+        mesh.AddVertex(glX0, glY0, 0, 0, 0.5f, r/256f, g/256f, b/256f, a/256f, 1);
+        mesh.AddVertex(glX1, glY0, 0, 0, 0.5f, r/256f, g/256f, b/256f, a/256f, 1);
+        mesh.AddVertex(glX1, glY1, 0, 0, 0.5f, r/256f, g/256f, b/256f, a/256f, 1);
     }
-    //These were copied and translated from Wikipedia, of all places: https://en.wikipedia.org/wiki/Bresenham's_line_algorithm
-    // Stackoverflow doesn't have ALL the answers.
     public void DrawLine(int x1, int y1, int x2, int y2, uint rgb, byte depth = 0)
     {
-        if(int.Abs(y2-y1) < int.Abs(x2-x1))
-        {
-            if(x1 > x2)
-                DrawLineLow(x2, y2, x1, y1, rgb);
-            else
-                DrawLineLow(x1, y1, x2, y2, rgb);
-        }
-        else
-        {
-            if(y1 > y2)
-                DrawLineHigh(x2, y2, x1, y1, rgb);
-            else
-                DrawLineHigh(x1, y1, x2, y2, rgb);
-        }
+        var size = VRenderLib.Render.WindowSize();
+        //we need to create a matrix transform that will turn our unit square into a pixel-sized object.
+
+        //start point
+        //start point + 1 pixel
+        float glX0 = ((x1 - 0.5f)/(float)size.X - 0.5f) * 2;
+        float glY0 = -((float)(y1 - 0.5f)/(float)size.Y - 0.5f) * 2;
+        //end point + 1 pixel
+        float glXf = ((float)(x2 - 0.5f)/(float)size.X - 0.5f) * 2;
+        float glYf = -((float)(y2 - 0.5f)/(float)size.Y - 0.5f) * 2;
+        //start point + 1 pixel
+        float glX01 = ((x1 + 0.5f)/(float)size.X - 0.5f) * 2;
+        float glY01 = -((float)(y1 + 0.5f)/(float)size.Y - 0.5f) * 2;
+        //end point + 1 pixel
+        float glXf1 = ((float)(x2 + 0.5f)/(float)size.X - 0.5f) * 2;
+        float glYf1 = -((float)(y2 + 0.5f)/(float)size.Y - 0.5f) * 2;
+        
+        //We need to convert the RGBA color into a vec4
+        VRenderLib.ColorFromRGBA(out var r, out byte g, out byte b, out byte a, rgb);
+
+        //We add the vertices to the batch thingy
+        //TODO: depth
+        //pos(3), texcoord(2), color(4)
+        //triangle one
+        mesh.AddVertex(glX0 , glY0 , 0, 0, 0.5f, r/256f, g/256f, b/256f, a/256f, 1);
+        mesh.AddVertex(glXf , glYf , 0, 0, 0.5f, r/256f, g/256f, b/256f, a/256f, 1);
+        mesh.AddVertex(glX01, glY01, 0, 0, 0.5f, r/256f, g/256f, b/256f, a/256f, 1);
+        //triangle two
+        mesh.AddVertex(glX01, glY01, 0, 0, 0.5f, r/256f, g/256f, b/256f, a/256f, 1);
+        mesh.AddVertex(glXf1, glYf1, 0, 0, 0.5f, r/256f, g/256f, b/256f, a/256f, 1);
+        mesh.AddVertex(glX0 , glY0 , 0, 0, 0.5f, r/256f, g/256f, b/256f, a/256f, 1);
     }
 
-    private void DrawLineLow(int x0, int y0, int x1, int y1, uint rgb)
-    {
-        int dx = x1-x0;
-        int dy = y1-y0;
-        int yi = 1;
-        if(dy < 0)
-        {
-            yi = -1;
-            dy = -dy;
-        }
-        int D = (2*dy) - dx;
-        int y = y0;
-
-        for(int x=x0; x<x1; x++)
-        {
-            DrawPixel(x, y, rgb);
-            if(D > 0)
-            {
-                y += yi;
-                D += (2 * (dy - dx));
-            }
-            else
-            {
-                D += 2*dy;
-            }
-        }
-    }
-
-    private void DrawLineHigh(int x0, int y0, int x1, int y1, uint rgb)
-    {
-        int dx = x1-x0;
-        int dy = y1-y0;
-        int xi = 1;
-        if(dy < 0)
-        {
-            xi = -1;
-            dx = -dx;
-        }
-        int D = (2*dx) - dy;
-        int x = x0;
-
-        for(int y=y0; y<y1; y++)
-        {
-            DrawPixel(x, y, rgb);
-            if(D > 0)
-            {
-                x += xi;
-                D += (2 * (dx - dy));
-            }
-            else
-            {
-                D += 2*dx;
-            }
-        }
-    }
     public void DrawVerticalLine(int x, int y1, int y2, uint rgb, byte depth = 0)
     {
         DrawLine(x, y1, x, y2, rgb, depth);
@@ -154,14 +157,11 @@ public sealed class RenderDisplay : IDisplay
     }
     public void DrawImage(object image, int x, int y, byte depth = 0)
     {
-        RenderImage renderImage = (RenderImage)image;
-        IRender.CurrentRender.DrawTextureDirect(renderImage, x, y, (int)renderImage.width, (int)renderImage.height, 0, 0, (int)renderImage.width, (int)renderImage.height);
     }
     //This method is no joke.
     public void DrawImage(object image, int x, int y, int width, int height, int srcx, int srcy, int srcwidth, int srcheight, byte depth = 0)
     {
-        RenderImage renderImage = (RenderImage)image;
-        IRender.CurrentRender.DrawTextureDirect(renderImage, x, y, width, height, srcx, srcy, srcwidth, srcheight);
+
     }
     //Draw using a default font
     public void DrawText(int fontSize, string text, NodeBounds bounds, uint rgba, byte depth)
@@ -172,54 +172,49 @@ public sealed class RenderDisplay : IDisplay
     //set the rendered size of a text element using the default font.
     public void TextBounds(int fontSize, string text, out int width, out int height)
     {
-        //For the time being, Voxelesque's text rendering is extremely simplistic - every character is a square.
-        // The rendered size of text in pixels is fairly simple to compute.
-        width = text.Length*fontSize;
-        height = fontSize;
+        TextBounds(defaultFont, fontSize, text, out width, out height);
     }
     public void DrawText(object font, int fontSize, string text, NodeBounds bounds, uint rgba, byte depth)
     {
-        RenderFont rFont = (RenderFont) font;
-        IRender render = IRender.CurrentRender;
-        Vector2 size = render.WindowSize();
-        //This sure took a LOOONG time.
-        // I eventually gave up doing it in my head and made a Desmos graph to help me out.
-        // here is the link if you're curious:https://www.desmos.com/calculator/gezhhwxq3y
-        Vector3 scale = new Vector3(1/size.X, 1/size.Y, 0);
-        //find the location
-        Vector3 location = new Vector3(
-            2*scale.X*(bounds.X??0)-1,
-            -2*scale.Y*(bounds.Y??0)+1,
-            0
-        );
-        //and the actual scale
-        Vector3 renderScale = new Vector3(
-            2*fontSize*scale.X,
-            2*fontSize*scale.Y,
-            1
-        );
-        //put all that into an EntityPosition for the IRender.
-        EntityPosition pos = new EntityPosition(
-            location,
-            Vector3.Zero,
-            renderScale
-        );
-        if(texts.Count == textIndex)texts.Add(null);
-        if(texts[textIndex] is not null)
+        if(font is not IRenderTexture texture)
         {
-            //override an existing text element
-            // Manually disable nullables because the compiler isn't smart enough to see that it's not null.
-            #nullable disable
-            texts[textIndex].Text = text;
-            texts[textIndex].Position = pos;
-            #nullable enable
+            //TODO: handle error more gracefully
+            throw new Exception("Font is not a render texture!");
         }
-        else
+        (var glx, var gly) = PixelToGL(bounds.X ?? 0, bounds.Y ?? 0);
+        //This is why we need a custom shader - so that the text color and tint color can be blended nicely.
+        VRenderLib.ColorFromRGBA(out var r, out byte g, out byte b, out byte a, rgba);
+        //Don't worry about re-generating the mesh every time.
+        // the mesh generator has a cache so it will reuse them if it can.
+        var nullableMesh = VRender.Utility.MeshGenerators.BasicText(text, false, false, out var err);
+        //TODO: handle error more gracefully
+        if(nullableMesh is null)throw new Exception(err);
+        var tmesh = nullableMesh.Value;
+        uint attributes = tmesh.attributes.TotalAttributes();
+        float[] vertices = tmesh.vertices;
+        Vector2i screenSize = VRenderLib.Render.WindowSize();
+        Vector2 scale = new Vector2(fontSize*2, fontSize*2)/screenSize;
+        foreach(uint index in tmesh.indices)
         {
-            texts[textIndex] = render.SpawnTextEntity(pos, text, false, false, rFont.shader, rFont.texture, false, null);
+            //text mesh attributes are position, texCoord
+            float xp = vertices[index*attributes];
+            float yp = vertices[index*attributes+1];
+            //float zp = vertices[index*attributes+2]
+            float xt = vertices[index*attributes+3];
+            float yt = vertices[index*attributes+4];
+            
+            //We need to transform this vertex into where it belongs
+            //scale
+            xp *= scale.X;
+            yp *= scale.Y;
+            //translation is easy
+            xp += glx;
+            yp += gly;
+            //Now we add the whole thing.
+            //TODO: depth
+            //pos(3), texcoord(2), color(4)
+            mesh.AddVertex(xp, yp, 0, xt, yt, r/256f, g/256f, b/256f, a/256f, 0);
         }
-
-        textIndex++;
     }
     public void TextBounds(object font, int fontSize, string text, out int width, out int height)
     {
@@ -352,6 +347,18 @@ public sealed class RenderDisplay : IDisplay
         return IRender.CurrentRender.Keyboard().IsKeyDown(Keys.ScrollLock);
     }
 
+    public float ScrollDelta()
+    {
+        return IRender.CurrentRender.Mouse().ScrollDelta.Y;
+    }
+
+    private (float, float) PixelToGL(int x, int y)
+    {
+        Vector2 size = VRenderLib.Render.WindowSize();
+        float glX = (x/(float)size.X - 0.5f) * 2;
+        float glY = -(y/(float)size.Y - 0.5f) * 2;
+        return (glX, glY);
+    }
     private Keys KeyCodeToKeys(KeyCode key)
     {
         switch(key)

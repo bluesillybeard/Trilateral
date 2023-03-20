@@ -5,6 +5,10 @@ using OpenTK.Windowing.GraphicsLibraryFramework;
 
 using VRender;
 
+using VRender.Interface;
+
+using VRender.Utility;
+
 using System;
 
 using vmodel;
@@ -13,108 +17,45 @@ using BasicGUI;
 public sealed class Voxelesque
 {
 
-    double time;
-    IRender render;
-    RenderEntityModel model;
-    VMesh cpuMesh;
-    IRenderShader shader;
-    IRenderShader cameralessShader;
-    IRenderTexture grass;
+    DateTime time;
     IRenderTexture ascii;
     Random random;
-
-    RemoveOnTouchBehavior GrassCubeBehavior;
-
-    RenderCamera camera;
-
+    Camera camera;
     BasicGUIPlane gui;
     TextElement debug;
     int frames;
     public Voxelesque()
     {
-        System.Threading.Thread.CurrentThread.Name = "Main Thread";
-        
-        random = new Random((int)DateTime.Now.Ticks);
-        RenderSettings settings = new RenderSettings();
-        render = RenderUtils.CreateIdealRenderOrDie(settings);
-
-        //initial loading stuff here - move to update method and make asynchronous when loading bar is added
-
-        VModel? grassCubeModel = VModelUtils.LoadModel("Resources/containerizedModels/raptor/model.vmf", out var errors);
-
-        if(grassCubeModel is null)
+        var render = VRenderLib.Render;
+        var size = render.WindowSize();
+        var asciiOrNull = render.LoadTexture("Resources/ASCII.png", out var exception);
+        if(asciiOrNull is null)
         {
-            string errories;
-            if(errors is not null) errories = string.Join("/n", errors);
-            else errories = "";
-            throw new Exception("Error loading model:" + errories);
+            throw new Exception("", exception);
         }
-        cpuMesh = grassCubeModel.Value.mesh;
-        model = render.LoadModel(grassCubeModel.Value);
-        IRenderShader? shader = render.LoadShader("Resources/Shaders/", out var e);
-        if(shader is null)throw new Exception("Could not load main shader", e);
-        this.shader = shader;
-        IRenderShader? cameralessShader = render.LoadShader("Resources/Shaders/cameraless", out e);
-        if(cameralessShader is null)throw new Exception("Could not load screenspace shader", e);
-        this.cameralessShader = cameralessShader;
-        IRenderTexture? ascii = render.LoadTexture("Resources/ASCII-Extended.png", out e);
-        if(ascii is null)throw new Exception("Could noat load ascii texture", e);
-        this.ascii = ascii;
-
-        grass = model.texture;
-
-        camera = render.SpawnCamera(new Vector3(0, 0, 0), new Vector3(0, 0, 0), 90);
-
-        GrassCubeBehavior = new RemoveOnTouchBehavior(cpuMesh);
-        frames = 0;
-        render.SetCamera(camera);
-
-        render.OnUpdate += update; //subscribe the the update event
-        render.OnRender += Render;
-        RenderFont font = new RenderFont(ascii, cameralessShader);
-        gui = new BasicGUIPlane(settings.Size.X, settings.Size.Y, new RenderDisplay(font));
-
-        LayoutContainer tl = new LayoutContainer(gui.GetRoot(), VAllign.top, HAllign.left);
-        gui.AddContainer(tl);
-        debug = new TextElement(tl, 0xFFFFFFFF, 15, "", font, gui.GetDisplay(), 0);
-        tl.AddChild(debug);
-
+        ascii = asciiOrNull;
+        gui = new BasicGUIPlane(size.X, size.Y, new RenderDisplay(ascii));
+        random = new Random();
+        camera = new Camera(Vector3.Zero, Vector3.Zero, 90, size);
+        debug = new TextElement(new LayoutContainer(gui.GetRoot(), VAllign.top, HAllign.left), 0xFFFFFFFF, 10, "", ascii, gui.GetDisplay(), 0);
+        render.OnUpdate += Update;
+        render.OnDraw += Render;
     }
-
-    public void Run()
-    {
-        render.Run();
-    }
-    void update(double d){
-        time += d;
-        debug.SetText("Entities: " + render.EntityCount() + "\n"
+    void Update(TimeSpan delta){
+        time += delta;
+        debug.SetText("Entities: " + "0" + "\n"
             + "Camera Position: " + camera.Position + '\n'
             + "Camera Rotation: " + camera.Rotation + '\n'
-            + "FPS: " + (int)(frames/d));
+            + "FPS: " + (int)(frames/(delta.Ticks)/10_000_000d));
         frames = 0;
 
-        //sillyText.RotationY += (float)(Math.Sin(time*2/10)*Math.Sin(time*3/10))/20;
-        KeyboardState keyboard = render.Keyboard();
-        MouseState mouse = render.Mouse();
-        //between -1 and 1
-        if(keyboard.IsKeyPressed(Keys.F)){
-            EntityPosition vel = new EntityPosition(
-                Vector3.Zero,
-                new Vector3(random.NextSingle(), random.NextSingle(), random.NextSingle()) * 5,
-                Vector3.Zero
+        KeyboardState keyboard = VRenderLib.Render.Keyboard();
+        MouseState mouse = VRenderLib.Render.Mouse();
 
-            );
-            EntityPosition pos = new EntityPosition(
-                camera.Position - Vector3.UnitY,
-                Vector3.Zero,
-                new Vector3(random.NextSingle(), random.NextSingle(), random.NextSingle()) * 5
-            );
-            render.SpawnEntity(pos, shader, model.mesh, model.texture, true, new CrazyMovementBehavior(vel)); 
-        }
         
         if (keyboard.IsKeyReleased(Keys.C))
         {
-            render.CursorLocked  = !render.CursorLocked;
+            VRenderLib.Render.CursorLocked  = !VRenderLib.Render.CursorLocked;
         }
 
         Vector3 cameraInc = new Vector3();
@@ -142,16 +83,18 @@ public sealed class Voxelesque
         // Update camera baseda on mouse
         float sensitivity = 0.5f;
 
-        if (render.CursorLocked || mouse.IsButtonDown(MouseButton.Right)) {
+        if (VRenderLib.Render.CursorLocked || mouse.IsButtonDown(MouseButton.Right)) {
             camera.Rotation += new Vector3((mouse.Y - mouse.PreviousY) * sensitivity, (mouse.X - mouse.PreviousX) * sensitivity, 0);
         }
         gui.Iterate();
-        Vector2i size = render.WindowSize();
+        Vector2i size = VRenderLib.Render.WindowSize();
         gui.SetSize(size.X, size.Y);
     }
 
-    void Render(double d){
+    void Render(TimeSpan delta){
+        VRenderLib.Render.BeginRenderQueue();
         gui.Draw();
+        VRenderLib.Render.EndRenderQueue();
         frames++;
     }
 }
