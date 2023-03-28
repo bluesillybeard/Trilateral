@@ -7,5 +7,5 @@
 tests/
 #any Java code, since I'll often use java code from the old codebase for reference writing the new code
 *.java
-#.yeetis files, since I need a way to ignore files on a case-by-case basis
-.yeetis
+#.yeetis files, since it provides a way to ignore files on a case-by-case basis
+*.yeetis

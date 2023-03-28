@@ -10,6 +10,7 @@
   <!--Libraries that I created or modified for use in this project on;y-->
     <ProjectReference Include="../VModel/VModel.csproj" /> <!-- custom library to load custom model format-->
     <ProjectReference Include="../VRender/VRender.csproj" /> <!--Voxelesque's custom rendering API. It's not really an engine as much as it is a graphics library.-->
-    <ProjectReference Include="../BasicGUI/BasicGUI.csproj"/> <!--BasicGUI-->
+    <ProjectReference Include="../BasicGUI/BasicGUI.csproj"/>
+    <ProjectReference Include="../nbtsharp/nbtsharp.csproj"/>
   </ItemGroup>
 </Project>

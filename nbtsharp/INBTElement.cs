@@ -2,6 +2,8 @@
 using System.Text;
 using System;
 
+//TODO: Refactor to use a discriminated union (if those even ever become a thing in C#)
+
 namespace nbtsharp;
 public interface INBTElement
 {

@@ -1,0 +1,4 @@
+type: block
+mesh: mesh.vmesh
+texture: texture.png
+opaque: 31

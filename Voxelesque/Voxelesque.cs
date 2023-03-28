@@ -14,6 +14,10 @@ using System;
 using vmodel;
 
 using BasicGUI;
+
+using World;
+using World.ChunkGenerators;
+using Utility;
 public sealed class Voxelesque
 {
     DateTime time;
@@ -23,33 +27,78 @@ public sealed class Voxelesque
     Matrix4 previousCameraTransform;
     BasicGUIPlane gui;
     TextElement debug;
-    int frames;
+    TimeSpan frameDelta;
+    ChunkManager chunks;
+    IRenderShader chunkShader;
     public Voxelesque()
     {
         var render = VRenderLib.Render;
         var size = render.WindowSize();
-        var asciiOrNull = render.LoadTexture("Resources/ASCII.png", out var exception);
-        if(asciiOrNull is null)
         {
-            throw new Exception("", exception);
+            var asciiOrNull = render.LoadTexture("Resources/ASCII.png", out var exception);
+            if(asciiOrNull is null)
+            {
+                //This is so that we can keep the stack trace of the original exception
+                throw new Exception("", exception);
+            }
+            ascii = asciiOrNull;
         }
-        ascii = asciiOrNull;
+        chunkShader = render.GetShader(new ShaderFeatures(ChunkRenderer.chunkAttributes, true, true));
         gui = new BasicGUIPlane(size.X, size.Y, new RenderDisplay(ascii));
         random = new Random();
         camera = new Camera(Vector3.Zero, Vector3.Zero, 90, size);
         debug = new TextElement(new LayoutContainer(gui.GetRoot(), VAllign.top, HAllign.left), 0xFFFFFFFF, 10, "", ascii, gui.GetDisplay(), 0);
         render.OnUpdate += Update;
         render.OnDraw += Render;
+        VModel dirt;
+        {
+            var dirtOrNothing = VModelUtils.LoadModel("Resources/models/dirt/model.vmf", out var errors);
+            if(dirtOrNothing is null)
+            {
+                if(errors is not null)
+                {
+                    System.Console.Error.WriteLine(string.Join(',', errors));
+                }
+                throw new Exception("Couldn't find dirt model");
+            }
+            dirt = dirtOrNothing.Value;
+        }
+        VModel glass;
+        {
+            var glassOrNothing = VModelUtils.LoadModel("Resources/models/glass/model.vmf", out var errors);
+            if(glassOrNothing is null)
+            {
+                if(errors is not null)
+                {
+                    System.Console.Error.WriteLine(string.Join(',', errors));
+                }
+                throw new Exception("Couldn't find glass model");
+            }
+            glass = glassOrNothing.Value;
+        }
+        FastNoiseLite noise = new FastNoiseLite(1823);
+        noise.SetNoiseType(FastNoiseLite.NoiseType.Perlin);
+        noise.SetFractalType(FastNoiseLite.FractalType.FBm);
+        noise.SetFrequency(0.004f);
+        noise.SetFractalOctaves(5);
+        noise.SetFractalLacunarity(2.0f);
+        noise.SetFractalGain(0.5f);
+        chunks = new ChunkManager(new BasicChunkGenerator(
+            new Block(dirt, chunkShader),
+            new Block(glass, chunkShader),
+            noise
+        ));
     }
     void Update(TimeSpan delta){
         time += delta;
         debug.SetText("Entities: " + "0" + "\n"
             + "Camera Position: " + camera.Position + '\n'
             + "Camera Rotation: " + camera.Rotation + '\n'
-            + "FPS: " + (int)(frames/(delta.Ticks)/10_000_000d));
-        frames = 0;
+            + "FPS: " + (int)(1/(frameDelta.Ticks/10_000_000d)) + '\n'
+            + "UPS: " + (int)(1/(delta.Ticks/10_000_000d)));
 
         UpdateCamera(delta);
+        chunks.Update(camera.Position, 50);
         gui.Iterate();
         Vector2i size = VRenderLib.Render.WindowSize();
         gui.SetSize(size.X, size.Y);
@@ -57,9 +106,10 @@ public sealed class Voxelesque
 
     void Render(TimeSpan delta){
         VRenderLib.Render.BeginRenderQueue();
+        chunks.Draw();
         gui.Draw();
         VRenderLib.Render.EndRenderQueue();
-        frames++;
+        frameDelta = delta;
     }
 
     void UpdateCamera(TimeSpan delta)
