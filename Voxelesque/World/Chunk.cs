@@ -5,7 +5,7 @@ using System;
 public struct Chunk
 {
     // Chunks are quite unusually shaped (geometrically speaking), but the data is stored as a cube.
-    public const uint Size = 32;
+    public const ushort Size = 32;
     //The chunk length is the total number of blocks in a chunk
     const uint Length = Size*Size*Size;
 

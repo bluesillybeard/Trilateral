@@ -1,9 +1,13 @@
 namespace Voxelesque.World;
 
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using System;
+
 using OpenTK.Mathematics;
 
 using Utility;
+using VRender.Utility;
 public sealed class ChunkManager
 {
     private Dictionary<Vector3i, Chunk> chunks;
@@ -25,7 +29,17 @@ public sealed class ChunkManager
     {
         this.chunks[pos] = generator.GenerateChunk(pos.X, pos.Y, pos.Z);
     }
+    private Task? UpdateTask;
     public void Update(Vector3 playerPosition, float distance)
+    {
+        if(UpdateTask is null || UpdateTask.IsCompleted)
+        {
+            UpdateTask = Task.Run(() => {UpdateSync(playerPosition, distance);});
+        }
+        
+    }
+
+    private void UpdateSync(Vector3 playerPosition, float distance)
     {
         Vector3i chunkRange = MathBits.GetChunkPos(new Vector3(distance, distance, distance));
         Vector3i playerChunk = MathBits.GetChunkPos(playerPosition);
@@ -54,9 +68,9 @@ public sealed class ChunkManager
         }
     }
 
-    public void Draw()
+    public void Draw(Camera cam)
     {
-        renderer.DrawChunks();
+        renderer.DrawChunks(cam);
     }
     public IReadOnlyDictionary<Vector3i, Chunk> Chunks{get => chunks;}
     public Chunk? GetChunk(Vector3i position)
@@ -84,6 +98,36 @@ public sealed class ChunkManager
         }
         //Then get the actual block itself
         return chunk.Value.GetBlock(MathBits.Mod(pos.X, Chunk.Size), MathBits.Mod(pos.Y, Chunk.Size), MathBits.Mod(pos.Z, Chunk.Size));
+    }
+
+    public Block? GetBlock(Vector3i chunkPos, uint x, uint y, uint z)
+    {
+        //First, figure out which chunk the block is in
+        Chunk? chunk = GetChunk(chunkPos);
+        if(chunk is null)
+        {
+            return null;
+        }
+        //Then get the actual block itself
+        return chunk.Value.GetBlock(x, y, z);
+    }
+
+    public Block? GetBlock(Vector3i chunkPos, int x, int y, int z)
+    {
+        //First, figure out which chunk the block is in
+        // TODO: find an integer-only version of this
+        Vector3i chunkOffset = new Vector3i(
+            (int)MathF.Floor(((float)x)/Chunk.Size),
+            (int)MathF.Floor(((float)y)/Chunk.Size),
+            (int)MathF.Floor(((float)z)/Chunk.Size)
+        );
+        Chunk? chunk = GetChunk(chunkPos);
+        if(chunk is null)
+        {
+            return null;
+        }
+        //Then get the actual block itself
+        return chunk.Value.GetBlock(MathBits.Mod(x, Chunk.Size), MathBits.Mod(y, Chunk.Size), MathBits.Mod(z, Chunk.Size));
     }
 
     public bool TrySetBlock(Block block, Vector3i pos)

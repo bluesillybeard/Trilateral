@@ -16,6 +16,11 @@ public static class MathBits
         return (uint)(num < 0 ? ((num+1)%div + div-1) : (num%div));
     }
 
+    public static uint Mod(int num, ushort div)
+    {
+        return (uint)(num < 0 ? ((num+1)%div + div-1) : (num%div));
+    }
+
     public const float ZScale = 0.288675134595f;
     /**
     <summary>

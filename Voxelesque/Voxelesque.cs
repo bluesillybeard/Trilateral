@@ -51,6 +51,7 @@ public sealed class Voxelesque
         render.OnUpdate += Update;
         render.OnDraw += Render;
         VModel dirt;
+        IRenderTexture dirtTexture;
         {
             var dirtOrNothing = VModelUtils.LoadModel("Resources/models/dirt/model.vmf", out var errors);
             if(dirtOrNothing is null)
@@ -62,8 +63,10 @@ public sealed class Voxelesque
                 throw new Exception("Couldn't find dirt model");
             }
             dirt = dirtOrNothing.Value;
+            dirtTexture = render.LoadTexture(dirt.texture);
         }
         VModel glass;
+        IRenderTexture glassTexture;
         {
             var glassOrNothing = VModelUtils.LoadModel("Resources/models/glass/model.vmf", out var errors);
             if(glassOrNothing is null)
@@ -75,6 +78,7 @@ public sealed class Voxelesque
                 throw new Exception("Couldn't find glass model");
             }
             glass = glassOrNothing.Value;
+            glassTexture = render.LoadTexture(glass.texture);
         }
         FastNoiseLite noise = new FastNoiseLite(1823);
         noise.SetNoiseType(FastNoiseLite.NoiseType.Perlin);
@@ -84,8 +88,8 @@ public sealed class Voxelesque
         noise.SetFractalLacunarity(2.0f);
         noise.SetFractalGain(0.5f);
         chunks = new ChunkManager(new BasicChunkGenerator(
-            new Block(dirt, chunkShader),
-            new Block(glass, chunkShader),
+            new Block(dirt, dirtTexture, chunkShader),
+            new Block(glass, glassTexture, chunkShader, false),
             noise
         ));
     }
@@ -98,7 +102,7 @@ public sealed class Voxelesque
             + "UPS: " + (int)(1/(delta.Ticks/10_000_000d)));
 
         UpdateCamera(delta);
-        chunks.Update(camera.Position, 50);
+        chunks.Update(camera.Position, 30);
         gui.Iterate();
         Vector2i size = VRenderLib.Render.WindowSize();
         gui.SetSize(size.X, size.Y);
@@ -106,7 +110,7 @@ public sealed class Voxelesque
 
     void Render(TimeSpan delta){
         VRenderLib.Render.BeginRenderQueue();
-        chunks.Draw();
+        chunks.Draw(camera);
         gui.Draw();
         VRenderLib.Render.EndRenderQueue();
         frameDelta = delta;

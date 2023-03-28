@@ -5,8 +5,11 @@ using VRender.Interface;
 using System.Collections.Generic;
 using System;
 using System.Threading.Tasks;
+using System.IO;
 using vmodel;
 using VRender;
+using VRender.Utility;
+using Utility;
 using StbImageSharp;
 
 //An object that represents a chunk
@@ -19,8 +22,6 @@ struct ChunkDrawObject{
     //TODO: account for adjacent chunks
     public ChunkDrawObject(Vector3i pos, Chunk chunk, ChunkManager chunkManager) : this()
     {
-        drawables = new List<(RenderModel, IRenderShader)>();
-
         var objects = new List<ChunkBuildObject>();
         for(uint x=0; x<Chunk.Size; x++){
             for(uint y=0; y<Chunk.Size; y++){
@@ -30,11 +31,12 @@ struct ChunkDrawObject{
                         continue;
                     }
                     Block block = blockOrNone.Value;
-                    int buildObjectHash = ChunkBuildObject.HashCodeOf(block.model.texture, block.shader);
+                    if(!block.draw)continue;
+                    int buildObjectHash = ChunkBuildObject.HashCodeOf(block.texture, block.shader);
                     var index = objects.FindIndex((obj) => {return obj.GetHashCode() == buildObjectHash;});
                     if(index == -1){
                         index = objects.Count;
-                        objects.Add(new ChunkBuildObject(block.model.texture, block.shader));
+                        objects.Add(new ChunkBuildObject(block.texture, block.shader, block.model.texture));
                     }
                     var buildObject = objects[index];
                     var blockedFaces = GetBlockedFaces(x, y, z, pos, chunk, chunkManager);
@@ -42,9 +44,37 @@ struct ChunkDrawObject{
                 }
             }
         }
+        drawables = new List<(RenderModel, IRenderShader)>(objects.Count);
+
+        foreach(ChunkBuildObject build in objects)
+        {
+            var shader = build.shader;
+            var cpuMesh = build.mesh.ToMesh();
+            var mesh = VRenderLib.Render.LoadMesh(cpuMesh);
+            var texture = build.texture;
+            //For debug purposes, all meshes are saved.
+            //var path = "/home/manjaroxcfetest/VSCodeProjects/stuff/idk/" + pos.ToString() + "_" + build.GetHashCode();
+            //
+            //SaveFile(path, new VModel(cpuMesh, build.CPUTexture, 0));
+            drawables.Add((new RenderModel(mesh, texture), shader));
+        }
         LastUpdate = DateTime.Now;
+
     }
 
+    private static void SaveFile(string path, VModel model)
+    {
+        try{
+            //For the same of simplicity, I just make that path as a directory then save our files into it.
+            if(!Directory.Exists(path))
+                Directory.CreateDirectory(path);
+            string name = new DirectoryInfo(path).Name;
+            //save the files
+            VModelUtils.SaveModel(model, path, "mesh.vmesh", "texture.png", "model.vmf");
+        } catch(Exception e){
+            System.Console.WriteLine("Could not save file: " + e.StackTrace + "\n " + e.Message);
+        }
+    }
     private byte GetBlockedFaces(uint x, uint y, uint z, Vector3i chunkPos, Chunk chunk, ChunkManager chunkManager)
     {
         /*
@@ -82,13 +112,13 @@ struct ChunkDrawObject{
             ym += (int)y;
             zm += (int)z;
             //TODO: chunkManager method that makes this more better
-            var adjacentBlock = chunkManager.GetBlock(new Vector3i(xm + chunkPos.X, ym + chunkPos.Y, zm + chunkPos.Z));
+            var adjacentBlock = chunkManager.GetBlock(chunkPos, xm, ym, zm);
             byte adjacentOpaque = 0;
             if(adjacentBlock is not null)
             {
                 adjacentOpaque = adjacentBlock.Value.model.opaqueFaces ?? 0;
             }
-            blockedFaces |= (byte)(adjacentOpaque & (1>>i));
+            blockedFaces |= (byte)(adjacentOpaque & (1<<i));
         }
         return blockedFaces;
     }
@@ -107,15 +137,22 @@ struct ChunkDrawObject{
 struct ChunkBuildObject{
 
     
-    public static int HashCodeOf(ImageResult texture, IRenderShader shader)
+    public static int HashCodeOf(IRenderTexture texture, IRenderShader shader)
     {
-        return 2*texture.GetHashCode() + 3*shader.GetHashCode();
+        int a = texture.GetHashCode();
+        int b = shader.GetHashCode();
+        a ^= b >> 5;
+        a ^= b << 17;
+        a ^= b >> 23;
+        a ^= b << 27;
+        return a;
     }
-    public ChunkBuildObject(ImageResult texture, IRenderShader shader)
+    public ChunkBuildObject(IRenderTexture texture, IRenderShader shader, ImageResult cpuTexture)
     {
         this.texture = texture;
         this.shader = shader;
         this.hash = HashCodeOf(texture, shader);
+        this.CPUTexture = cpuTexture;
         mesh = new MeshBuilder(ChunkRenderer.chunkAttributes);
     }
 
@@ -133,7 +170,7 @@ struct ChunkBuildObject{
             System.Console.Error.WriteLine("Block mesh attributes don't match required attributes");
             return;
         }
-        float XMirror = ((x + z) & 1) - 0.5f; //-1 if X should be mirrored, 1 if it shouldn't.
+        float XMirror = ((x + z) & 1) - 0.5f; //-0.5 if X should be mirrored, 0.5 if it shouldn't.
 
         for(uint indexIndex = 0; indexIndex < blockMesh.indices.Length; indexIndex++)
         {
@@ -146,9 +183,9 @@ struct ChunkBuildObject{
             float[] vertex = blockMesh.vertices[(int)(index*totalAttribs) .. (int)(index*totalAttribs+totalAttribs)];
             mesh.AddVertex(
                 //x, y, z
-                vertex[0] * XMirror + x * 0.5f,
-                vertex[1] * 0.5f + y * 0.5f,
-                vertex[2] * 0.5f + z * 0.288675134595f,
+                vertex[0] * 2*XMirror + x * 0.5f,
+                vertex[1] + y * 0.5f,
+                vertex[2] + z * MathBits.ZScale,
                 //We leave normals and texture coordinates as-is
                 vertex[3],
                 vertex[4],
@@ -160,8 +197,9 @@ struct ChunkBuildObject{
     }
 
     public readonly MeshBuilder mesh;
-    public readonly ImageResult texture;
+    public readonly IRenderTexture texture;
     public readonly IRenderShader shader;
+    public readonly ImageResult CPUTexture;
     // The hash is computationally expensive and is based on objects that won't change,
     // So we calculate it once at the beginning and store it
     private readonly int hash;
@@ -169,23 +207,6 @@ struct ChunkBuildObject{
     public override int GetHashCode()
     {
         return hash;
-    }
-
-    public void BeginAddToDrawObject(ChunkDrawObject obj)
-    {
-        var build = this;
-        //We do a little "fire and forget" here.
-        Task.Run(
-            () => {
-                build.AddToDrawObject(obj);
-            }
-        );
-    }
-
-    private void AddToDrawObject(ChunkDrawObject obj)
-    {
-        var renderModel = VRenderLib.Render.LoadModel(new VModel(this.mesh.ToMesh(), this.texture, null));
-        obj.drawables.Add((renderModel, this.shader));
     }
 }
 public sealed class ChunkRenderer
@@ -201,28 +222,33 @@ public sealed class ChunkRenderer
         modifiedDrawObjects = new List<KeyValuePair<Vector3i, ChunkDrawObject>>();
     }
 
-    public void DrawChunks()
+    public void DrawChunks(Camera camera)
     {
-        foreach(var obj in modifiedDrawObjects)
-        {
-            var pos = obj.Key;
-            var draw = obj.Value;
-            if(chunkDrawObjects.TryGetValue(pos, out var old))
+        lock(modifiedDrawObjects){
+            foreach(var obj in modifiedDrawObjects)
             {
-                old.Dispose();
+                var pos = obj.Key;
+                var draw = obj.Value;
+                if(chunkDrawObjects.TryGetValue(pos, out var old))
+                {
+                    old.Dispose();
+                }
+                chunkDrawObjects[pos] = draw;
             }
-            chunkDrawObjects[pos] = draw;
+            modifiedDrawObjects.Clear();
         }
-        modifiedDrawObjects.Clear();
         System.Console.WriteLine(chunkDrawObjects.Count);
         foreach(KeyValuePair<Vector3i, ChunkDrawObject> obj in chunkDrawObjects)
         {
             var pos = obj.Key;
             var drawObject = obj.Value;
             //We need to make a translation for the position, since the mesh is only relative to the chunk's origin, not the actual origin.
-            var transform = Matrix4.CreateTranslation(pos.X * Chunk.Size * 0.28867513459481288225f, pos.Y * Chunk.Size * 0.5f, pos.Z * Chunk.Size * 0.5f);
+            var transform = Matrix4.CreateTranslation(pos.X * Chunk.Size * 0.5f, pos.Y * Chunk.Size * 0.5f, pos.Z * Chunk.Size * MathBits.ZScale);
             //Now we draw it
-            var uniforms = new KeyValuePair<string, object>[]{new KeyValuePair<string, object>("model", transform)};
+            var uniforms = new KeyValuePair<string, object>[]{
+                new KeyValuePair<string, object>("model", transform),
+                new KeyValuePair<string, object>("camera", camera.GetTransform())
+            };
             foreach(var drawable in drawObject.drawables)
             {
                 VRenderLib.Render.Draw(
@@ -250,7 +276,7 @@ public sealed class ChunkRenderer
         //I normally wouldn't put a try-catch here,
         // But since this is part of a "fire and forget" method, we need to make sure any exceptions are caught and logged properly.
         try{
-            modifiedDrawObjects.Add(new KeyValuePair<Vector3i, ChunkDrawObject>(pos, new ChunkDrawObject(pos, chunk, chunkManager)));
+            lock(modifiedDrawObjects)modifiedDrawObjects.Add(new KeyValuePair<Vector3i, ChunkDrawObject>(pos, new ChunkDrawObject(pos, chunk, chunkManager)));
         } catch (Exception e)
         {
             System.Console.Error.WriteLine("Exception while building chunk:" + e.Message + "\n Stacktrace:" + e.StackTrace);
