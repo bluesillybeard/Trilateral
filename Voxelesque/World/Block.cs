@@ -3,7 +3,7 @@ namespace Voxelesque.World;
 using vmodel;
 using VRender.Interface;
 //This represents a type of block.
-public struct Block
+public class Block
 {
     public Block(VModel model, IRenderTexture texture, IRenderShader shader, string name)
     {

@@ -51,7 +51,7 @@ struct ChunkDrawObject{
                     if(blockOrNone is null){
                         continue;
                     }
-                    Block block = blockOrNone.Value;
+                    Block block = blockOrNone;
                     if(!block.draw)continue;
                     int buildObjectHash = ChunkBuildObject.HashCodeOf(block.texture, block.shader);
                     var index = objects.FindIndex((obj) => {return obj.GetHashCode() == buildObjectHash;});
@@ -131,9 +131,14 @@ struct ChunkDrawObject{
             byte adjacentOpaque = 0;
             if(adjacentBlock is not null)
             {
-                adjacentOpaque = adjacentBlock.Value.model.opaqueFaces ?? 0;
+                adjacentOpaque = adjacentBlock.model.opaqueFaces ?? 0;
             }
             blockedFaces |= (byte)(adjacentOpaque & (1<<i));
+        }
+        if(blockedFaces != 31 && chunkPos == new Vector3i(0, 0, 0))
+        {
+            //System.Console.WriteLine("yeet");
+            return blockedFaces;
         }
         return blockedFaces;
     }
@@ -294,6 +299,15 @@ public sealed class ChunkRenderer
             }
         }
     }
+
+    // private static readonly Vector3i[] adjacencyList = new Vector3i[]{
+    //     new Vector3i( 0, 0, 1),
+    //     new Vector3i( 0, 1, 0),
+    //     new Vector3i( 1, 0, 0),
+    //     new Vector3i( 0, 0,-1),
+    //     new Vector3i( 0,-1, 0),
+    //     new Vector3i(-1, 0, 0)
+    // };
     /**
     <summary>
     Returns true if all 6 adjacent chunks are initialized
@@ -307,6 +321,7 @@ public sealed class ChunkRenderer
         if(!m.Chunks.ContainsKey(new Vector3i(pos.X,   pos.Y,   pos.Z-1))) return false;
         if(!m.Chunks.ContainsKey(new Vector3i(pos.X,   pos.Y-1, pos.Z  ))) return false;
         if(!m.Chunks.ContainsKey(new Vector3i(pos.X-1, pos.Y,   pos.Z  ))) return false;
+
         return true;
     }
 }

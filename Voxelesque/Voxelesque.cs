@@ -99,7 +99,7 @@ public sealed class Voxelesque
         string block = "none";
         if(b is not null)
         {
-            block = b.Value.name;
+            block = b.name;
         }
         debug.SetText(
             "Camera Position: " + camera.Position + '\n'
@@ -110,7 +110,7 @@ public sealed class Voxelesque
         );
 
         UpdateCamera(delta);
-        chunks.Update(camera.Position, 100);
+        chunks.Update(camera.Position, 400);
         gui.Iterate();
         Vector2i size = VRenderLib.Render.WindowSize();
         gui.SetSize(size.X, size.Y);
