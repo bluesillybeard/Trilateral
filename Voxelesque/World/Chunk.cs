@@ -23,6 +23,16 @@ public struct Chunk
         this.blocks = null;
         lastChange = DateTime.Now;
     }
+
+    public Chunk(Block[] blocks)
+    {
+        if(blocks.Length != Length)
+        {
+            throw new Exception("Cannot create a chunk with the incorrect length!");
+        }
+        this.blocks = blocks;
+        lastChange = DateTime.Now;
+    }
     public Block? GetBlock(uint x, uint y, uint z)
     {
         uint index = x + Size*y + Size*Size*z;

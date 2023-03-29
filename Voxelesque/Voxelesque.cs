@@ -88,21 +88,29 @@ public sealed class Voxelesque
         noise.SetFractalLacunarity(2.0f);
         noise.SetFractalGain(0.5f);
         chunks = new ChunkManager(new BasicChunkGenerator(
-            new Block(dirt, dirtTexture, chunkShader),
-            new Block(glass, glassTexture, chunkShader, false),
+            new Block(dirt, dirtTexture, chunkShader, "dirt"),
+            new Block(glass, glassTexture, chunkShader, false, "air"),
             noise
         ));
     }
     void Update(TimeSpan delta){
         time += delta;
-        debug.SetText("Entities: " + "0" + "\n"
-            + "Camera Position: " + camera.Position + '\n'
+        var b = chunks.GetBlock(MathBits.GetBlockPos(camera.Position));
+        string block = "none";
+        if(b is not null)
+        {
+            block = b.Value.name;
+        }
+        debug.SetText(
+            "Camera Position: " + camera.Position + '\n'
             + "Camera Rotation: " + camera.Rotation + '\n'
             + "FPS: " + (int)(1/(frameDelta.Ticks/10_000_000d)) + '\n'
-            + "UPS: " + (int)(1/(delta.Ticks/10_000_000d)));
+            + "UPS: " + (int)(1/(delta.Ticks/10_000_000d)) + '\n'
+            + "block:" + block
+        );
 
         UpdateCamera(delta);
-        chunks.Update(camera.Position, 30);
+        chunks.Update(camera.Position, 20);
         gui.Iterate();
         Vector2i size = VRenderLib.Render.WindowSize();
         gui.SetSize(size.X, size.Y);

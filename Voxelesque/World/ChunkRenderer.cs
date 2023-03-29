@@ -16,11 +16,32 @@ using StbImageSharp;
 struct ChunkDrawObject{
 
 
-    public List<(RenderModel model, IRenderShader shader)> drawables;
+    public List<(RenderModel model, IRenderShader shader)> Drawables;
     public DateTime LastUpdate; //when the chunk was last updated
+    private Task? UpdateTask;
+    private bool inProgress;
+    public bool InProgress {get => inProgress;}
 
-    //TODO: account for adjacent chunks
-    public ChunkDrawObject(Vector3i pos, Chunk chunk, ChunkManager chunkManager) : this()
+    public ChunkDrawObject()
+    {
+        inProgress = false;
+        Drawables = new List<(RenderModel model, IRenderShader shader)>(0);
+        LastUpdate = DateTime.Now;
+        UpdateTask = null;
+    }
+
+    public void BeginBuilding(Vector3i pos, Chunk chunk, ChunkManager m)
+    {
+        //TODO: cancel current task and make a new one
+        if(inProgress)return;
+        inProgress = true;
+        LastUpdate = DateTime.Now;
+        var me = this;
+        UpdateTask = Task.Run(
+            () => {me.Build(pos, chunk, m);}
+        );
+    }
+    private void Build(Vector3i pos, Chunk chunk, ChunkManager m)
     {
         var objects = new List<ChunkBuildObject>();
         for(uint x=0; x<Chunk.Size; x++){
@@ -39,12 +60,11 @@ struct ChunkDrawObject{
                         objects.Add(new ChunkBuildObject(block.texture, block.shader, block.model.texture));
                     }
                     var buildObject = objects[index];
-                    var blockedFaces = GetBlockedFaces(x, y, z, pos, chunk, chunkManager);
+                    var blockedFaces = GetBlockedFaces(x, y, z, pos, chunk, m);
                     buildObject.AddBlock(x, y, z, block, blockedFaces);
                 }
             }
         }
-        drawables = new List<(RenderModel, IRenderShader)>(objects.Count);
 
         foreach(ChunkBuildObject build in objects)
         {
@@ -52,14 +72,9 @@ struct ChunkDrawObject{
             var cpuMesh = build.mesh.ToMesh();
             var mesh = VRenderLib.Render.LoadMesh(cpuMesh);
             var texture = build.texture;
-            //For debug purposes, all meshes are saved.
-            //var path = "/home/manjaroxcfetest/VSCodeProjects/stuff/idk/" + pos.ToString() + "_" + build.GetHashCode();
-            //
-            //SaveFile(path, new VModel(cpuMesh, build.CPUTexture, 0));
-            drawables.Add((new RenderModel(mesh, texture), shader));
+            Drawables.Add((new RenderModel(mesh, texture), shader));
         }
-        LastUpdate = DateTime.Now;
-
+        inProgress = false;
     }
 
     private static void SaveFile(string path, VModel model)
@@ -125,7 +140,7 @@ struct ChunkDrawObject{
 
     public void Dispose()
     {
-        foreach(var d in drawables)
+        foreach(var d in Drawables)
         {
             d.model.mesh.Dispose();
             //We don't dispose textures since they are persistent.
@@ -214,30 +229,13 @@ public sealed class ChunkRenderer
     public static readonly Attributes chunkAttributes = new Attributes(new EAttribute[]{EAttribute.position, EAttribute.textureCoords, EAttribute.normal});
 
     private Dictionary<Vector3i, ChunkDrawObject> chunkDrawObjects;
-
-    private List<KeyValuePair<Vector3i, ChunkDrawObject>> modifiedDrawObjects;
     public ChunkRenderer()
     {
         chunkDrawObjects = new Dictionary<Vector3i, ChunkDrawObject>();
-        modifiedDrawObjects = new List<KeyValuePair<Vector3i, ChunkDrawObject>>();
     }
 
     public void DrawChunks(Camera camera)
     {
-        lock(modifiedDrawObjects){
-            foreach(var obj in modifiedDrawObjects)
-            {
-                var pos = obj.Key;
-                var draw = obj.Value;
-                if(chunkDrawObjects.TryGetValue(pos, out var old))
-                {
-                    old.Dispose();
-                }
-                chunkDrawObjects[pos] = draw;
-            }
-            modifiedDrawObjects.Clear();
-        }
-        System.Console.WriteLine(chunkDrawObjects.Count);
         foreach(KeyValuePair<Vector3i, ChunkDrawObject> obj in chunkDrawObjects)
         {
             var pos = obj.Key;
@@ -249,7 +247,7 @@ public sealed class ChunkRenderer
                 new KeyValuePair<string, object>("model", transform),
                 new KeyValuePair<string, object>("camera", camera.GetTransform())
             };
-            foreach(var drawable in drawObject.drawables)
+            foreach(var drawable in drawObject.Drawables)
             {
                 VRenderLib.Render.Draw(
                     drawable.model.texture, drawable.model.mesh,
@@ -259,27 +257,49 @@ public sealed class ChunkRenderer
         }
     }
 
-    public void NotifyChunkUpdated(Vector3i pos, Chunk chunk, ChunkManager chunkManager)
+    public void Update(ChunkManager m)
     {
-        BuildChunkAsync(pos, chunk, chunkManager);
-    }
-    private void BuildChunkAsync(Vector3i pos, Chunk chunk, ChunkManager chunkManager)
-    {
-        //TODO: special executor just for building chunks
-        Task.Run(
-            () => {BuildChunk(pos, chunk, chunkManager);}
-        );
-    }
-
-    private void BuildChunk(Vector3i pos, Chunk chunk, ChunkManager chunkManager)
-    {
-        //I normally wouldn't put a try-catch here,
-        // But since this is part of a "fire and forget" method, we need to make sure any exceptions are caught and logged properly.
-        try{
-            lock(modifiedDrawObjects)modifiedDrawObjects.Add(new KeyValuePair<Vector3i, ChunkDrawObject>(pos, new ChunkDrawObject(pos, chunk, chunkManager)));
-        } catch (Exception e)
+        //For every chunk in the manager
+        lock(m.Chunks)
         {
-            System.Console.Error.WriteLine("Exception while building chunk:" + e.Message + "\n Stacktrace:" + e.StackTrace);
+            foreach(var chk in m.Chunks)
+            {
+                var pos = chk.Key;
+                var chunk = chk.Value;
+                //If the chunk has been built before but needs to be updated
+                if(chunkDrawObjects.TryGetValue(pos, out var old))
+                {
+                    if(old.LastUpdate < chunk.LastChange && AllAdjacentChunksValid(pos, m))
+                    {
+                        old.BeginBuilding(pos, chunk, m);
+                    }
+                }
+                else
+                {
+                    if(AllAdjacentChunksValid(pos, m))
+                    {
+                        //If the chunk has not been built before (It's a new chunk)
+                        var draw = new ChunkDrawObject();
+                        draw.BeginBuilding(pos, chunk, m);
+                        chunkDrawObjects.Add(pos, draw);
+                    }
+                }
+            }
         }
+    }
+    /**
+    <summary>
+    Returns true if all 6 adjacent chunks are initialized
+    </summary>
+    */
+    private bool AllAdjacentChunksValid(Vector3i pos, ChunkManager m)
+    {
+        if(!m.Chunks.ContainsKey(new Vector3i(pos.X,   pos.Y,   pos.Z+1))) return false;
+        if(!m.Chunks.ContainsKey(new Vector3i(pos.X,   pos.Y+1, pos.Z  ))) return false;
+        if(!m.Chunks.ContainsKey(new Vector3i(pos.X+1, pos.Y,   pos.Z  ))) return false;
+        if(!m.Chunks.ContainsKey(new Vector3i(pos.X,   pos.Y,   pos.Z-1))) return false;
+        if(!m.Chunks.ContainsKey(new Vector3i(pos.X,   pos.Y-1, pos.Z  ))) return false;
+        if(!m.Chunks.ContainsKey(new Vector3i(pos.X-1, pos.Y,   pos.Z  ))) return false;
+        return true;
     }
 }

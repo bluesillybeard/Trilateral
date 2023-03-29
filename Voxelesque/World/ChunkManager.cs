@@ -22,21 +22,22 @@ public sealed class ChunkManager
     private Chunk LoadChunk(Vector3i pos)
     {
         var chunk = generator.GenerateChunk(pos.X, pos.Y, pos.Z);
-        this.chunks[pos] = chunk;
         return chunk;
     }
     private void UnloadChunk(Vector3i pos)
     {
-        this.chunks[pos] = generator.GenerateChunk(pos.X, pos.Y, pos.Z);
+        this.chunks.Remove(pos);
     }
     private Task? UpdateTask;
     public void Update(Vector3 playerPosition, float distance)
     {
-        if(UpdateTask is null || UpdateTask.IsCompleted)
+        if(UpdateTask is null)
         {
-            UpdateTask = Task.Run(() => {UpdateSync(playerPosition, distance);});
+            UpdateTask = Task.Run(() => {
+                UpdateSync(playerPosition, distance);
+            });
         }
-        
+        renderer.Update(this);
     }
 
     private void UpdateSync(Vector3 playerPosition, float distance)
@@ -44,7 +45,8 @@ public sealed class ChunkManager
         Vector3i chunkRange = MathBits.GetChunkPos(new Vector3(distance, distance, distance));
         Vector3i playerChunk = MathBits.GetChunkPos(playerPosition);
         float distanceSquared = distance * distance;
-        for (int x = -chunkRange.X; x < chunkRange.X; x++) {
+        List<KeyValuePair<Vector3i, Chunk>> newChunks = new List<KeyValuePair<Vector3i, Chunk>>();
+        for(int x = -chunkRange.X; x < chunkRange.X; x++){
             for (int y = -chunkRange.Y; y < chunkRange.Y; y++) {
                 for (int z = -chunkRange.Z; z < chunkRange.Z; z++) {
                     Vector3i chunkPos = playerChunk + new Vector3i(x, y, z);
@@ -53,19 +55,12 @@ public sealed class ChunkManager
                     if(Vector3.DistanceSquared(chunkWorldPos, playerPosition) < distanceSquared)
                     {
                         var chunk = LoadChunk(chunkPos);
-                        renderer.NotifyChunkUpdated(chunkPos, chunk, this);
+                        chunks.Add(chunkPos, chunk);
                     }
-                    
-                    //if (RenderUtils.getChunkWorldPos(chunkPos).distanceSquared(GlobalBits.playerPosition) < renderDistanceSquared && !scheduledChunks.contains(chunkPos)) {
-                    //    scheduledChunks.add(chunkPos);
-                    //    //executor.submit(() -> {
-                    //    //    loadChunk(chunkPos.x, chunkPos.y, chunkPos.z);
-                        //    scheduledChunks.remove(chunkPos);
-                        //});
-                    //}
                 }
             }
         }
+        System.Console.WriteLine("finished generating chunks");
     }
 
     public void Draw(Camera cam)
@@ -121,7 +116,7 @@ public sealed class ChunkManager
             (int)MathF.Floor(((float)y)/Chunk.Size),
             (int)MathF.Floor(((float)z)/Chunk.Size)
         );
-        Chunk? chunk = GetChunk(chunkPos);
+        Chunk? chunk = GetChunk(chunkPos + chunkOffset);
         if(chunk is null)
         {
             return null;
