@@ -257,30 +257,37 @@ public sealed class ChunkRenderer
         }
     }
 
-    public void Update(ChunkManager m)
+    public void NotifyChunkDeleted(Vector3i pos)
+    {
+        if(this.chunkDrawObjects.Remove(pos, out var drawObject)){
+            drawObject.Dispose();
+        }
+    }
+
+    public void Update(ChunkManager chunkManager)
     {
         //For every chunk in the manager
-        lock(m.Chunks)
+        lock(chunkManager.Chunks)
         {
-            foreach(var chk in m.Chunks)
+            foreach(var pair in chunkManager.Chunks)
             {
-                var pos = chk.Key;
-                var chunk = chk.Value;
+                var pos = pair.Key;
+                var chunk = pair.Value;
                 //If the chunk has been built before but needs to be updated
-                if(chunkDrawObjects.TryGetValue(pos, out var old))
+                if(chunkDrawObjects.TryGetValue(pos, out var oldDrawObject))
                 {
-                    if(old.LastUpdate < chunk.LastChange && AllAdjacentChunksValid(pos, m))
+                    if(oldDrawObject.LastUpdate < chunk.LastChange && AllAdjacentChunksValid(pos, chunkManager))
                     {
-                        old.BeginBuilding(pos, chunk, m);
+                        oldDrawObject.BeginBuilding(pos, chunk, chunkManager);
                     }
                 }
                 else
                 {
-                    if(AllAdjacentChunksValid(pos, m))
+                    if(AllAdjacentChunksValid(pos, chunkManager))
                     {
                         //If the chunk has not been built before (It's a new chunk)
                         var draw = new ChunkDrawObject();
-                        draw.BeginBuilding(pos, chunk, m);
+                        draw.BeginBuilding(pos, chunk, chunkManager);
                         chunkDrawObjects.Add(pos, draw);
                     }
                 }

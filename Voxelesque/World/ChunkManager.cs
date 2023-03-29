@@ -31,10 +31,15 @@ public sealed class ChunkManager
     private Task? UpdateTask;
     public void Update(Vector3 playerPosition, float distance)
     {
-        if(UpdateTask is null)
+        if(UpdateTask is null || UpdateTask.IsCompleted)
         {
             UpdateTask = Task.Run(() => {
-                UpdateSync(playerPosition, distance);
+                try{
+                    UpdateSync(playerPosition, distance);
+                } catch (Exception e)
+                {
+                    System.Console.Error.WriteLine("Exception: " + e.Message + "\nstack trace:" + e.StackTrace);
+                }
             });
         }
         renderer.Update(this);
@@ -45,24 +50,60 @@ public sealed class ChunkManager
         Vector3i chunkRange = MathBits.GetChunkPos(new Vector3(distance, distance, distance));
         Vector3i playerChunk = MathBits.GetChunkPos(playerPosition);
         float distanceSquared = distance * distance;
+        UnloadDistantChunks(playerPosition, distanceSquared);
         List<KeyValuePair<Vector3i, Chunk>> newChunks = new List<KeyValuePair<Vector3i, Chunk>>();
-        for(int x = -chunkRange.X; x < chunkRange.X; x++){
-            for (int y = -chunkRange.Y; y < chunkRange.Y; y++) {
-                for (int z = -chunkRange.Z; z < chunkRange.Z; z++) {
-                    Vector3i chunkPos = playerChunk + new Vector3i(x, y, z);
-                    if(chunks.ContainsKey(chunkPos))continue;
-                    Vector3 chunkWorldPos = MathBits.GetChunkWorldPos(chunkPos);
-                    if(Vector3.DistanceSquared(chunkWorldPos, playerPosition) < distanceSquared)
-                    {
-                        var chunk = LoadChunk(chunkPos);
-                        chunks.Add(chunkPos, chunk);
-                    }
+        for(int chunkX = -chunkRange.X; chunkX < chunkRange.X; chunkX++)
+        {
+            for (int chunkY = -chunkRange.Y; chunkY < chunkRange.Y; chunkY++)
+            {
+                for (int chunkZ = -chunkRange.Z; chunkZ < chunkRange.Z; chunkZ++)
+                {
+                    Vector3i chunkPos = playerChunk + new Vector3i(chunkX, chunkY, chunkZ);
+                    UpdateChunk(chunkPos, distanceSquared, playerPosition);
                 }
             }
         }
-        System.Console.WriteLine("finished generating chunks");
+        //System.Console.WriteLine("finished generating chunks");
     }
 
+    private void UnloadDistantChunks(Vector3 playerPosition, float distanceSquared)
+    {
+        List<Vector3i> chunksToRemove = new List<Vector3i>();
+        lock(chunks){
+            foreach(var chunk in chunks)
+            {
+                var pos = chunk.Key;
+                var data = chunk.Value;
+                Vector3 chunkWorldPos = MathBits.GetChunkWorldPos(pos);
+                if(Vector3.DistanceSquared(chunkWorldPos, playerPosition) > distanceSquared)
+                {
+                    chunksToRemove.Add(pos);
+                }
+            }
+            foreach(Vector3i c in chunksToRemove)
+            {
+                chunks.Remove(c);
+                renderer.NotifyChunkDeleted(c);
+            }
+        }
+    }
+
+    private void UpdateChunk(Vector3i chunkPos, float distanceSquared, Vector3 playerPosition)
+    {
+        if(chunks.ContainsKey(chunkPos))
+        {
+            return;
+        }
+        Vector3 chunkWorldPos = MathBits.GetChunkWorldPos(chunkPos);
+        if(Vector3.DistanceSquared(chunkWorldPos, playerPosition) < distanceSquared)
+        {
+            var chunk = LoadChunk(chunkPos);
+            lock(chunks)
+            {
+                chunks.Add(chunkPos, chunk);
+            }
+        }
+    }
     public void Draw(Camera cam)
     {
         renderer.DrawChunks(cam);

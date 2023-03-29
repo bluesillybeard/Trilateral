@@ -25,7 +25,8 @@ public class BasicChunkGenerator : IChunkGenerator
         for(uint xp = 0; xp < Chunk.Size; xp++){
             for(uint zp = 0; zp < Chunk.Size; zp++){
                 float height = noise.GetNoise(csx+xp, csz+(zp*0.5773502692f));
-                height = height*height*400;//squaring it makes it better by making lower terrain flatter, and higher terrain more varied and mountain-like
+                height = height*height*400;
+                //squaring it makes it better by making lower terrain flatter, and higher terrain more varied and mountain-like
                 for(uint yp = 0; yp < Chunk.Size; yp++){
                     uint index = xp + Chunk.Size*yp + Chunk.Size*Chunk.Size*zp;
                     if(csy+yp < height) {
