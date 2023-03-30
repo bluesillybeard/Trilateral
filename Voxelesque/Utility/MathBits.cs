@@ -59,40 +59,40 @@ public static class MathBits
     public static Vector3i GetBlockPos(Vector3 worldPos)
     {
 
-        //I'm sincerely sorry, I don't kbow how to explain what this is doing exactly.
+        //I'm sincerely sorry, I don't know how to explain what this is doing exactly.
         // All you need to know is that it accounts for the tesselation of triangles.
-
+        int z = (int)MathF.Round(worldPos.Z/0.25f);
+        int xp = (int)MathF.Round((worldPos.X/*-XOffset*/)/MathBits.XScale);
         //TODO: finish implementing this
         // The Z parity is easy to calculate,
         // But the X parity may not be so simple.
 
-        // var XOffset = -0.072f;
-        // var XParity = (blockPos.X & 1) == 1;
-        // var ZParity = (blockPos.Z & 1) == 1;
-        // if(XParity ^ ZParity)
-        // {
-        //     //TODO: calculate this offset to greater accuruacy
-        //     XOffset = 0.072f;
-        // }
+        var XOffset = -0.072f;
+        var XParity = (xp & 1) == 1;
+        var ZParity = (z & 1) == 1;
+        if(XParity ^ ZParity)
+        {
+            //TODO: calculate this offset to greater accuruacy
+            XOffset = 0.072f;
+        }
         return new Vector3i(
-            (int)MathF.Round((worldPos.X/*-XOffset*/)/MathBits.XScale),
+            (int)MathF.Round((worldPos.X-XOffset)/MathBits.XScale),
             (int)MathF.Round(worldPos.Y/0.5f),
-            (int)MathF.Round(worldPos.Z/0.25f)
+            z
         );
     }
     /**
     <summary>
-    gets the world position of the center of a block,
+    gets the world position of the cetner of a block,
     </summary>
     */
     public static Vector3 GetBlockWorldPos(Vector3i blockPos)
     {
         //I'm sincerely sorry, I don't kbow how to explain what this is doing exactly.
         // All you need to know is that it accounts for the tesselation of triangles.
+        var parity = ((blockPos.X+blockPos.Z) & 1) == 1;
         var XOffset = -0.072f;
-        var XParity = (blockPos.X & 1) == 1;
-        var ZParity = (blockPos.Z & 1) == 1;
-        if(XParity ^ ZParity)
+        if(parity)
         {
             //TODO: calculate this offset to greater accuruacy
             XOffset = 0.072f;
@@ -102,19 +102,23 @@ public static class MathBits
             blockPos.Y * 0.5f,
             blockPos.Z * 0.25f
         );
-    }
 
-        /**
-    <summary>
-    gets the world position of the start pos of a block,
-    </summary>
-    */
-    public static Vector3 GetBlockWorldPosUncentered(Vector3i blockPos)
-    {
+
+        /*
+        //I'm sincerely sorry, I don't kbow how to explain what this is doing exactly.
+        // All you need to know is that it accounts for the tesselation of triangles.
+        var parity = ((blockPos.X+blockPos.Z) & 1) == 1;
+        var XOffset = -0.072f * -((blockPos.X+blockPos.Z) % 2);
+        if(parity)
+        {
+            //TODO: calculate this offset to greater accuruacy
+            XOffset = 0.072f;
+        }
         return new Vector3(
-            (blockPos.X)*XScale,
-            (blockPos.Y)*0.5f,
-            (blockPos.Z)*0.25f
+            blockPos.X * MathBits.XScale + XOffset,
+            blockPos.Y * 0.5f,
+            blockPos.Z * 0.25f
         );
+        */
     }
 }

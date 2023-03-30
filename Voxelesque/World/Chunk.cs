@@ -15,7 +15,7 @@ public struct Chunk
 
     //Can't statically assign a length of an array in C#.
     // It's valid though, since an array can be any length.
-    private Block[/*ChunkSize^3*/]? blocks;
+    private Block?[/*ChunkSize^3*/]? blocks;
 
     //creates a new empty chunk
     public Chunk()
@@ -24,7 +24,7 @@ public struct Chunk
         lastChange = DateTime.Now;
     }
 
-    public Chunk(Block[] blocks)
+    public Chunk(Block?[] blocks)
     {
         if(blocks.Length != Length)
         {

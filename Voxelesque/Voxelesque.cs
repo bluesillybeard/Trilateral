@@ -88,8 +88,7 @@ public sealed class Voxelesque
         noise.SetFractalLacunarity(2.0f);
         noise.SetFractalGain(0.5f);
         chunks = new ChunkManager(new OneBlockChunkGenerator(
-            new Block(dirt, dirtTexture, chunkShader, "dirt")
-            //new Block(glass, glassTexture, chunkShader, false, "air"),
+            new Block(dirt, dirtTexture, chunkShader, "dirt")//,
             //noise
         ));
     }
