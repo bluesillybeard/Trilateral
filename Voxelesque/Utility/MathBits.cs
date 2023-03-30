@@ -6,6 +6,9 @@ using World;
 public static class MathBits
 {
 
+    //General math functions
+
+    //These modulus functions do an actual modulus instead of whatever nonsense C# has by default.
     public static int Mod(int num, int div)
     {
         return num < 0 ? ((num+1)%div + div-1) : (num%div);
@@ -19,6 +22,14 @@ public static class MathBits
     public static uint Mod(int num, ushort div)
     {
         return (uint)(num < 0 ? ((num+1)%div + div-1) : (num%div));
+    }
+
+    //There is nothing wrong with C#'s division operator, in fact it does exactly what it needs to.
+    // However, it is sometimes useful to floor instead of  truncate the answer, and that is what this does.
+
+    public static int DivideFloor(int num, int div)
+    {
+        return (int)MathF.Floor((float)num/div);
     }
 
     //the height of an isometric triangle whose side lengths are each 0.5
@@ -58,32 +69,43 @@ public static class MathBits
     */
     public static Vector3i GetBlockPos(Vector3 worldPos)
     {
-
-        //I'm sincerely sorry, I don't know how to explain what this is doing exactly.
-        // All you need to know is that it accounts for the tesselation of triangles.
-        int z = (int)MathF.Round(worldPos.Z/0.25f);
-        int xp = (int)MathF.Round((worldPos.X/*-XOffset*/)/MathBits.XScale);
-        //TODO: finish implementing this
-        // The Z parity is easy to calculate,
-        // But the X parity may not be so simple.
-
-        var XOffset = -0.072f;
-        var XParity = (xp & 1) == 1;
-        var ZParity = (z & 1) == 1;
-        if(XParity ^ ZParity)
+        //If there is some genius out there who can make this method faster,
+        // please help me! I don't know what i'm doing.
+        Vector2 wxz = worldPos.Xz;
+        //Go through every possible nearby position
+        var possibleX = (int)(worldPos.X/XScale);
+        var possibleZ = (int)(worldPos.Z/0.25f);
+        var x0 = possibleX-2;
+        var x1 = possibleX+2;
+        var z0 = possibleZ-2;
+        var z1 = possibleZ+2;
+        int nearestX = 0;
+        int nearestZ = 0;
+        float nearestDistanceSquared = float.PositiveInfinity;
+        for(int x=x0+1; x<x1; x++)
         {
-            //TODO: calculate this offset to greater accuruacy
-            XOffset = 0.072f;
+            for(int z=z0+1; z<z1; z++)
+            {
+                Vector2 wp = GetBlockWorldPos(x, 0, z).Xz;
+                float distanceSquared = Vector2.DistanceSquared(wp, wxz);
+                if(distanceSquared < nearestDistanceSquared)
+                {
+                    nearestDistanceSquared = distanceSquared;
+                    nearestX = x;
+                    nearestZ = z;
+                }
+            }
         }
         return new Vector3i(
-            (int)MathF.Round((worldPos.X-XOffset)/MathBits.XScale),
+            nearestX,
+            //Y position is easy since it's all squares
             (int)MathF.Round(worldPos.Y/0.5f),
-            z
+            nearestZ
         );
     }
     /**
     <summary>
-    gets the world position of the cetner of a block,
+    gets the world position of the center of a block,
     </summary>
     */
     public static Vector3 GetBlockWorldPos(Vector3i blockPos)
@@ -102,23 +124,23 @@ public static class MathBits
             blockPos.Y * 0.5f,
             blockPos.Z * 0.25f
         );
+    }
 
-
-        /*
+    public static Vector3 GetBlockWorldPos(int bx, int by, int bz)
+    {
         //I'm sincerely sorry, I don't kbow how to explain what this is doing exactly.
         // All you need to know is that it accounts for the tesselation of triangles.
-        var parity = ((blockPos.X+blockPos.Z) & 1) == 1;
-        var XOffset = -0.072f * -((blockPos.X+blockPos.Z) % 2);
+        var parity = ((bx+bz) & 1) == 1;
+        var XOffset = 0f;
         if(parity)
         {
             //TODO: calculate this offset to greater accuruacy
-            XOffset = 0.072f;
+            XOffset = 0.144f;
         }
         return new Vector3(
-            blockPos.X * MathBits.XScale + XOffset,
-            blockPos.Y * 0.5f,
-            blockPos.Z * 0.25f
+            bx * XScale + XOffset,
+            by * 0.5f,
+            bz * 0.25f
         );
-        */
     }
 }

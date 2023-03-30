@@ -50,14 +50,14 @@ struct ChunkBuildObject{
         // My old protytype used a hack to make it work, but this time i'm doing it "properly".
         var parity = ((bx+bz) & 1) == 1;
         var angle = 0f;
-        var XOffset = -0.072f;
+        var XOffset = 0f;
         if(parity)
         {
             //Rotate it by 60 degrees
             angle += MathF.PI/3;
             //And offset it by a certain amount, since tesselating triangles is driving me bloody insane
             //TODO: calculate this offset to greater accuruacy
-            XOffset = 0.072f;
+            XOffset = 0.144f;
         }
         for(uint indexIndex = 0; indexIndex < blockMesh.indices.Length; indexIndex++)
         {

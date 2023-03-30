@@ -87,9 +87,9 @@ public sealed class Voxelesque
         noise.SetFractalOctaves(5);
         noise.SetFractalLacunarity(2.0f);
         noise.SetFractalGain(0.5f);
-        chunks = new ChunkManager(new OneBlockChunkGenerator(
-            new Block(dirt, dirtTexture, chunkShader, "dirt")//,
-            //noise
+        chunks = new ChunkManager(new BasicChunkGenerator(
+            new Block(dirt, dirtTexture, chunkShader, "dirt"),
+            noise
         ));
     }
     void Update(TimeSpan delta){
@@ -151,6 +151,7 @@ public sealed class Voxelesque
         // Update camera position
         float cameraSpeed = 1f / 6f;
         if(keyboard.IsKeyDown(Keys.LeftShift)) cameraSpeed = 1f;
+        if(keyboard.IsKeyDown(Keys.LeftAlt)) cameraSpeed = 1f/15f;
         camera.Move(cameraInc * cameraSpeed);
         // Update camera based on mouse
         float sensitivity = 0.5f;

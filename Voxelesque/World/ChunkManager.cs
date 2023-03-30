@@ -130,7 +130,11 @@ public sealed class ChunkManager
     public Block? GetBlock(Vector3i pos)
     {
         //First, figure out which chunk the block is in
-        Chunk? chunk = GetChunk(pos/(int)Chunk.Size);
+        Chunk? chunk = GetChunk(
+            MathBits.DivideFloor(pos.X, Chunk.Size),
+            MathBits.DivideFloor(pos.Y, Chunk.Size),
+            MathBits.DivideFloor(pos.Z, Chunk.Size)
+        );
         if(chunk is null)
         {
             return null;
