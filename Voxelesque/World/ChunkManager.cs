@@ -1,6 +1,7 @@
 namespace Voxelesque.World;
 
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using System;
 
@@ -10,13 +11,13 @@ using Utility;
 using VRender.Utility;
 public sealed class ChunkManager
 {
-    private Dictionary<Vector3i, Chunk> chunks;
+    private ConcurrentDictionary<Vector3i, Chunk> chunks;
     private ChunkRenderer renderer;
     private IChunkGenerator generator;
     public ChunkManager(IChunkGenerator generator)
     {
         this.generator = generator;
-        chunks = new Dictionary<Vector3i, Chunk>();
+        chunks = new ConcurrentDictionary<Vector3i, Chunk>();//new Dictionary<Vector3i, Chunk>();
         renderer = new ChunkRenderer();
     }
     private Chunk LoadChunk(Vector3i pos)
@@ -26,7 +27,8 @@ public sealed class ChunkManager
     }
     private void UnloadChunk(Vector3i pos)
     {
-        this.chunks.Remove(pos);
+        this.chunks.Remove(pos, out var _);
+        renderer.NotifyChunkDeleted(pos);
     }
     private Task? UpdateTask;
     public void Update(Vector3 playerPosition, float distance)
@@ -82,8 +84,7 @@ public sealed class ChunkManager
             }
             foreach(Vector3i c in chunksToRemove)
             {
-                chunks.Remove(c);
-                renderer.NotifyChunkDeleted(c);
+                UnloadChunk(c);
             }
         }
     }
@@ -98,10 +99,12 @@ public sealed class ChunkManager
         if(Vector3.DistanceSquared(chunkWorldPos, playerPosition) < distanceSquared)
         {
             var chunk = LoadChunk(chunkPos);
-            lock(chunks)
-            {
-                chunks.Add(chunkPos, chunk);
-            }
+            chunks.AddOrUpdate(chunkPos, (a) => {
+                return chunk;
+            }, (pos, existing) => {
+                if(existing.LastChange <= chunk.LastChange) return chunk;
+                return existing;
+            }); 
         }
     }
     public void Draw(Camera cam)

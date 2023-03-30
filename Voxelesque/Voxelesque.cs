@@ -87,15 +87,15 @@ public sealed class Voxelesque
         noise.SetFractalOctaves(5);
         noise.SetFractalLacunarity(2.0f);
         noise.SetFractalGain(0.5f);
-        chunks = new ChunkManager(new BasicChunkGenerator(
-            new Block(dirt, dirtTexture, chunkShader, "dirt"),
-            new Block(glass, glassTexture, chunkShader, false, "air"),
-            noise
+        chunks = new ChunkManager(new OneBlockChunkGenerator(
+            new Block(dirt, dirtTexture, chunkShader, "dirt")
+            //new Block(glass, glassTexture, chunkShader, false, "air"),
+            //noise
         ));
     }
     void Update(TimeSpan delta){
         time += delta;
-        var b = chunks.GetBlock(MathBits.GetBlockPos(camera.Position));
+        Block? b = chunks.GetBlock(MathBits.GetBlockPos(camera.Position));
         string block = "none";
         if(b is not null)
         {
@@ -110,7 +110,7 @@ public sealed class Voxelesque
         );
 
         UpdateCamera(delta);
-        chunks.Update(camera.Position, 400);
+        chunks.Update(camera.Position, 100);
         gui.Iterate();
         Vector2i size = VRenderLib.Render.WindowSize();
         gui.SetSize(size.X, size.Y);
@@ -158,5 +158,6 @@ public sealed class Voxelesque
         if (VRenderLib.Render.CursorLocked || mouse.IsButtonDown(MouseButton.Right)) {
             camera.Rotation += new Vector3((mouse.Y - mouse.PreviousY) * sensitivity, (mouse.X - mouse.PreviousX) * sensitivity, 0);
         }
+        camera.SetAspect(VRenderLib.Render.WindowSize());
     }
 }

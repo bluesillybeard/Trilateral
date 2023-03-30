@@ -41,8 +41,14 @@ struct ChunkDrawObject{
             () => {me.Build(pos, chunk, m);}
         );
     }
+    //TODO: construct a list of the 6 adjacent chunks instead of looking at the global chunk manager
     private void Build(Vector3i pos, Chunk chunk, ChunkManager m)
     {
+        if(!ChunkRenderer.AllAdjacentChunksValid(pos, m))
+        {
+            //If a chunk was unloaded while this chunk was waiting to be built, cancel building it.
+            return;
+        }
         var objects = new List<ChunkBuildObject>();
         for(uint x=0; x<Chunk.Size; x++){
             for(uint y=0; y<Chunk.Size; y++){
@@ -60,8 +66,12 @@ struct ChunkDrawObject{
                         objects.Add(new ChunkBuildObject(block.texture, block.shader, block.model.texture));
                     }
                     var buildObject = objects[index];
-                    var blockedFaces = GetBlockedFaces(x, y, z, pos, chunk, m);
-                    buildObject.AddBlock(x, y, z, block, blockedFaces);
+                    if(!buildObject.AddBlock(x, y, z, block, pos, chunk, m))
+                    {
+                        //If adding the block failed (for whatever reason), cancel building this chunk.
+                        inProgress = false;
+                        return;
+                    }
                 }
             }
         }
@@ -90,6 +100,106 @@ struct ChunkDrawObject{
             System.Console.WriteLine("Could not save file: " + e.StackTrace + "\n " + e.Message);
         }
     }
+
+    public void Dispose()
+    {
+        foreach(var d in Drawables)
+        {
+            d.model.mesh.Dispose();
+            //We don't dispose textures since they are persistent.
+        }
+    }
+}
+
+
+struct ChunkBuildObject{
+
+    
+    public static int HashCodeOf(IRenderTexture texture, IRenderShader shader)
+    {
+        int a = texture.GetHashCode();
+        int b = shader.GetHashCode();
+        a ^= b >> 5;
+        a ^= b << 17;
+        a ^= b >> 23;
+        a ^= b << 27;
+        return a;
+    }
+    public ChunkBuildObject(IRenderTexture texture, IRenderShader shader, ImageResult cpuTexture)
+    {
+        this.texture = texture;
+        this.shader = shader;
+        this.hash = HashCodeOf(texture, shader);
+        this.CPUTexture = cpuTexture;
+        mesh = new MeshBuilder(ChunkRenderer.chunkAttributes);
+    }
+
+    public bool AddBlock(uint bx, uint by, uint bz, Block block, Vector3i chunkPos, Chunk chunk, ChunkManager m)
+    {
+        var blockedFaces = GetBlockedFaces(bx, by, bz, chunkPos, chunk, m);
+        if(blockedFaces == 255)return false;
+        //skip surrounded blocks
+        if((~blockedFaces & 0b11111) == 0){
+            return true;
+        }
+        var blockMesh = block.model.mesh;
+        var totalAttribs = blockMesh.attributes.TotalAttributes();
+        //TODO: try to convert the attributes if they don't match
+        if(!blockMesh.attributes.Equals(ChunkRenderer.chunkAttributes))
+        {
+            System.Console.Error.WriteLine("Block mesh attributes don't match required attributes");
+            return false;
+        }
+
+        //Triangles have this really annoying property where their tesselation is annoyingly complex to calculate.
+        // My old protytype used a hack to make it work, but this time i'm doing it "properly".
+        var XParity = (bx & 1) == 1;
+        var ZParity = (bz & 1) == 1;
+        var angle = 0f;
+        var XOffset = -0.072f;
+        if(XParity ^ ZParity)
+        {
+            //Rotate it by 60 degrees
+            angle += MathF.PI/3;
+            //And offset it by a certain amount, since tesselating triangles is driving me bloody insane
+            //TODO: calculate this offset to greater accuruacy
+            XOffset = 0.072f;
+        }
+        for(uint indexIndex = 0; indexIndex < blockMesh.indices.Length; indexIndex++)
+        {
+            //if (blockMesh.triangleToFaces is not null && (blockMesh.triangleToFaces[indexIndex / 3] & blockedFaces) != 0) {
+            //    continue; // Skip this index if it should be removed
+            //}
+            uint index = blockMesh.indices[indexIndex];
+            //Not really sure why, but I can't use a span. My guess is that the AsSpan method isn't implemented for floats.
+            //Span<float> vertex = mesh.vertices.AsSpan<float>(index*totalAttribs, totalAttribs);
+            float[] vertex = blockMesh.vertices[(int)(index*totalAttribs) .. (int)(index*totalAttribs+totalAttribs)];
+
+            var sina = MathF.Sin(angle);
+            var cosa = MathF.Cos(angle);
+            Vector3 pos = new Vector3(vertex[0], vertex[1], vertex[2]);
+            pos = new Vector3(
+                pos.X *  cosa + pos.Z * sina + bx * MathBits.XScale + XOffset,
+                pos.Y                        + by * 0.5f,
+                pos.X * -sina + pos.Z * cosa + bz * 0.25f
+            );
+            mesh.AddVertex(
+                //x, y, z
+                pos.X,
+                pos.Y,
+                pos.Z,
+                //We leave normals and texture coordinates as-is
+                vertex[3],
+                vertex[4],
+                vertex[5],
+                vertex[6],
+                vertex[7]
+            );
+        }
+
+        return true;
+    }
+
     private byte GetBlockedFaces(uint x, uint y, uint z, Vector3i chunkPos, Chunk chunk, ChunkManager chunkManager)
     {
         /*
@@ -126,94 +236,16 @@ struct ChunkDrawObject{
             xm += (int)x;
             ym += (int)y;
             zm += (int)z;
-            //TODO: chunkManager method that makes this more better
             var adjacentBlock = chunkManager.GetBlock(chunkPos, xm, ym, zm);
             byte adjacentOpaque = 0;
-            if(adjacentBlock is not null)
+            if(adjacentBlock is null)
             {
-                adjacentOpaque = adjacentBlock.model.opaqueFaces ?? 0;
+                continue;
             }
+            adjacentOpaque = adjacentBlock.model.opaqueFaces ?? 0;
             blockedFaces |= (byte)(adjacentOpaque & (1<<i));
         }
-        if(blockedFaces != 31 && chunkPos == new Vector3i(0, 0, 0))
-        {
-            //System.Console.WriteLine("yeet");
-            return blockedFaces;
-        }
         return blockedFaces;
-    }
-
-    public void Dispose()
-    {
-        foreach(var d in Drawables)
-        {
-            d.model.mesh.Dispose();
-            //We don't dispose textures since they are persistent.
-        }
-    }
-}
-
-
-struct ChunkBuildObject{
-
-    
-    public static int HashCodeOf(IRenderTexture texture, IRenderShader shader)
-    {
-        int a = texture.GetHashCode();
-        int b = shader.GetHashCode();
-        a ^= b >> 5;
-        a ^= b << 17;
-        a ^= b >> 23;
-        a ^= b << 27;
-        return a;
-    }
-    public ChunkBuildObject(IRenderTexture texture, IRenderShader shader, ImageResult cpuTexture)
-    {
-        this.texture = texture;
-        this.shader = shader;
-        this.hash = HashCodeOf(texture, shader);
-        this.CPUTexture = cpuTexture;
-        mesh = new MeshBuilder(ChunkRenderer.chunkAttributes);
-    }
-
-    public void AddBlock(uint x, uint y, uint z, Block block, byte blockedFaces)
-    {
-        //skip surrounded blocks
-        if((~blockedFaces & 0b11111) == 0){
-            return;
-        }
-        var blockMesh = block.model.mesh;
-        var totalAttribs = blockMesh.attributes.TotalAttributes();
-        //TODO: try to convert the attributes if they don't match
-        if(!blockMesh.attributes.Equals(ChunkRenderer.chunkAttributes))
-        {
-            System.Console.Error.WriteLine("Block mesh attributes don't match required attributes");
-            return;
-        }
-        float XMirror = ((x + z) & 1) - 0.5f; //-0.5 if X should be mirrored, 0.5 if it shouldn't.
-
-        for(uint indexIndex = 0; indexIndex < blockMesh.indices.Length; indexIndex++)
-        {
-            if (blockMesh.triangleToFaces is not null && (blockMesh.triangleToFaces[indexIndex / 3] & blockedFaces) != 0) {
-                continue; // Skip this index if it should be removed
-            }
-            uint index = blockMesh.indices[indexIndex];
-            //Not really sure why, but I can't use a span. My guess is that the AsSpan method isn't implemented for floats.
-            //Span<float> vertex = mesh.vertices.AsSpan<float>(index*totalAttribs, totalAttribs);
-            float[] vertex = blockMesh.vertices[(int)(index*totalAttribs) .. (int)(index*totalAttribs+totalAttribs)];
-            mesh.AddVertex(
-                //x, y, z
-                vertex[0] * 2*XMirror + x * 0.5f,
-                vertex[1] + y * 0.5f,
-                vertex[2] + z * MathBits.ZScale,
-                //We leave normals and texture coordinates as-is
-                vertex[3],
-                vertex[4],
-                vertex[5],
-                vertex[6],
-                vertex[7]
-            );
-        }
     }
 
     public readonly MeshBuilder mesh;
@@ -246,7 +278,7 @@ public sealed class ChunkRenderer
             var pos = obj.Key;
             var drawObject = obj.Value;
             //We need to make a translation for the position, since the mesh is only relative to the chunk's origin, not the actual origin.
-            var transform = Matrix4.CreateTranslation(pos.X * Chunk.Size * 0.5f, pos.Y * Chunk.Size * 0.5f, pos.Z * Chunk.Size * MathBits.ZScale);
+            var transform = Matrix4.CreateTranslation(pos.X * Chunk.Size * MathBits.XScale, pos.Y * Chunk.Size * 0.5f, pos.Z * Chunk.Size * 0.25f);
             //Now we draw it
             var uniforms = new KeyValuePair<string, object>[]{
                 new KeyValuePair<string, object>("model", transform),
@@ -313,7 +345,7 @@ public sealed class ChunkRenderer
     Returns true if all 6 adjacent chunks are initialized
     </summary>
     */
-    private bool AllAdjacentChunksValid(Vector3i pos, ChunkManager m)
+    public static bool AllAdjacentChunksValid(Vector3i pos, ChunkManager m)
     {
         if(!m.Chunks.ContainsKey(new Vector3i(pos.X,   pos.Y,   pos.Z+1))) return false;
         if(!m.Chunks.ContainsKey(new Vector3i(pos.X,   pos.Y+1, pos.Z  ))) return false;
