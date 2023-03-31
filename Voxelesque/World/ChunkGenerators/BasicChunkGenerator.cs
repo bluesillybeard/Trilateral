@@ -19,7 +19,7 @@ public class BasicChunkGenerator : IChunkGenerator
         int csy = (int) (Chunk.Size * cy);
         int csx = (int) (Chunk.Size * cx);
         int csz = (int) (Chunk.Size * cz * 0.5773502692f);
-        Block?[] blocks = new Block[Chunk.Size*Chunk.Size*Chunk.Size];
+        Chunk c = new Chunk();
         for(uint xp = 0; xp < Chunk.Size; xp++){
             for(uint zp = 0; zp < Chunk.Size; zp++){
                 float height = noise.GetNoise(csx+xp, csz+(zp*0.5773502692f));
@@ -28,17 +28,17 @@ public class BasicChunkGenerator : IChunkGenerator
                 for(uint yp = 0; yp < Chunk.Size; yp++){
                     uint index = xp + Chunk.Size*yp + Chunk.Size*Chunk.Size*zp;
                     if(csy+yp < height) {
-                        blocks[index] = fill;
+                        c.SetBlock(fill, index);
                     }
                     //a platform a y=13-15 for the first chunk
                     if(cx == 0 && cy == 0 && cz == 0 && yp >= 13)
                     {
-                        blocks[index] = fill;
+                        c.SetBlock(fill, index);
                     }
                 }
             }
         }
-        Chunk c = new Chunk(blocks);
+        c.UpdateLastChange();
         return c;
     }
 }

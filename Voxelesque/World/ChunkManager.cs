@@ -140,7 +140,7 @@ public sealed class ChunkManager
             return null;
         }
         //Then get the actual block itself
-        return chunk.Value.GetBlock(MathBits.Mod(pos.X, Chunk.Size), MathBits.Mod(pos.Y, Chunk.Size), MathBits.Mod(pos.Z, Chunk.Size));
+        return chunk.GetBlock(MathBits.Mod(pos.X, Chunk.Size), MathBits.Mod(pos.Y, Chunk.Size), MathBits.Mod(pos.Z, Chunk.Size));
     }
 
     public Block? GetBlock(Vector3i chunkPos, uint x, uint y, uint z)
@@ -152,7 +152,7 @@ public sealed class ChunkManager
             return null;
         }
         //Then get the actual block itself
-        return chunk.Value.GetBlock(x, y, z);
+        return chunk.GetBlock(x, y, z);
     }
 
     public Block? GetBlock(Vector3i chunkPos, int x, int y, int z)
@@ -170,7 +170,7 @@ public sealed class ChunkManager
             return null;
         }
         //Then get the actual block itself
-        return chunk.Value.GetBlock(MathBits.Mod(x, Chunk.Size), MathBits.Mod(y, Chunk.Size), MathBits.Mod(z, Chunk.Size));
+        return chunk.GetBlock(MathBits.Mod(x, Chunk.Size), MathBits.Mod(y, Chunk.Size), MathBits.Mod(z, Chunk.Size));
     }
 
     public bool TrySetBlock(Block block, Vector3i pos)
@@ -182,7 +182,7 @@ public sealed class ChunkManager
             return false;
         }
         //Then set the actual block itself
-        chunk.Value.SetBlock(block, MathBits.Mod(pos.X, Chunk.Size), MathBits.Mod(pos.Y, Chunk.Size), MathBits.Mod(pos.Z, Chunk.Size));
+        chunk.SetBlock(block, MathBits.Mod(pos.X, Chunk.Size), MathBits.Mod(pos.Y, Chunk.Size), MathBits.Mod(pos.Z, Chunk.Size));
         return true;
     }
 }
