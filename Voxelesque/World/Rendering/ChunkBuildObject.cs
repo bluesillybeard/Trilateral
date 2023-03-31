@@ -61,9 +61,9 @@ struct ChunkBuildObject{
         }
         for(uint indexIndex = 0; indexIndex < blockMesh.indices.Length; indexIndex++)
         {
-            //if (blockMesh.triangleToFaces is not null && (blockMesh.triangleToFaces[indexIndex / 3] & blockedFaces) != 0) {
-            //    continue; // Skip this index if it should be removed
-            //}
+            if (blockMesh.triangleToFaces is not null && (blockMesh.triangleToFaces[indexIndex / 3] & blockedFaces) != 0) {
+                continue; // Skip this index if it should be removed
+            }
             uint index = blockMesh.indices[indexIndex];
             //Not really sure why, but I can't use a span. My guess is that the AsSpan method isn't implemented for floats.
             //Span<float> vertex = mesh.vertices.AsSpan<float>(index*totalAttribs, totalAttribs);
@@ -111,7 +111,8 @@ struct ChunkBuildObject{
             int xm = 0;
             int ym = 0;
             int zm = 0;
-            switch(i)
+            // I literally figured this out using trial and error lol
+            switch(num)
             {
                 //Not rotated
                 case 0:
@@ -119,11 +120,11 @@ struct ChunkBuildObject{
                 case 1:
                     ym = -1; break;
                 case 2:
-                    xm = 1; break;
+                    zm = -1; break;
                 case 3:
                     zm = 1; break;
                 case 4:
-                    zm = -1; break;
+                    xm = -1; break;
                 //rotated by 60 degrees
                 case 5:
                     ym = 1; break;
@@ -134,7 +135,7 @@ struct ChunkBuildObject{
                 case 8:
                     xm = 1; break;
                 case 9:
-                    xm = -1; break;
+                    zm = 1; break;
             }
             xm += (int)x;
             ym += (int)y;

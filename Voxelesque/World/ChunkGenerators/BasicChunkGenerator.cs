@@ -30,6 +30,11 @@ public class BasicChunkGenerator : IChunkGenerator
                     if(csy+yp < height) {
                         blocks[index] = fill;
                     }
+                    //a platform a y=13-15 for the first chunk
+                    if(cx == 0 && cy == 0 && cz == 0 && yp >= 13)
+                    {
+                        blocks[index] = fill;
+                    }
                 }
             }
         }

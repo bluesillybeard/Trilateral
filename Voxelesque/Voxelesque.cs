@@ -109,7 +109,7 @@ public sealed class Voxelesque
         );
 
         UpdateCamera(delta);
-        chunks.Update(camera.Position, 100);
+        chunks.Update(camera.Position, 400);
         gui.Iterate();
         Vector2i size = VRenderLib.Render.WindowSize();
         gui.SetSize(size.X, size.Y);

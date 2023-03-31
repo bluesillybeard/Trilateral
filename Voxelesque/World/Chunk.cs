@@ -2,6 +2,10 @@ namespace Voxelesque.World;
 
 using System;
 
+//This class uses a few optimizations to make things nice and memory efficient without sacrificing too much speed.
+// Memory optimizations:
+// -Pointers are huge. 8 bytes each. Block is a refernce type. By assigning each block and ID, we can cut that down to 2 bytes each.
+//  It's well worth the tiny bit of extra memory to store the mapping from ID to Block
 public struct Chunk
 {
     // Chunks are quite unusually shaped (geometrically speaking), but the data is stored as a cube.
@@ -13,9 +17,7 @@ public struct Chunk
     DateTime lastChange;
     public DateTime LastChange{get=>lastChange;}
 
-    //Can't statically assign a length of an array in C#.
-    // It's valid though, since an array can be any length.
-    private Block?[/*ChunkSize^3*/]? blocks;
+    private Block?[]? blocks;
 
     //creates a new empty chunk
     public Chunk()
