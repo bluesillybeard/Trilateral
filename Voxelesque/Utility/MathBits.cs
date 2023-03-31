@@ -64,6 +64,19 @@ public static class MathBits
     }
     /**
     <summary>
+    gets the world pos of the center of a chunk.
+    </summary>
+    */
+    public static Vector3 GetChunkWorldPosUncentered(Vector3i chunkPos)
+    {
+        return new Vector3(
+            chunkPos.X*(Chunk.Size*XScale),
+            chunkPos.Y*(Chunk.Size*0.5f),
+            chunkPos.Z*(Chunk.Size*0.25f)
+        );
+    }
+    /**
+    <summary>
     gets the block position given a world position.
     </summary>
     */

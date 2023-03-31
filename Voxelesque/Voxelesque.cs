@@ -23,6 +23,8 @@ public sealed class Voxelesque
     DateTime time;
     IRenderTexture ascii;
     Random random;
+    //We keep the camera position small, and use a chunk's position.
+    Vector3i playerChunk;
     Camera camera;
     Matrix4 previousCameraTransform;
     BasicGUIPlane gui;
@@ -46,7 +48,7 @@ public sealed class Voxelesque
         chunkShader = render.GetShader(new ShaderFeatures(ChunkRenderer.chunkAttributes, true, true));
         gui = new BasicGUIPlane(size.X, size.Y, new RenderDisplay(ascii));
         random = new Random();
-        camera = new Camera(Vector3.Zero, Vector3.Zero, 90, size);
+        camera = new Camera(new Vector3(0f, 10f, 0f), Vector3.Zero, 90, size);
         debug = new TextElement(new LayoutContainer(gui.GetRoot(), VAllign.top, HAllign.left), 0xFFFFFFFF, 10, "", ascii, gui.GetDisplay(), 0);
         render.OnUpdate += Update;
         render.OnDraw += Render;
@@ -101,7 +103,8 @@ public sealed class Voxelesque
             block = b.name;
         }
         debug.SetText(
-            "Camera Position: " + camera.Position + '\n'
+            "Player Position: " + camera.Position + '\n'
+             + "Player chunk: " + playerChunk + "\n"
             + "Camera Rotation: " + camera.Rotation + '\n'
             + "FPS: " + (int)(1/(frameDelta.Ticks/10_000_000d)) + '\n'
             + "UPS: " + (int)(1/(delta.Ticks/10_000_000d)) + '\n'
@@ -109,7 +112,7 @@ public sealed class Voxelesque
         );
 
         UpdateCamera(delta);
-        chunks.Update(camera.Position, 150);
+        chunks.Update(camera.Position + MathBits.GetChunkWorldPosUncentered(playerChunk), 50);
         gui.Iterate();
         Vector2i size = VRenderLib.Render.WindowSize();
         gui.SetSize(size.X, size.Y);
@@ -117,7 +120,7 @@ public sealed class Voxelesque
 
     void Render(TimeSpan delta){
         VRenderLib.Render.BeginRenderQueue();
-        chunks.Draw(camera);
+        chunks.Draw(camera, playerChunk);
         gui.Draw();
         VRenderLib.Render.EndRenderQueue();
         frameDelta = delta;
@@ -159,5 +162,10 @@ public sealed class Voxelesque
             camera.Rotation += new Vector3((mouse.Y - mouse.PreviousY) * sensitivity, (mouse.X - mouse.PreviousX) * sensitivity, 0);
         }
         camera.SetAspect(VRenderLib.Render.WindowSize());
+        Vector3i cameraChunk = MathBits.GetChunkPos(camera.Position);
+        Vector3 cameraChunkWorldPos = MathBits.GetChunkWorldPosUncentered(cameraChunk);
+        Vector3 residual = camera.Position - cameraChunkWorldPos;
+        camera.Position = residual;
+        playerChunk += cameraChunk;
     }
 }

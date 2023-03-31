@@ -17,11 +17,11 @@ public sealed class ChunkRenderer
         chunkDrawObjects = new Dictionary<Vector3i, ChunkDrawObject>();
     }
 
-    public void DrawChunks(Camera camera)
+    public void DrawChunks(Camera camera, Vector3i playerChunk)
     {
         foreach(KeyValuePair<Vector3i, ChunkDrawObject> obj in chunkDrawObjects)
         {
-            var pos = obj.Key;
+            var pos = obj.Key - playerChunk;
             var drawObject = obj.Value;
             //We need to make a translation for the position, since the mesh is only relative to the chunk's origin, not the actual origin.
             var transform = Matrix4.CreateTranslation(pos.X * Chunk.Size * MathBits.XScale, pos.Y * Chunk.Size * 0.5f, pos.Z * Chunk.Size * 0.25f);

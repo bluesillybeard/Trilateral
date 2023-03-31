@@ -107,9 +107,9 @@ public sealed class ChunkManager
             }); 
         }
     }
-    public void Draw(Camera cam)
+    public void Draw(Camera cam, Vector3i playerChunk)
     {
-        renderer.DrawChunks(cam);
+        renderer.DrawChunks(cam, playerChunk);
     }
     public IReadOnlyDictionary<Vector3i, Chunk> Chunks{get => chunks;}
     public Chunk? GetChunk(Vector3i position)
