@@ -112,18 +112,23 @@ public sealed class Voxelesque
         );
 
         UpdateCamera(delta);
-        chunks.Update(camera.Position + MathBits.GetChunkWorldPosUncentered(playerChunk), 50);
+        chunks.Update(camera.Position + MathBits.GetChunkWorldPosUncentered(playerChunk), 150);
         gui.Iterate();
         Vector2i size = VRenderLib.Render.WindowSize();
         gui.SetSize(size.X, size.Y);
     }
 
     void Render(TimeSpan delta){
+        try{
         VRenderLib.Render.BeginRenderQueue();
         chunks.Draw(camera, playerChunk);
         gui.Draw();
         VRenderLib.Render.EndRenderQueue();
         frameDelta = delta;
+        } catch (Exception e)
+        {
+            Console.Error.WriteLine("Error rendering chunk: " + e.Message + "\ntacktrace: " + e.StackTrace);
+        }
     }
 
     void UpdateCamera(TimeSpan delta)
@@ -153,7 +158,7 @@ public sealed class Voxelesque
         }
         // Update camera position
         float cameraSpeed = 1f / 6f;
-        if(keyboard.IsKeyDown(Keys.LeftShift)) cameraSpeed = 1f;
+        if(keyboard.IsKeyDown(Keys.LeftShift)) cameraSpeed = 5f;
         if(keyboard.IsKeyDown(Keys.LeftAlt)) cameraSpeed = 1f/15f;
         camera.Move(cameraInc * cameraSpeed);
         // Update camera based on mouse

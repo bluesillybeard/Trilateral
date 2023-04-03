@@ -2,6 +2,7 @@ namespace Voxelesque.World;
 
 using OpenTK.Mathematics;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using vmodel;
 using VRender;
 using VRender.Utility;
@@ -11,18 +12,23 @@ public sealed class ChunkRenderer
 {
     public static readonly Attributes chunkAttributes = new Attributes(new EAttribute[]{EAttribute.position, EAttribute.textureCoords, EAttribute.normal});
 
-    private Dictionary<Vector3i, ChunkDrawObject> chunkDrawObjects;
+    private ConcurrentDictionary<Vector3i, ChunkDrawObject> chunkDrawObjects;
     public ChunkRenderer()
     {
-        chunkDrawObjects = new Dictionary<Vector3i, ChunkDrawObject>();
+        chunkDrawObjects = new ConcurrentDictionary<Vector3i, ChunkDrawObject>();
     }
 
     public void DrawChunks(Camera camera, Vector3i playerChunk)
     {
+        uint renderedChunks = 0;
         foreach(KeyValuePair<Vector3i, ChunkDrawObject> obj in chunkDrawObjects)
         {
             var pos = obj.Key - playerChunk;
             var drawObject = obj.Value;
+            if(drawObject.InProgress)
+            {
+                continue; //Skip ones that aren't finished
+            }
             //We need to make a translation for the position, since the mesh is only relative to the chunk's origin, not the actual origin.
             var transform = Matrix4.CreateTranslation(pos.X * Chunk.Size * MathBits.XScale, pos.Y * Chunk.Size * 0.5f, pos.Z * Chunk.Size * 0.25f);
             //Now we draw it
@@ -37,7 +43,10 @@ public sealed class ChunkRenderer
                     drawable.shader, uniforms, true
                 );
             }
+            renderedChunks++;
         }
+
+        System.Console.WriteLine("Rendered " + renderedChunks + "/" + chunkDrawObjects.Count + " chunks");
     }
 
     public void NotifyChunkDeleted(Vector3i pos)
@@ -50,56 +59,44 @@ public sealed class ChunkRenderer
     public void Update(ChunkManager chunkManager)
     {
         //For every chunk in the manager
-        lock(chunkManager.Chunks)
+        foreach(var pair in chunkManager.Chunks)
         {
-            foreach(var pair in chunkManager.Chunks)
+            var pos = pair.Key;
+            var chunk = pair.Value;
+            //If the chunk has been built before but needs to be updated
+            if(chunkDrawObjects.TryGetValue(pos, out var oldDrawObject))
             {
-                var pos = pair.Key;
-                var chunk = pair.Value;
-                //If the chunk has been built before but needs to be updated
-                if(chunkDrawObjects.TryGetValue(pos, out var oldDrawObject))
+                if(oldDrawObject.LastUpdate < chunk.LastChange)
                 {
-                    if(oldDrawObject.LastUpdate < chunk.LastChange && AllAdjacentChunksValid(pos, chunkManager))
-                    {
-                        oldDrawObject.BeginBuilding(pos, chunk, chunkManager);
-                    }
+                    var adjacentChunks = GetAdjacentChunks(chunkManager, pos);
+                    if(adjacentChunks is null)continue;
+                    oldDrawObject.BeginBuilding(pos, adjacentChunks);
                 }
-                else
-                {
-                    if(AllAdjacentChunksValid(pos, chunkManager))
-                    {
-                        //If the chunk has not been built before (It's a new chunk)
-                        var draw = new ChunkDrawObject();
-                        draw.BeginBuilding(pos, chunk, chunkManager);
-                        chunkDrawObjects.Add(pos, draw);
-                    }
+            }
+            else
+            {
+                var adjacentChunks = GetAdjacentChunks(chunkManager, pos);
+                if(adjacentChunks is null)continue;
+                var draw = new ChunkDrawObject();
+                if(!chunkDrawObjects.TryAdd(pos, draw)){
+                    System.Console.WriteLine("Failed to add draw object for " + pos);
+                    continue;
                 }
+                draw.BeginBuilding(pos, adjacentChunks);
             }
         }
     }
 
-    // private static readonly Vector3i[] adjacencyList = new Vector3i[]{
-    //     new Vector3i( 0, 0, 1),
-    //     new Vector3i( 0, 1, 0),
-    //     new Vector3i( 1, 0, 0),
-    //     new Vector3i( 0, 0,-1),
-    //     new Vector3i( 0,-1, 0),
-    //     new Vector3i(-1, 0, 0)
-    // };
-    /**
-    <summary>
-    Returns true if all 6 adjacent chunks are initialized
-    </summary>
-    */
-    public static bool AllAdjacentChunksValid(Vector3i pos, ChunkManager m)
+    private Chunk[]? GetAdjacentChunks(ChunkManager m, Vector3i pos)
     {
-        if(!m.Chunks.ContainsKey(new Vector3i(pos.X,   pos.Y,   pos.Z+1))) return false;
-        if(!m.Chunks.ContainsKey(new Vector3i(pos.X,   pos.Y+1, pos.Z  ))) return false;
-        if(!m.Chunks.ContainsKey(new Vector3i(pos.X+1, pos.Y,   pos.Z  ))) return false;
-        if(!m.Chunks.ContainsKey(new Vector3i(pos.X,   pos.Y,   pos.Z-1))) return false;
-        if(!m.Chunks.ContainsKey(new Vector3i(pos.X,   pos.Y-1, pos.Z  ))) return false;
-        if(!m.Chunks.ContainsKey(new Vector3i(pos.X-1, pos.Y,   pos.Z  ))) return false;
-
-        return true;
+        //If the chunk has not been built before (It's a new chunk)
+        Chunk[] adjacentChunks = new Chunk[ChunkDrawObject.adjacencyList.Length];
+        for(uint i=0; i<adjacentChunks.Length; i++)
+        {
+            var c = m.GetChunk(pos + ChunkDrawObject.adjacencyList[i]);
+            if(c is null)return null; //We don't want to build chunks that don't have all adjacent ones available.
+            adjacentChunks[i] = c;
+        }
+        return adjacentChunks;
     }
 }

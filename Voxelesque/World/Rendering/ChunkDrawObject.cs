@@ -11,41 +11,47 @@ using VRender;
 
 //An object that represents a chunk
 struct ChunkDrawObject{
-
-
     public List<(RenderModel model, IRenderShader shader)> Drawables;
     public DateTime LastUpdate; //when the chunk was last updated
     private Task? UpdateTask;
-    private bool inProgress;
-    public bool InProgress {get => inProgress;}
+    public bool InProgress {get => UpdateTask is not null && !UpdateTask.IsCompleted;}
 
     public ChunkDrawObject()
     {
-        inProgress = false;
         Drawables = new List<(RenderModel model, IRenderShader shader)>(0);
         LastUpdate = DateTime.Now;
         UpdateTask = null;
     }
 
-    public void BeginBuilding(Vector3i pos, Chunk chunk, ChunkManager m)
+    public void BeginBuilding(Vector3i pos, Chunk[] adjacent)
     {
         //TODO: cancel current task and make a new one
-        if(inProgress)return;
-        inProgress = true;
+        if(InProgress)return;
         LastUpdate = DateTime.Now;
         var me = this;
         UpdateTask = Task.Run(
-            () => {me.Build(pos, chunk, m);}
+            () => {
+                try{
+                    me.Build(pos, adjacent);
+                } catch (Exception e)
+                {
+                    System.Console.Error.WriteLine("Error while building chunk: " + e.Message);
+                }
+            }
         );
     }
-    //TODO: construct a list of the 6 adjacent chunks instead of looking at the global chunk manager
-    private void Build(Vector3i pos, Chunk chunk, ChunkManager m)
+
+    public void Dispose()
     {
-        if(!ChunkRenderer.AllAdjacentChunksValid(pos, m))
+        foreach(var d in Drawables)
         {
-            //If a chunk was unloaded while this chunk was waiting to be built, cancel building it.
-            return;
+            d.model.mesh.Dispose();
+            //We don't dispose textures since they are persistent.
         }
+    }
+    private void Build(Vector3i pos, Chunk[] adjacent)
+    {
+        Chunk chunk = adjacent[0];
         var objects = new List<ChunkBuildObject>();
         for(uint x=0; x<Chunk.Size; x++){
             for(uint y=0; y<Chunk.Size; y++){
@@ -63,10 +69,9 @@ struct ChunkDrawObject{
                         objects.Add(new ChunkBuildObject(block.texture, block.shader, block.model.texture));
                     }
                     var buildObject = objects[index];
-                    if(!buildObject.AddBlock(x, y, z, block, pos, chunk, m))
+                    if(!buildObject.AddBlock(x, y, z, block, pos, chunk, adjacent))
                     {
                         //If adding the block failed (for whatever reason), cancel building this chunk.
-                        inProgress = false;
                         return;
                     }
                 }
@@ -81,29 +86,51 @@ struct ChunkDrawObject{
             var texture = build.texture;
             Drawables.Add((new RenderModel(mesh, texture), shader));
         }
-        inProgress = false;
     }
 
-    private static void SaveFile(string path, VModel model)
+    public static readonly Vector3i[] adjacencyList = new Vector3i[]{
+        new Vector3i( 0, 0, 0),
+        new Vector3i( 0, 0, 1),
+        new Vector3i( 0, 1, 0),
+        new Vector3i( 1, 0, 0),
+        new Vector3i( 0, 0,-1),
+        new Vector3i( 0,-1, 0),
+        new Vector3i(-1, 0, 0)
+    };
+    //TODO: use a switch statement instead
+    private static readonly int[] reverseAdjacency = new int[]{
+        -1,//-1,-1,-1
+        -1,// 0,-1,-1
+        -1,// 1,-1,-1
+        -1,//-1, 0,-1
+         4,// 0, 0,-1
+        -1,// 1, 0,-1
+        -1,//-1, 1,-1
+        -1,// 0, 1,-1
+        -1,// 1, 1,-1
+        -1,//-1,-1, 0
+         5,// 0,-1, 0
+        -1,// 1,-1, 0
+         6,//-1, 0, 0
+         0,// 0, 0, 0
+         3,// 1, 0, 0
+        -1,//-1, 1, 0
+         2,// 0, 1, 0
+        -1,// 1, 1, 0
+        -1,//-1,-1, 1
+        -1,// 0,-1, 1
+        -1,// 1,-1, 1
+        -1,//-1, 0, 1
+         1,// 0, 0, 1
+        -1,// 1, 0, 1
+        -1,//-1, 1, 1
+        -1,// 0, 1, 1
+        -1,// 1, 1, 1
+    };
+    //Make sure to update this if the adjacency list ever changes!
+    public static int GetAdjacencyIndex(Vector3i adjacency)
     {
-        try{
-            //For the same of simplicity, I just make that path as a directory then save our files into it.
-            if(!Directory.Exists(path))
-                Directory.CreateDirectory(path);
-            string name = new DirectoryInfo(path).Name;
-            //save the files
-            VModelUtils.SaveModel(model, path, "mesh.vmesh", "texture.png", "model.vmf");
-        } catch(Exception e){
-            System.Console.WriteLine("Could not save file: " + e.StackTrace + "\n " + e.Message);
-        }
-    }
-
-    public void Dispose()
-    {
-        foreach(var d in Drawables)
-        {
-            d.model.mesh.Dispose();
-            //We don't dispose textures since they are persistent.
-        }
+        int num = (adjacency.X+1) + 3*(adjacency.Y+1) + 9*(adjacency.Z+1);
+        return reverseAdjacency[num];
     }
 }

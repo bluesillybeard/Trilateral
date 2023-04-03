@@ -29,9 +29,9 @@ struct ChunkBuildObject{
         mesh = new MeshBuilder(ChunkRenderer.chunkAttributes);
     }
 
-    public bool AddBlock(uint bx, uint by, uint bz, Block block, Vector3i chunkPos, Chunk chunk, ChunkManager m)
+    public bool AddBlock(uint bx, uint by, uint bz, Block block, Vector3i chunkPos, Chunk chunk, Chunk[] adjacent)
     {
-        var blockedFaces = GetBlockedFaces(bx, by, bz, chunkPos, chunk, m);
+        var blockedFaces = GetBlockedFaces(bx, by, bz, chunkPos, chunk, adjacent);
         if(blockedFaces == 255)return false;
         //skip surrounded blocks
         if((~blockedFaces & 0b11111) == 0){
@@ -94,7 +94,7 @@ struct ChunkBuildObject{
         return true;
     }
 
-    private byte GetBlockedFaces(uint x, uint y, uint z, Vector3i chunkPos, Chunk chunk, ChunkManager chunkManager)
+    private byte GetBlockedFaces(uint bx, uint by, uint bz, Vector3i chunkPos, Chunk chunk, Chunk[] adjacent)
     {
         /*
         bit 1 :top (+y)
@@ -107,7 +107,7 @@ struct ChunkBuildObject{
         for(int i=0; i<5; i++)
         {
             //Rotate every other block in a grid pattern by 60 degrees.
-            int num = (int)(i + 5*((z + x) & 1));
+            int num = (int)(i + 5*((bz + bx) & 1));
             int xm = 0;
             int ym = 0;
             int zm = 0;
@@ -137,10 +137,17 @@ struct ChunkBuildObject{
                 case 9:
                     zm = 1; break;
             }
-            xm += (int)x;
-            ym += (int)y;
-            zm += (int)z;
-            var adjacentBlock = chunkManager.GetBlock(chunkPos, xm, ym, zm);
+            xm += (int)bx;
+            ym += (int)by;
+            zm += (int)bz;
+            Vector3i chunkOffset = new Vector3i(
+                (int)MathF.Floor(((float)xm)/Chunk.Size),
+                (int)MathF.Floor(((float)ym)/Chunk.Size),
+                (int)MathF.Floor(((float)zm)/Chunk.Size)
+            );
+            int index = ChunkDrawObject.GetAdjacencyIndex(chunkOffset);
+            var adjacentChunk = adjacent[index];
+            var adjacentBlock = adjacentChunk.GetBlock(MathBits.Mod(xm, Chunk.Size),MathBits.Mod(ym, Chunk.Size),MathBits.Mod(zm, Chunk.Size));
             byte adjacentOpaque = 0;
             if(adjacentBlock is null)
             {
