@@ -38,13 +38,13 @@ public sealed class ChunkManager
             UpdateTask = Task.Run(() => {
                 try{
                     UpdateSync(playerPosition, distance);
+                    renderer.Update(this);
                 } catch (Exception e)
                 {
                     System.Console.Error.WriteLine("Exception: " + e.Message + "\nstack trace:" + e.StackTrace);
                 }
             });
         }
-        renderer.Update(this);
     }
 
     private void UpdateSync(Vector3 playerPosition, float distance)
@@ -54,9 +54,6 @@ public sealed class ChunkManager
         float distanceSquared = distance * distance;
         UnloadDistantChunks(playerPosition, distanceSquared);
         List<KeyValuePair<Vector3i, Chunk>> newChunks = new List<KeyValuePair<Vector3i, Chunk>>();
-        //TODO: Make the UpdateChunk method run once per instance,
-        // So threads aren't waiting for the others to finish.
-        //for(int chunkX = -chunkRange.X; chunkX < chunkRange.X; chunkX++)
         Parallel.For(-chunkRange.X, chunkRange.X, (chunkX) =>
         {
             for (int chunkY = -chunkRange.Y; chunkY < chunkRange.Y; chunkY++)
@@ -68,7 +65,6 @@ public sealed class ChunkManager
                 }
             }
         });
-        //System.Console.WriteLine("finished generating chunks");
     }
 
     private void UnloadDistantChunks(Vector3 playerPosition, float distanceSquared)

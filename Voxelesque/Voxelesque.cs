@@ -20,6 +20,7 @@ using World.ChunkGenerators;
 using Utility;
 public sealed class Voxelesque
 {
+    DateTime start;
     DateTime time;
     IRenderTexture ascii;
     Random random;
@@ -32,8 +33,11 @@ public sealed class Voxelesque
     TimeSpan frameDelta;
     ChunkManager chunks;
     IRenderShader chunkShader;
+    uint totalFrames;
     public Voxelesque()
     {
+        start = DateTime.Now;
+        time = DateTime.Now;
         var render = VRenderLib.Render;
         var size = render.WindowSize();
         {
@@ -52,6 +56,7 @@ public sealed class Voxelesque
         debug = new TextElement(new LayoutContainer(gui.GetRoot(), VAllign.top, HAllign.left), 0xFFFFFFFF, 10, "", ascii, gui.GetDisplay(), 0);
         render.OnUpdate += Update;
         render.OnDraw += Render;
+        render.OnCleanup += Dispose;
         VModel dirt;
         IRenderTexture dirtTexture;
         {
@@ -106,8 +111,8 @@ public sealed class Voxelesque
             "Player Position: " + camera.Position + '\n'
              + "Player chunk: " + playerChunk + "\n"
             + "Camera Rotation: " + camera.Rotation + '\n'
-            + "FPS: " + (int)(1/(frameDelta.Ticks/10_000_000d)) + '\n'
-            + "UPS: " + (int)(1/(delta.Ticks/10_000_000d)) + '\n'
+            + "FPS: " + (int)(1/(frameDelta.Ticks/(double)TimeSpan.TicksPerSecond)) + '\n'
+            + "UPS: " + (int)(1/(delta.Ticks/(double)TimeSpan.TicksPerSecond)) + '\n'
             + "block:" + block
         );
 
@@ -119,12 +124,13 @@ public sealed class Voxelesque
     }
 
     void Render(TimeSpan delta){
+        totalFrames++;
         try{
-        VRenderLib.Render.BeginRenderQueue();
-        chunks.Draw(camera, playerChunk);
-        gui.Draw();
-        VRenderLib.Render.EndRenderQueue();
-        frameDelta = delta;
+            VRenderLib.Render.BeginRenderQueue();
+            chunks.Draw(camera, playerChunk);
+            gui.Draw();
+            VRenderLib.Render.EndRenderQueue();
+            frameDelta = delta;
         } catch (Exception e)
         {
             Console.Error.WriteLine("Error rendering chunk: " + e.Message + "\ntacktrace: " + e.StackTrace);
@@ -172,5 +178,11 @@ public sealed class Voxelesque
         Vector3 residual = camera.Position - cameraChunkWorldPos;
         camera.Position = residual;
         playerChunk += cameraChunk;
+    }
+
+
+    void Dispose()
+    {
+        System.Console.WriteLine("average fps:" + totalFrames/((time-start).Ticks/(double)TimeSpan.TicksPerSecond));
     }
 }

@@ -93,6 +93,6 @@ public sealed class ChunkRenderer
             if(c is null)return null; //We don't want to build chunks that don't have all adjacent ones available.
             adjacentChunks[i] = c;
         }
-        return adjacentChunks;
+    return adjacentChunks;
     }
 }
