@@ -20,7 +20,6 @@ public sealed class ChunkRenderer
 
     public void DrawChunks(Camera camera, Vector3i playerChunk)
     {
-        uint renderedChunks = 0;
         foreach(KeyValuePair<Vector3i, ChunkDrawObject> obj in chunkDrawObjects)
         {
             var pos = obj.Key - playerChunk;
@@ -43,10 +42,7 @@ public sealed class ChunkRenderer
                     drawable.shader, uniforms, true
                 );
             }
-            renderedChunks++;
         }
-
-        System.Console.WriteLine("Rendered " + renderedChunks + "/" + chunkDrawObjects.Count + " chunks");
     }
 
     public void NotifyChunkDeleted(Vector3i pos)

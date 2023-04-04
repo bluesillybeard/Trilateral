@@ -69,7 +69,7 @@ struct ChunkDrawObject{
                         objects.Add(new ChunkBuildObject(block.texture, block.shader, block.model.texture));
                     }
                     var buildObject = objects[index];
-                    if(!buildObject.AddBlock(x, y, z, block, pos, chunk, adjacent))
+                    if(!buildObject.AddBlock(x, y, z, block, pos, adjacent))
                     {
                         //If adding the block failed (for whatever reason), cancel building this chunk.
                         return;

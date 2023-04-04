@@ -3,6 +3,8 @@ namespace Voxelesque.World;
 using OpenTK.Mathematics;
 using VRender.Interface;
 using System;
+using System.Buffers.Binary;
+using System.Collections.Generic;
 using vmodel;
 using Utility;
 using StbImageSharp;
@@ -29,10 +31,9 @@ struct ChunkBuildObject{
         mesh = new MeshBuilder(ChunkRenderer.chunkAttributes);
     }
 
-    public bool AddBlock(uint bx, uint by, uint bz, Block block, Vector3i chunkPos, Chunk chunk, Chunk[] adjacent)
+    public bool AddBlock(uint bx, uint by, uint bz, Block block, Vector3i chunkPos, Chunk[] adjacent)
     {
-        var blockedFaces = GetBlockedFaces(bx, by, bz, chunkPos, chunk, adjacent);
-        if(blockedFaces == 255)return false;
+        var blockedFaces = GetBlockedFaces(bx, by, bz, chunkPos, adjacent);
         //skip surrounded blocks
         if((~blockedFaces & 0b11111) == 0){
             return true;
@@ -45,32 +46,22 @@ struct ChunkBuildObject{
             System.Console.Error.WriteLine("Block mesh attributes don't match required attributes");
             return false;
         }
-
         //Triangles have this really annoying property where their tesselation is annoyingly complex to calculate.
         // My old protytype used a hack to make it work, but this time i'm doing it "properly".
-        var parity = ((bx+bz) & 1) == 1;
-        var angle = 0f;
-        var XOffset = 0f;
-        if(parity)
-        {
-            //Rotate it by 60 degrees
-            angle += MathF.PI/3;
-            //And offset it by a certain amount, since tesselating triangles is driving me bloody insane
-            //TODO: calculate this offset to greater accuruacy
-            XOffset = 0.144f;
-        }
+        var parity = ((bx+bz) & 1);
+        //Every other block is rotated in order to meet the tesselation
+        var angle = (MathF.PI/3)*parity;
+        //And offset it by a certain amount, since tesselating triangles is driving me bloody insane
+        //TODO: calculate this offset to greater accuruacy
+        var XOffset = 0.144f*parity;
         for(uint indexIndex = 0; indexIndex < blockMesh.indices.Length; indexIndex++)
         {
             if (blockMesh.triangleToFaces is not null && (blockMesh.triangleToFaces[indexIndex / 3] & blockedFaces) != 0) {
                 continue; // Skip this index if it should be removed
             }
             uint index = blockMesh.indices[indexIndex];
-            //Not really sure why, but I can't use a span. My guess is that the AsSpan method isn't implemented for floats.
-            //Span<float> vertex = mesh.vertices.AsSpan<float>(index*totalAttribs, totalAttribs);
-            float[] vertex = blockMesh.vertices[(int)(index*totalAttribs) .. (int)(index*totalAttribs+totalAttribs)];
-
-            var sina = MathF.Sin(angle);
-            var cosa = MathF.Cos(angle);
+            Span<float> vertex = new Span<float>(blockMesh.vertices, (int)(index*totalAttribs), (int)totalAttribs);
+            (var sina, var cosa) = MathF.SinCos(angle);
             Vector3 pos = new Vector3(vertex[0], vertex[1], vertex[2]);
             pos = new Vector3(
                 pos.X *  cosa + pos.Z * sina + bx * MathBits.XScale + XOffset,
@@ -90,11 +81,10 @@ struct ChunkBuildObject{
                 vertex[7]
             );
         }
-
         return true;
     }
 
-    private byte GetBlockedFaces(uint bx, uint by, uint bz, Vector3i chunkPos, Chunk chunk, Chunk[] adjacent)
+    private byte GetBlockedFaces(uint bx, uint by, uint bz, Vector3i chunkPos, Chunk[] adjacent)
     {
         /*
         bit 1 :top (+y)
