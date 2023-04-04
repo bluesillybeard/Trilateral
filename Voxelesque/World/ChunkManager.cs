@@ -53,17 +53,32 @@ public sealed class ChunkManager
         Vector3i playerChunk = MathBits.GetChunkPos(playerPosition);
         float distanceSquared = distance * distance;
         UnloadDistantChunks(playerPosition, distanceSquared);
-        List<KeyValuePair<Vector3i, Chunk>> newChunks = new List<KeyValuePair<Vector3i, Chunk>>();
-        Parallel.For(-chunkRange.X, chunkRange.X, (chunkX) =>
+        //First, generate a list of chunks that need to be loaded.
+        // TODO: If there are multiple players, this code will absolute screw up massively.
+        int totalChunks = 2*2*2*chunkRange.X*chunkRange.Y*chunkRange.Z - chunks.Count;
+        if(totalChunks == 0)return;
+        List<Vector3i> chunksToLoad = new List<Vector3i>(totalChunks);
+        for(int cx=-chunkRange.X; cx<chunkRange.X; cx++)
         {
-            for (int chunkY = -chunkRange.Y; chunkY < chunkRange.Y; chunkY++)
+            for (int cy = -chunkRange.Y; cy < chunkRange.Y; cy++)
             {
-                for (int chunkZ = -chunkRange.Z; chunkZ < chunkRange.Z; chunkZ++)
+                for (int cz = -chunkRange.Z; cz < chunkRange.Z; cz++)
                 {
-                    Vector3i chunkPos = playerChunk + new Vector3i(chunkX, chunkY, chunkZ);
-                    UpdateChunk(chunkPos, distanceSquared, playerPosition);
+                    Vector3i chunkPos = playerChunk + new Vector3i(cx, cy, cz);
+                    if(!chunks.ContainsKey(chunkPos))
+                    {
+                        chunksToLoad.Add(chunkPos);
+                    }
                 }
             }
+        }
+        ParallelOptions options = new ParallelOptions();
+        //Eating up all the threads in the world is a bad idea, it causes the game thread and render thread to have less time allocated to them,
+        // Decreasing framerate for no real reason.
+        options.MaxDegreeOfParallelism = Environment.ProcessorCount/2;
+        Parallel.For(0, chunksToLoad.Count, options, (index) => {
+            Vector3i chunkToLoad = chunksToLoad[index];
+            UpdateChunk(chunkToLoad, distanceSquared, playerPosition);
         });
     }
 
@@ -90,10 +105,6 @@ public sealed class ChunkManager
 
     private void UpdateChunk(Vector3i chunkPos, float distanceSquared, Vector3 playerPosition)
     {
-        if(chunks.ContainsKey(chunkPos))
-        {
-            return;
-        }
         Vector3 chunkWorldPos = MathBits.GetChunkWorldPos(chunkPos);
         if(Vector3.DistanceSquared(chunkWorldPos, playerPosition) < distanceSquared)
         {

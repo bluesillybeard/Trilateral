@@ -12,7 +12,12 @@ using System.Collections.Generic;
 public class Chunk
 {
     // Chunks are quite unusually shaped (geometrically speaking), but the data is stored as a cube.
-    public const ushort Size = 32;
+    // I chose 40x40x40 because it is the largest size that allows my memory optimization to work.
+    // Larger chunks tend to be better, since modern CPU's benefit from working with larger blocks of data at a time.
+    public const ushort Size = 40;
+    // TODO: In the future I want chunks to be larger in the vertical direction, like 16x16x256, since the world generation works one column at a time,
+    // And larger columns means the CPU works in larger blocks. However, that would require a lot of redesigning, which I really don't want to do right now.
+
     //The chunk length is the total number of blocks in a chunk
     const uint Length = Size*Size*Size;
 
