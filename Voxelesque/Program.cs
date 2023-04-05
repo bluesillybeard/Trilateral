@@ -29,6 +29,7 @@ namespace Voxelesque.Game
             VRenderLib.InitRender(settings);
             VRenderLib.Render.OnStart += Start;
             VRenderLib.Render.Run();
+            Utility.Profiler.Dispose();
         }
 
         private static void Start()

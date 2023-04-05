@@ -8,9 +8,13 @@ using System.Threading.Tasks;
 using System.IO;
 using vmodel;
 using VRender;
+using Voxelesque.Utility;
 
 //An object that represents a chunk
 struct ChunkDrawObject{
+
+    static TimeSpan totalDelta;
+    static uint totalChunks;
     public List<(RenderModel model, IRenderShader shader)> Drawables;
     public DateTime LastUpdate; //when the chunk was last updated
     private Task? UpdateTask;
@@ -25,6 +29,7 @@ struct ChunkDrawObject{
 
     public void BeginBuilding(Vector3i pos, Chunk[] adjacent)
     {
+        Profiler.Push("ChunkBeginBuilding");
         //TODO: cancel current task and make a new one
         if(InProgress)return;
         LastUpdate = DateTime.Now;
@@ -39,6 +44,7 @@ struct ChunkDrawObject{
                 }
             }
         );
+        Profiler.Pop("ChunkBeginBuilding");
     }
 
     public void Dispose()
@@ -51,6 +57,9 @@ struct ChunkDrawObject{
     }
     private void Build(Vector3i pos, Chunk[] adjacent)
     {
+        Profiler.Push("ChunkBuild");
+        Profiler.Push("ChunkBuildBlocks");
+        DateTime startTime = DateTime.Now;
         Chunk chunk = adjacent[0];
         var objects = new List<ChunkBuildObject>();
         for(uint x=0; x<Chunk.Size; x++){
@@ -77,7 +86,8 @@ struct ChunkDrawObject{
                 }
             }
         }
-
+        Profiler.Pop("ChunkBuildBlocks");
+        Profiler.Push("ChunkBuildMesh");
         foreach(ChunkBuildObject build in objects)
         {
             var shader = build.shader;
@@ -86,6 +96,11 @@ struct ChunkDrawObject{
             var texture = build.texture;
             Drawables.Add((new RenderModel(mesh, texture), shader));
         }
+        totalDelta += (DateTime.Now - startTime);
+        totalChunks++;
+        System.Console.WriteLine("avg:" + ((double)totalDelta.Ticks)/totalChunks);
+        Profiler.Push("ChunkBuildMesh");
+        Profiler.Pop("ChunkBuild");
     }
 
     public static readonly Vector3i[] adjacencyList = new Vector3i[]{

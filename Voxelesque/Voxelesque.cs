@@ -100,6 +100,8 @@ public sealed class Voxelesque
         ));
     }
     void Update(TimeSpan delta){
+        Profiler.Push("Update");
+        Profiler.Push("DebugText");
         time += delta;
         Block? b = chunks.GetBlock(MathBits.GetBlockPos(camera.Position));
         string block = "none";
@@ -115,15 +117,20 @@ public sealed class Voxelesque
             + "UPS: " + (int)(1/(delta.Ticks/(double)TimeSpan.TicksPerSecond)) + '\n'
             + "block:" + block
         );
+        Profiler.Pop("DebugText");
 
         UpdateCamera(delta);
-        chunks.Update(camera.Position + MathBits.GetChunkWorldPosUncentered(playerChunk), 200);
+        chunks.Update(camera.Position + MathBits.GetChunkWorldPosUncentered(playerChunk), 150);
+        Profiler.Push("GUIIterate");
         gui.Iterate();
         Vector2i size = VRenderLib.Render.WindowSize();
         gui.SetSize(size.X, size.Y);
+        Profiler.Pop("GUIIterate");
+        Profiler.Pop("Update");
     }
 
     void Render(TimeSpan delta){
+        Profiler.Push("Render");
         totalFrames++;
         try{
             VRenderLib.Render.BeginRenderQueue();
@@ -135,6 +142,7 @@ public sealed class Voxelesque
         {
             Console.Error.WriteLine("Error rendering chunk: " + e.Message + "\ntacktrace: " + e.StackTrace);
         }
+        Profiler.Pop("Render");
     }
 
     void UpdateCamera(TimeSpan delta)

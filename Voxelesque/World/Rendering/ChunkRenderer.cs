@@ -54,6 +54,7 @@ public sealed class ChunkRenderer
 
     public void Update(ChunkManager chunkManager)
     {
+        Profiler.Push("ChunkRendererUpdate");
         //For every chunk in the manager
         foreach(var pair in chunkManager.Chunks)
         {
@@ -81,18 +82,24 @@ public sealed class ChunkRenderer
                 draw.BeginBuilding(pos, adjacentChunks);
             }
         }
+        Profiler.Pop("ChunkRendererUpdate");
     }
 
     private Chunk[]? GetAdjacentChunks(ChunkManager m, Vector3i pos)
     {
+        Profiler.Push("GetAdjacentChunks");
         //If the chunk has not been built before (It's a new chunk)
         Chunk[] adjacentChunks = new Chunk[ChunkDrawObject.adjacencyList.Length];
         for(uint i=0; i<adjacentChunks.Length; i++)
         {
             var c = m.GetChunk(pos + ChunkDrawObject.adjacencyList[i]);
-            if(c is null)return null; //We don't want to build chunks that don't have all adjacent ones available.
+            if(c is null){
+                Profiler.Pop("GetAdjacentChunks");
+                return null; //We don't want to build chunks that don't have all adjacent ones available.
+            }
             adjacentChunks[i] = c;
         }
+        Profiler.Pop("GetAdjacentChunks");
         return adjacentChunks;
     }
 }

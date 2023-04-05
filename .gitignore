@@ -9,3 +9,5 @@ tests/
 *.java
 #.yeetis files, since it provides a way to ignore files on a case-by-case basis
 *.yeetis
+# Any temporary file
+*.temp

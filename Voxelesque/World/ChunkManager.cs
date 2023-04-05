@@ -22,7 +22,9 @@ public sealed class ChunkManager
     }
     private Chunk LoadChunk(Vector3i pos)
     {
+        Profiler.Push("LoadChunk");
         var chunk = generator.GenerateChunk(pos.X, pos.Y, pos.Z);
+        Profiler.Pop("LoadChunk");
         return chunk;
     }
     private void UnloadChunk(Vector3i pos)
@@ -35,6 +37,7 @@ public sealed class ChunkManager
     {
         if(UpdateTask is null || UpdateTask.IsCompleted)
         {
+            Profiler.Push("ChunkUpdateBegin");
             UpdateTask = Task.Run(() => {
                 try{
                     UpdateSync(playerPosition, distance);
@@ -44,11 +47,13 @@ public sealed class ChunkManager
                     System.Console.Error.WriteLine("Exception: " + e.Message + "\nstack trace:" + e.StackTrace);
                 }
             });
+            Profiler.Pop("ChunkUpdateBegin");
         }
     }
 
     private void UpdateSync(Vector3 playerPosition, float distance)
     {
+        Profiler.Push("ChunkUpdate");
         Vector3i chunkRange = MathBits.GetChunkPos(new Vector3(distance, distance, distance));
         Vector3i playerChunk = MathBits.GetChunkPos(playerPosition);
         float distanceSquared = distance * distance;
@@ -57,6 +62,7 @@ public sealed class ChunkManager
         // TODO: If there are multiple players, this code will absolute screw up massively.
         int totalChunks = 2*2*2*chunkRange.X*chunkRange.Y*chunkRange.Z - chunks.Count;
         if(totalChunks == 0)return;
+        Profiler.Push("GenerateLoadList");
         List<Vector3i> chunksToLoad = new List<Vector3i>(totalChunks);
         for(int cx=-chunkRange.X; cx<chunkRange.X; cx++)
         {
@@ -72,6 +78,8 @@ public sealed class ChunkManager
                 }
             }
         }
+        Profiler.Pop("GenerateLoadList");
+        Profiler.Push("LoadChunks");
         ParallelOptions options = new ParallelOptions();
         //Eating up all the threads in the world is a bad idea, it causes the game thread and render thread to have less time allocated to them,
         // Decreasing framerate for no real reason.
@@ -80,10 +88,13 @@ public sealed class ChunkManager
             Vector3i chunkToLoad = chunksToLoad[index];
             UpdateChunk(chunkToLoad, distanceSquared, playerPosition);
         });
+        Profiler.Pop("LoadChunks");
+        Profiler.Pop("ChunkUpdate");
     }
 
     private void UnloadDistantChunks(Vector3 playerPosition, float distanceSquared)
     {
+        Profiler.Push("UnloadChunks");
         List<Vector3i> chunksToRemove = new List<Vector3i>();
         lock(chunks){
             foreach(var chunk in chunks)
@@ -101,10 +112,12 @@ public sealed class ChunkManager
                 UnloadChunk(c);
             }
         }
+        Profiler.Pop("UnloadChunks");
     }
 
     private void UpdateChunk(Vector3i chunkPos, float distanceSquared, Vector3 playerPosition)
     {
+        Profiler.Push("UpdateChunkExistence");
         Vector3 chunkWorldPos = MathBits.GetChunkWorldPos(chunkPos);
         if(Vector3.DistanceSquared(chunkWorldPos, playerPosition) < distanceSquared)
         {
@@ -116,6 +129,7 @@ public sealed class ChunkManager
                 return existing;
             }); 
         }
+        Profiler.Pop("UpdateChunkExistence");
     }
     public void Draw(Camera cam, Vector3i playerChunk)
     {
