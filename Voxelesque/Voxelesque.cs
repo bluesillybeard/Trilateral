@@ -18,6 +18,11 @@ using BasicGUI;
 using World;
 using World.ChunkGenerators;
 using Utility;
+
+//TODO: The framerate still drops when loading chunks.
+// I have two guesses: We are still waiting for it all to finish befoer starting the next frame,
+// Or it's blocking somewhere else and I have to track the blocking code down and remove it.
+// The profiler can help, but it's not perfect.
 public sealed class Voxelesque
 {
     DateTime start;

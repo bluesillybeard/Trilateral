@@ -30,11 +30,6 @@ public class BasicChunkGenerator : IChunkGenerator
                     if(csy+yp < height) {
                         c.SetBlock(fill, index);
                     }
-                    //a platform a y=13-15 for the first chunk
-                    if(cx == 0 && cy == 0 && cz == 0 && yp >= 13)
-                    {
-                        c.SetBlock(fill, index);
-                    }
                 }
             }
         }
