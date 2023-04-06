@@ -26,7 +26,10 @@ public static class Profiler
 
     public static void Dispose()
     {
-        stream.Flush();
-        stream.Dispose();
+        lock(stream)
+        {
+            stream.Flush();
+            stream.Dispose();
+        }
     }
 }

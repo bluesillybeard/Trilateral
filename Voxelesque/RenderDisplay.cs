@@ -78,7 +78,9 @@ public sealed class RenderDisplay : IDisplay
         {
             System.Console.Error.WriteLine("bro this aint right");
         }
-        renderMesh = VRenderLib.Render.LoadMesh(vmesh);
+        //Higher priority since we need to wait for it in order to continue rendering.
+        // Waiting for all of the lower priority tasks is just a waste of time
+        renderMesh = VRenderLib.Render.LoadMesh(vmesh, IRender.RenderPriority);
         VRenderLib.Render.Draw(
             defaultFont, renderMesh, shader, Enumerable.Empty<KeyValuePair<string, object>>(), false
         );
