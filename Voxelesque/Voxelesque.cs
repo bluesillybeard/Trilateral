@@ -134,8 +134,12 @@ public sealed class Voxelesque
         totalFrames++;
         try{
             VRenderLib.Render.BeginRenderQueue();
+            Profiler.Push("RenderChunks");
             chunks.Draw(camera, playerChunk);
+            Profiler.Pop("RenderChunks");
+            Profiler.Push("RenderGUI");
             gui.Draw();
+            Profiler.Pop("RenderGUI");
             VRenderLib.Render.EndRenderQueue();
             frameDelta = delta;
         } catch (Exception e)

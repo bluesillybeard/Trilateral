@@ -11,3 +11,5 @@ tests/
 *.yeetis
 # Any temporary file
 *.temp
+# profile results
+*.vprofile

@@ -12,7 +12,7 @@ using System.Threading;
 // and it needs to represent each breakdown hirarchically. (Perhaps just output a JSON file?)
 public static class Profiler
 {
-    private static FileStream stream = new FileStream(("proflog" + DateTime.Now + ".temp").Replace(' ', '_').Replace('/', '.'), FileMode.CreateNew);
+    private static FileStream stream = new FileStream(("proflog" + DateTime.Now + ".vprofile").Replace(' ', '_').Replace('/', '.'), FileMode.CreateNew);
     private static DateTime start = DateTime.Now;
     public static void Push(string name)
     {

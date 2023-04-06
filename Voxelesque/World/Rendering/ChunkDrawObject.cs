@@ -14,7 +14,6 @@ using Voxelesque.Utility;
 struct ChunkDrawObject{
 
     static TimeSpan totalDelta;
-    static uint totalChunks;
     public List<(RenderModel model, IRenderShader shader)> Drawables;
     public DateTime LastUpdate; //when the chunk was last updated
     private Task? UpdateTask;
@@ -97,8 +96,6 @@ struct ChunkDrawObject{
             Drawables.Add((new RenderModel(mesh, texture), shader));
         }
         totalDelta += (DateTime.Now - startTime);
-        totalChunks++;
-        System.Console.WriteLine("avg:" + ((double)totalDelta.Ticks)/totalChunks);
         Profiler.Push("ChunkBuildMesh");
         Profiler.Pop("ChunkBuild");
     }
