@@ -12,8 +12,6 @@ using Voxelesque.Utility;
 
 //An object that represents a chunk
 struct ChunkDrawObject{
-
-    static TimeSpan totalDelta;
     public List<(RenderModel model, IRenderShader shader)> Drawables;
     public DateTime LastUpdate; //when the chunk was last updated
     private Task? UpdateTask;
@@ -87,16 +85,15 @@ struct ChunkDrawObject{
         }
         Profiler.Pop("ChunkBuildBlocks");
         Profiler.Push("ChunkBuildMesh");
+        //We only have to wait for the very last task to finish
+        
         foreach(ChunkBuildObject build in objects)
         {
-            var shader = build.shader;
             var cpuMesh = build.mesh.ToMesh();
             var mesh = VRenderLib.Render.LoadMesh(cpuMesh);
-            var texture = build.texture;
-            Drawables.Add((new RenderModel(mesh, texture), shader));
+            Drawables.Add((new RenderModel(mesh, build.texture), build.shader));
         }
-        totalDelta += (DateTime.Now - startTime);
-        Profiler.Push("ChunkBuildMesh");
+        Profiler.Pop("ChunkBuildMesh");
         Profiler.Pop("ChunkBuild");
     }
 

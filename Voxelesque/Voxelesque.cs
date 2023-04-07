@@ -105,6 +105,7 @@ public sealed class Voxelesque
         ));
     }
     void Update(TimeSpan delta){
+        if(!firstFrame)Profiler.Pop("Wait");
         Profiler.Push("Update");
         Profiler.Push("DebugText");
         time += delta;
@@ -125,16 +126,19 @@ public sealed class Voxelesque
         Profiler.Pop("DebugText");
 
         UpdateCamera(delta);
-        chunks.Update(camera.Position + MathBits.GetChunkWorldPosUncentered(playerChunk), 150);
+        chunks.Update(camera.Position + MathBits.GetChunkWorldPosUncentered(playerChunk), 200);
         Profiler.Push("GUIIterate");
         gui.Iterate();
         Vector2i size = VRenderLib.Render.WindowSize();
         gui.SetSize(size.X, size.Y);
         Profiler.Pop("GUIIterate");
         Profiler.Pop("Update");
+        if(!firstFrame)Profiler.Push("Wait");
     }
 
+    bool firstFrame = true;
     void Render(TimeSpan delta){
+        if(!firstFrame)Profiler.Pop("Wait");
         Profiler.Push("Render");
         totalFrames++;
         try{
@@ -152,6 +156,8 @@ public sealed class Voxelesque
             Console.Error.WriteLine("Error rendering chunk: " + e.Message + "\ntacktrace: " + e.StackTrace);
         }
         Profiler.Pop("Render");
+        Profiler.Push("Wait");
+        firstFrame = false;
     }
 
     void UpdateCamera(TimeSpan delta)

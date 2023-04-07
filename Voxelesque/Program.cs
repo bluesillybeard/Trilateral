@@ -25,6 +25,7 @@ namespace Voxelesque.Game
                 BackgroundColor = 0x000000ff,
                 WindowTitle = "Voxelesque",
                 size = new OpenTK.Mathematics.Vector2i(800, 600),
+                VSync = false,
             };
             VRenderLib.InitRender(settings);
             VRenderLib.Render.OnStart += Start;
