@@ -1,13 +1,13 @@
 namespace Voxelesque.World;
 
 using OpenTK.Mathematics;
-using VRender.Interface;
+using VRenderLib.Interface;
 using System.Collections.Generic;
 using System;
 using System.Threading.Tasks;
 using System.IO;
 using vmodel;
-using VRender;
+using VRenderLib;
 using Voxelesque.Utility;
 
 //An object that represents a chunk

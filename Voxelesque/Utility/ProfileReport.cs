@@ -143,6 +143,7 @@ class ProfileNode
         {
             text.Append("\t");
         }
+        if(calls == 0) calls = 1;
         text.Append(name)
         .Append(" avg:").Append(totalDelta.Ticks / calls)
         .Append(" min:").Append(smallestDelta.Ticks)

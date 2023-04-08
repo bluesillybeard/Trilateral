@@ -1,7 +1,7 @@
 namespace Voxelesque.World;
 
 using vmodel;
-using VRender.Interface;
+using VRenderLib.Interface;
 //This represents a type of block.
 public class Block
 {

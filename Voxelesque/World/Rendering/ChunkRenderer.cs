@@ -4,8 +4,8 @@ using OpenTK.Mathematics;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using vmodel;
-using VRender;
-using VRender.Utility;
+using VRenderLib;
+using VRenderLib.Utility;
 using Utility;
 
 public sealed class ChunkRenderer

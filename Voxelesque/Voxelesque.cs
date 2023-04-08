@@ -3,11 +3,11 @@ namespace Voxelesque.Game;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 
-using VRender;
+using VRenderLib;
 
-using VRender.Interface;
+using VRenderLib.Interface;
 
-using VRender.Utility;
+using VRenderLib.Utility;
 
 using System;
 
