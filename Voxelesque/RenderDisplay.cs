@@ -7,6 +7,7 @@ using System.Linq;
 using System.Collections.Generic;
 using BasicGUI;
 using vmodel;
+using Voxelesque.Utility;
 
 namespace Voxelesque;
 
@@ -63,11 +64,9 @@ public sealed class RenderDisplay : IDisplay
 
     private MeshBuilder mesh;
     private IRenderShader shader;
-    private IRenderMesh? renderMesh;
     public void BeginFrame()
     {
         mesh.Clear();
-        if(renderMesh != null)renderMesh.Dispose();
     }
     public void EndFrame()
     {
@@ -81,13 +80,15 @@ public sealed class RenderDisplay : IDisplay
         var meshTask = VRender.Render.SubmitToQueueHighPriority<IRenderMesh>( ()=>{
             return VRenderLib.VRender.Render.LoadMesh(vmesh);
         }, "UploadGUIMesh");
+        Profiler.Push("GUIWaitMesh");
         meshTask.WaitUntilDone();
+        Profiler.Pop("GUIWaitMesh");
         var gpumesh = meshTask.GetResult();
         if(gpumesh is null)throw new Exception("Mesh didn't upload", meshTask.GetException());
         VRender.Render.Draw(
             defaultFont, gpumesh, shader, Enumerable.Empty<KeyValuePair<string, object>>(), false
         );
-
+        gpumesh.Dispose();
     }
     public void DrawPixel(int x, int y, uint rgb, byte depth = 0)
     {

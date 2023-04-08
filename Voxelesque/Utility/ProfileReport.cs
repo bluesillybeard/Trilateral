@@ -145,9 +145,9 @@ class ProfileNode
         }
         if(calls == 0) calls = 1;
         text.Append(name)
-        .Append(" avg:").Append(totalDelta.Ticks / calls)
-        .Append(" min:").Append(smallestDelta.Ticks)
-        .Append(" max:").Append(largestDelta.Ticks)
+        .Append(" avg:").Append((totalDelta.Ticks / calls)/(double)TimeSpan.TicksPerSecond)
+        .Append(" min:").Append((smallestDelta.Ticks)/(double)TimeSpan.TicksPerSecond)
+        .Append(" max:").Append((largestDelta.Ticks)/(double)TimeSpan.TicksPerSecond)
         .Append(" n:").Append(calls)
         .Append('\n');
         if(children is not null)

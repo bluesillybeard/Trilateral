@@ -121,7 +121,9 @@ public sealed class Voxelesque
             + "Camera Rotation: " + camera.Rotation + '\n'
             + "FPS: " + (int)(1/(frameDelta.Ticks/(double)TimeSpan.TicksPerSecond)) + '\n'
             + "UPS: " + (int)(1/(delta.Ticks/(double)TimeSpan.TicksPerSecond)) + '\n'
-            + "block:" + block
+            + "block:" + block + '\n'
+            + "existing chunks:" + chunks.NumChunks + '\n'
+
         );
         Profiler.Pop("DebugText");
 
@@ -146,7 +148,7 @@ public sealed class Voxelesque
             chunks.Draw(camera, playerChunk);
             Profiler.Pop("RenderChunks");
             Profiler.Push("RenderGUI");
-            gui.Draw();
+            //gui.Draw();
             Profiler.Pop("RenderGUI");
             VRender.Render.EndRenderQueue();
             frameDelta = delta;

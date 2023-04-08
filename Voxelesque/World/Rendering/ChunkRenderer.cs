@@ -10,6 +10,9 @@ using Utility;
 
 public sealed class ChunkRenderer
 {
+    //TODO: VERY VERY VERY IMPORTANT
+    // Use a ThreadPool instead of the global Task system.
+    // And also massively rewrite this class to avoid blocking AS MUCH AS POSSIBLE.
     public static readonly Attributes chunkAttributes = new Attributes(new EAttribute[]{EAttribute.position, EAttribute.textureCoords, EAttribute.normal});
 
     private ConcurrentDictionary<Vector3i, ChunkDrawObject> chunkDrawObjects;
@@ -37,6 +40,7 @@ public sealed class ChunkRenderer
             };
             foreach(var drawable in drawObject.Drawables)
             {
+
                 VRender.Render.Draw(
                     drawable.model.texture, drawable.model.mesh,
                     drawable.shader, uniforms, true

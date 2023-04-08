@@ -3,6 +3,7 @@ namespace Voxelesque.World;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
+using System.Threading;
 using System;
 
 using OpenTK.Mathematics;
@@ -16,6 +17,7 @@ public sealed class ChunkManager
     private IChunkGenerator generator;
     public ChunkManager(IChunkGenerator generator)
     {
+        //ThreadPool.SetMaxThreads(8, 8);
         this.generator = generator;
         chunks = new ConcurrentDictionary<Vector3i, Chunk>();//new Dictionary<Vector3i, Chunk>();
         renderer = new ChunkRenderer();
@@ -136,6 +138,7 @@ public sealed class ChunkManager
         renderer.DrawChunks(cam, playerChunk);
     }
     public IReadOnlyDictionary<Vector3i, Chunk> Chunks{get => chunks;}
+    public int NumChunks {get => chunks.Count;}
     public Chunk? GetChunk(Vector3i position)
     {
         if(chunks.TryGetValue(position, out var c)){
