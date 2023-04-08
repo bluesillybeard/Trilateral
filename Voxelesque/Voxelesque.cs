@@ -43,7 +43,7 @@ public sealed class Voxelesque
     {
         start = DateTime.Now;
         time = DateTime.Now;
-        var render = VRenderLib.Render;
+        var render = VRender.Render;
         var size = render.WindowSize();
         {
             var asciiOrNull = render.LoadTexture("Resources/ASCII.png", out var exception);
@@ -129,7 +129,7 @@ public sealed class Voxelesque
         chunks.Update(camera.Position + MathBits.GetChunkWorldPosUncentered(playerChunk), 200);
         Profiler.Push("GUIIterate");
         gui.Iterate();
-        Vector2i size = VRenderLib.Render.WindowSize();
+        Vector2i size = VRender.Render.WindowSize();
         gui.SetSize(size.X, size.Y);
         Profiler.Pop("GUIIterate");
         Profiler.Pop("Update");
@@ -142,14 +142,13 @@ public sealed class Voxelesque
         Profiler.Push("Render");
         totalFrames++;
         try{
-            VRenderLib.Render.BeginRenderQueue();
             Profiler.Push("RenderChunks");
             chunks.Draw(camera, playerChunk);
             Profiler.Pop("RenderChunks");
             Profiler.Push("RenderGUI");
             gui.Draw();
             Profiler.Pop("RenderGUI");
-            VRenderLib.Render.EndRenderQueue();
+            VRender.Render.EndRenderQueue();
             frameDelta = delta;
         } catch (Exception e)
         {
@@ -163,11 +162,11 @@ public sealed class Voxelesque
     void UpdateCamera(TimeSpan delta)
     {
         previousCameraTransform = camera.GetTransform();
-        KeyboardState keyboard = VRenderLib.Render.Keyboard();
-        MouseState mouse = VRenderLib.Render.Mouse();
+        KeyboardState keyboard = VRender.Render.Keyboard();
+        MouseState mouse = VRender.Render.Mouse();
         if (keyboard.IsKeyReleased(Keys.C))
         {
-            VRenderLib.Render.CursorLocked  = !VRenderLib.Render.CursorLocked;
+            VRender.Render.CursorLocked  = !VRender.Render.CursorLocked;
         }
         Vector3 cameraInc = new Vector3();
         if (keyboard.IsKeyDown(Keys.W)) {
@@ -192,10 +191,10 @@ public sealed class Voxelesque
         camera.Move(cameraInc * cameraSpeed);
         // Update camera based on mouse
         float sensitivity = 0.5f;
-        if (VRenderLib.Render.CursorLocked || mouse.IsButtonDown(MouseButton.Right)) {
+        if (VRender.Render.CursorLocked || mouse.IsButtonDown(MouseButton.Right)) {
             camera.Rotation += new Vector3((mouse.Y - mouse.PreviousY) * sensitivity, (mouse.X - mouse.PreviousX) * sensitivity, 0);
         }
-        camera.SetAspect(VRenderLib.Render.WindowSize());
+        camera.SetAspect(VRender.Render.WindowSize());
         Vector3i cameraChunk = MathBits.GetChunkPos(camera.Position);
         Vector3 cameraChunkWorldPos = MathBits.GetChunkWorldPosUncentered(cameraChunk);
         Vector3 residual = camera.Position - cameraChunkWorldPos;

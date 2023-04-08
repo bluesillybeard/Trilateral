@@ -21,15 +21,15 @@ namespace Voxelesque.Game
             System.Console.SetError(new CustomOutTextWriter(System.Console.Error, ConsoleColor.Red));
             var random = new Random((int)DateTime.Now.Ticks);
             var settings = new RenderSettings(){
-                TargetFrameTime = 1f/60f,
+                TargetFrameTime = 1f/70f,
                 BackgroundColor = 0x000000ff,
                 WindowTitle = "Voxelesque",
                 size = new OpenTK.Mathematics.Vector2i(800, 600),
                 VSync = false,
             };
-            VRenderLib.InitRender(settings);
-            VRenderLib.Render.OnStart += Start;
-            VRenderLib.Render.Run();
+            VRender.VRender.InitRender(settings);
+            VRender.VRender.Render.OnStart += Start;
+            VRender.VRender.Render.Run();
             Utility.Profiler.Dispose();
         }
 

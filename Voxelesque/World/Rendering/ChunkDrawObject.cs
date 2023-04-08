@@ -90,7 +90,7 @@ struct ChunkDrawObject{
         foreach(ChunkBuildObject build in objects)
         {
             var cpuMesh = build.mesh.ToMesh();
-            var mesh = VRenderLib.Render.LoadMesh(cpuMesh);
+            var mesh = VRender.Render.LoadMesh(cpuMesh);
             Drawables.Add((new RenderModel(mesh, build.texture), build.shader));
         }
         Profiler.Pop("ChunkBuildMesh");

@@ -37,7 +37,7 @@ public sealed class ChunkRenderer
             };
             foreach(var drawable in drawObject.Drawables)
             {
-                VRenderLib.Render.Draw(
+                VRender.Render.Draw(
                     drawable.model.texture, drawable.model.mesh,
                     drawable.shader, uniforms, true
                 );
