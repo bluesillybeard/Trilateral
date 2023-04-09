@@ -10,6 +10,7 @@ using VRenderLib.Interface;
 using VRenderLib.Utility;
 
 using System;
+using System.Threading;
 
 using vmodel;
 
@@ -148,7 +149,7 @@ public sealed class Voxelesque
             chunks.Draw(camera, playerChunk);
             Profiler.Pop("RenderChunks");
             Profiler.Push("RenderGUI");
-            //gui.Draw();
+            gui.Draw();
             Profiler.Pop("RenderGUI");
             VRender.Render.EndRenderQueue();
             frameDelta = delta;
@@ -207,6 +208,7 @@ public sealed class Voxelesque
 
     void Dispose()
     {
+        chunks.Dispose();
         System.Console.WriteLine("average fps:" + totalFrames/((time-start).Ticks/(double)TimeSpan.TicksPerSecond));
     }
 }

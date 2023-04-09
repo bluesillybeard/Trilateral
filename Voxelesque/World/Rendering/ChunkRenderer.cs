@@ -3,22 +3,29 @@ namespace Voxelesque.World;
 using OpenTK.Mathematics;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
+using System;
 using vmodel;
 using VRenderLib;
 using VRenderLib.Utility;
+using VRenderLib.Threading;
 using Utility;
 
 public sealed class ChunkRenderer
 {
-    //TODO: VERY VERY VERY IMPORTANT
-    // Use a ThreadPool instead of the global Task system.
-    // And also massively rewrite this class to avoid blocking AS MUCH AS POSSIBLE.
     public static readonly Attributes chunkAttributes = new Attributes(new EAttribute[]{EAttribute.position, EAttribute.textureCoords, EAttribute.normal});
+    private Dictionary<Vector3i, ChunkDrawObject> chunkDrawObjects;
+    private UnorderedLocalThreadPool chunkDrawPool;
+    private ConcurrentDictionary<Vector3i, ChunkDrawObject> inProgressDrawObjects;
+    private List<ChunkDrawObject> newDrawObjects;
+    private List<Vector3i> chunksInWait; //Chunks that didn't have all their neighbors, so they are waiting for their neighbors.
 
-    private ConcurrentDictionary<Vector3i, ChunkDrawObject> chunkDrawObjects;
     public ChunkRenderer()
     {
-        chunkDrawObjects = new ConcurrentDictionary<Vector3i, ChunkDrawObject>();
+        chunkDrawObjects = new Dictionary<Vector3i, ChunkDrawObject>();
+        inProgressDrawObjects = new ConcurrentDictionary<Vector3i, ChunkDrawObject>();
+        chunkDrawPool = new UnorderedLocalThreadPool(Environment.ProcessorCount/2);
+        newDrawObjects = new List<ChunkDrawObject>();
+        chunksInWait = new List<Vector3i>();
     }
 
     public void DrawChunks(Camera camera, Vector3i playerChunk)
@@ -27,65 +34,118 @@ public sealed class ChunkRenderer
         {
             var pos = obj.Key - playerChunk;
             var drawObject = obj.Value;
-            if(drawObject.InProgress)
-            {
-                continue; //Skip ones that aren't finished
-            }
-            //We need to make a translation for the position, since the mesh is only relative to the chunk's origin, not the actual origin.
-            var transform = Matrix4.CreateTranslation(pos.X * Chunk.Size * MathBits.XScale, pos.Y * Chunk.Size * 0.5f, pos.Z * Chunk.Size * 0.25f);
-            //Now we draw it
-            var uniforms = new KeyValuePair<string, object>[]{
-                new KeyValuePair<string, object>("model", transform),
-                new KeyValuePair<string, object>("camera", camera.GetTransform())
-            };
-            foreach(var drawable in drawObject.Drawables)
-            {
-
-                VRender.Render.Draw(
-                    drawable.model.texture, drawable.model.mesh,
-                    drawable.shader, uniforms, true
-                );
-            }
+            
+            drawObject.Draw(camera.GetTransform());
         }
     }
 
     public void NotifyChunkDeleted(Vector3i pos)
     {
+        if(inProgressDrawObjects.Remove(pos, out var inProgress))
+        {
+            if(!inProgress.InProgress)
+            {
+                //TODO: find a better way to do this.
+                newDrawObjects.Remove(new ChunkDrawObject(pos));
+            }
+        }
         if(this.chunkDrawObjects.Remove(pos, out var drawObject)){
             drawObject.Dispose();
         }
     }
 
+    public void NotifyChunkAdded(Vector3i pos, ChunkManager m)
+    {
+        //First, make sure we don't already have this chunk
+        if(chunkDrawObjects.ContainsKey(pos) || inProgressDrawObjects.ContainsKey(pos))return;
+
+        var chunks = GetAdjacentChunks(m, pos);
+        //Chunks that aren't ready to be build go into the list
+        if(chunks is null)
+        {
+            chunksInWait.Add(pos);
+            return;
+        }
+        BuildChunk(pos, chunks);
+    }
+
+    private void BuildChunk(Vector3i pos, Chunk[] chunks)
+    {
+        var obj = new ChunkDrawObject(pos);
+        obj.InProgress = true;
+        //Would be great if there was a method that would add or replace.
+        inProgressDrawObjects.AddOrUpdate(pos, 
+        (p) => {
+            return obj;
+        },
+        (p, old) => {
+            return obj;
+        });
+
+        chunkDrawPool.SubmitTask(
+            () => {
+                obj.Build(pos, chunks);
+                newDrawObjects.Add(obj);
+            }, "BuildChunk"+pos
+        );
+    }
+
     public void Update(ChunkManager chunkManager)
     {
         Profiler.Push("ChunkRendererUpdate");
-        //For every chunk in the manager
-        foreach(var pair in chunkManager.Chunks)
+        //First, go through the chunks waiting to be built
+        List<Vector3i> noLongerWaiting = new List<Vector3i>();
+        foreach(var pos in chunksInWait)
         {
-            var pos = pair.Key;
-            var chunk = pair.Value;
-            //If the chunk has been built before but needs to be updated
-            if(chunkDrawObjects.TryGetValue(pos, out var oldDrawObject))
-            {
-                if(oldDrawObject.LastUpdate < chunk.LastChange)
-                {
-                    var adjacentChunks = GetAdjacentChunks(chunkManager, pos);
-                    if(adjacentChunks is null)continue;
-                    oldDrawObject.BeginBuilding(pos, adjacentChunks);
-                }
-            }
-            else
-            {
-                var adjacentChunks = GetAdjacentChunks(chunkManager, pos);
-                if(adjacentChunks is null)continue;
-                var draw = new ChunkDrawObject();
-                if(!chunkDrawObjects.TryAdd(pos, draw)){
-                    System.Console.WriteLine("Failed to add draw object for " + pos);
-                    continue;
-                }
-                draw.BeginBuilding(pos, adjacentChunks);
-            }
+            var adj = GetAdjacentChunks(chunkManager, pos);
+            if(adj is null)continue;
+            BuildChunk(pos, adj);
+            noLongerWaiting.Add(pos);
         }
+        foreach(var pos in noLongerWaiting)
+        {
+            chunksInWait.Remove(pos);
+        }
+        //Then, go through all of the new chunks
+        foreach(var newDraw in newDrawObjects)
+        {
+            inProgressDrawObjects.Remove(newDraw.pos, out var _);
+            chunkDrawObjects.TryAdd(newDraw.pos, newDraw);
+            newDraw.SendToGPU();
+        }
+        newDrawObjects.Clear();
+        //For every chunk in the manager
+        // foreach(var pair in chunkManager.Chunks)
+        // {
+        //     var pos = pair.Key;
+        //     var chunk = pair.Value;
+        //     //If the chunk has been built before but needs to be updated
+        //     if(chunkDrawObjects.TryGetValue(pos, out var oldDrawObject))
+        //     {
+        //         if(oldDrawObject.LastUpdate < chunk.LastChange)
+        //         {
+        //             var adjacentChunks = GetAdjacentChunks(chunkManager, pos);
+        //             if(adjacentChunks is null)continue;
+        //             if(!oldDrawObject.InProgress)
+        //             {
+        //                 oldDrawObject.InProgress = true;
+        //                 chunkDrawPool.SubmitTask(() => {oldDrawObject.Build(pos, adjacentChunks);}, "RebuildChunk");
+        //             }
+        //         }
+        //     }
+        //     else
+        //     {
+        //         var adjacentChunks = GetAdjacentChunks(chunkManager, pos);
+        //         if(adjacentChunks is null)continue;
+        //         var draw = new ChunkDrawObject();
+        //         if(!chunkDrawObjects.TryAdd(pos, draw)){
+        //             System.Console.WriteLine("Failed to add draw object for " + pos);
+        //             continue;
+        //         }
+        //         draw.InProgress = true;
+        //         chunkDrawPool.SubmitTask(() => {draw.Build(pos, adjacentChunks);}, "BuildChunk");
+        //     }
+        // }
         Profiler.Pop("ChunkRendererUpdate");
     }
 
@@ -105,5 +165,10 @@ public sealed class ChunkRenderer
         }
         Profiler.Pop("GetAdjacentChunks");
         return adjacentChunks;
+    }
+
+    public void Dispose()
+    {
+        chunkDrawPool.Stop();
     }
 }
