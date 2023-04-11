@@ -37,6 +37,7 @@ public sealed class ChunkManager
     private Task? UpdateTask;
     public void Update(Vector3 playerPosition, float distance)
     {
+        renderer.Update(this);
         if(UpdateTask is null || UpdateTask.IsCompleted)
         {
             Profiler.Push("ChunkUpdateBegin");
@@ -44,10 +45,7 @@ public sealed class ChunkManager
             // Rather than relying on C#'s task scheduling.
             UpdateTask = Task.Run(() => {
                 try{
-                    if(UpdateSync(playerPosition, distance))
-                    {
-                        renderer.Update(this);
-                    }
+                    UpdateSync(playerPosition, distance);
                 } catch (Exception e)
                 {
                     System.Console.Error.WriteLine("Exception: " + e.Message + "\nstack trace:" + e.StackTrace);
@@ -140,7 +138,7 @@ public sealed class ChunkManager
                 if(existing.LastChange <= chunk.LastChange) return chunk;
                 return existing;
             });
-            renderer.NotifyChunkAdded(chunkPos, this);
+            renderer.NotifyChunkAdded(chunkPos);
         }
         Profiler.Pop("UpdateChunkExistence");
     }
