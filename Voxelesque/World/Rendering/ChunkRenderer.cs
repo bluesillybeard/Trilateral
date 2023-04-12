@@ -3,7 +3,7 @@ namespace Voxelesque.World;
 using OpenTK.Mathematics;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
-using System;
+using System.Threading;
 using vmodel;
 using VRenderLib;
 using VRenderLib.Utility;
@@ -18,7 +18,8 @@ public sealed class ChunkRenderer
     private Dictionary<Vector3i, ChunkDrawObject> chunkDrawObjects; //Chunks that are ready to be drawn.
     private Dictionary<Vector3i, ChunkDrawObjectUploading> chunksBeingUploaded; //Chunks that are in the provess of being uploaded to the GPU
     private Dictionary<Vector3i, ChunkDrawObjectBuilding> chunksBeingBuilt; //chunks that are in the process of being built
-    private ConcurrentDictionary<Vector3i, object?> chunksInWait; //Chunks that are waiting to be built
+    private List<Vector3i> chunksInWait; //Chunks that are waiting to be built
+    private ConcurrentBag<Vector3i> newChunks;
     private ConcurrentBag<Vector3i> chunksToRemove; //chunks that are waiting to be removed
 
     public ChunkRenderer()
@@ -26,7 +27,8 @@ public sealed class ChunkRenderer
         chunkDrawObjects = new Dictionary<Vector3i, ChunkDrawObject>();
         chunksBeingUploaded = new Dictionary<Vector3i, ChunkDrawObjectUploading>();
         chunksBeingBuilt = new Dictionary<Vector3i, ChunkDrawObjectBuilding>();
-        chunksInWait = new ConcurrentDictionary<Vector3i, object?>();
+        chunksInWait = new List<Vector3i>();
+        newChunks = new ConcurrentBag<Vector3i>();
         chunksToRemove = new ConcurrentBag<Vector3i>();
         chunkDrawPool = new UnorderedLocalThreadPool();
     }
@@ -44,9 +46,15 @@ public sealed class ChunkRenderer
         chunksToRemove.Add(pos);
     }
 
-    public void NotifyChunkAdded(Vector3i pos)
+    public void NotifyChunksAdded(IEnumerable<Chunk> chunks)
     {
-        chunksInWait.TryAdd(pos, null);
+        foreach(Chunk c in chunks)
+        {
+            //If the chunk is empty, just skip it.
+            if(c.IsEmpty())return;
+            newChunks.Add(c.pos);
+        }
+        
     }
 
     private void BuildChunk(Vector3i pos, Chunk[] chunks)
@@ -62,13 +70,14 @@ public sealed class ChunkRenderer
     public void Update(ChunkManager chunkManager)
     {
         Profiler.Push("ChunkRendererUpdate");
+        Profiler.Push("ChunksToRemove");
         //Go through the chunks waiting to be removed
         foreach(var pos in chunksToRemove)
         {
             //Not sure why it's complaining about nullability here.
             // just ignore it for now.
             #nullable disable
-            chunksInWait.Remove(pos, out var _);
+            chunksInWait.Remove(pos);
             #nullable restore
             if(chunksBeingBuilt.Remove(pos, out var building))
             {
@@ -84,23 +93,35 @@ public sealed class ChunkRenderer
             }
         }
         chunksToRemove.Clear();
+        Profiler.Pop("ChunksToRemove");
+        Profiler.Push("ChunksInWait");
         //go through the chunks waiting to be built
+        //If this line isn't here, it takes AGES to wait for this thread's turn to use ChunksInWait.
         List<Vector3i> noLongerWaiting = new List<Vector3i>();
-        foreach(var pos in chunksInWait.Keys)
+        chunksInWait.AddRange(newChunks);
+        newChunks.Clear();
+        foreach(var pos in chunksInWait)
         {
             var adj = GetAdjacentChunks(chunkManager, pos);
-            if(adj is null)continue;
+            if(adj is null)
+            {
+                continue;
+            }
             BuildChunk(pos, adj);
             noLongerWaiting.Add(pos);
         }
+        Profiler.Pop("ChunksInWait");
+        Profiler.Push("ChunksNoLongerWaiting");
         foreach(var pos in noLongerWaiting)
         {
             //Not sure why it's complaining about nullability here.
             // just ignore it for now.
             #nullable disable
-            chunksInWait.Remove(pos, out var _);
+            chunksInWait.Remove(pos);
             #nullable restore
         }
+        Profiler.Pop("ChunksNoLongerWaiting");
+        Profiler.Push("ChunksBeingBuilt");
         //Chunks that are being built or just finished building
         List<ChunkDrawObjectBuilding> chunksFinishedBuilding = new List<ChunkDrawObjectBuilding>();
         foreach(var chunk in chunksBeingBuilt)
@@ -119,6 +140,8 @@ public sealed class ChunkRenderer
             uploading.SendToGPU(chunk);
         }
         chunksFinishedBuilding.Clear();
+        Profiler.Pop("ChunksBeingBuilt");
+        Profiler.Push("ChunksBeingUploaded");
         List<ChunkDrawObjectUploading> chunksFinishedUploading = new List<ChunkDrawObjectUploading>();
         //Go through the chunks that are being uploaded or are done uploading
         foreach(var chunk in chunksBeingUploaded)
@@ -133,6 +156,7 @@ public sealed class ChunkRenderer
             chunksBeingUploaded.Remove(chunk.pos);
             chunkDrawObjects.Add(chunk.pos, new ChunkDrawObject(chunk));
         }
+        Profiler.Pop("ChunksBeingUploaded");
         Profiler.Pop("ChunkRendererUpdate");
     }
 

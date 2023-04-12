@@ -90,10 +90,26 @@ public sealed class ChunkManager
         //Eating up all the threads in the world is a bad idea, it causes the game thread and render thread to have less time allocated to them,
         // Decreasing framerate for no real reason.
         options.MaxDegreeOfParallelism = Environment.ProcessorCount/2;
+        ConcurrentBag<Chunk> newChunks = new ConcurrentBag<Chunk>();
         Parallel.For(0, chunksToLoad.Count, options, (index) => {
             Vector3i chunkToLoad = chunksToLoad[index];
-            UpdateChunk(chunkToLoad, distanceSquared, playerPosition);
+            Profiler.Push("UpdateChunkExistence");
+            Vector3 chunkWorldPos = MathBits.GetChunkWorldPos(chunkToLoad);
+            if(Vector3.DistanceSquared(chunkWorldPos, playerPosition) < distanceSquared)
+            {
+                var chunk = LoadChunk(chunkToLoad);
+                chunks.AddOrUpdate(chunkToLoad, (a) => {
+                    return chunk;
+                }, (pos, existing) => {
+                    if(existing.LastChange <= chunk.LastChange) return chunk;
+                    return existing;
+                });
+                chunk.Optimize();
+                newChunks.Add(chunk);
+            }
+            Profiler.Pop("UpdateChunkExistence");
         });
+        renderer.NotifyChunksAdded(newChunks);
         Profiler.Pop("LoadChunks");
         Profiler.Pop("ChunkUpdate");
         return modified;
@@ -123,24 +139,6 @@ public sealed class ChunkManager
         }
         Profiler.Pop("UnloadChunks");
         return mod;
-    }
-
-    private void UpdateChunk(Vector3i chunkPos, float distanceSquared, Vector3 playerPosition)
-    {
-        Profiler.Push("UpdateChunkExistence");
-        Vector3 chunkWorldPos = MathBits.GetChunkWorldPos(chunkPos);
-        if(Vector3.DistanceSquared(chunkWorldPos, playerPosition) < distanceSquared)
-        {
-            var chunk = LoadChunk(chunkPos);
-            chunks.AddOrUpdate(chunkPos, (a) => {
-                return chunk;
-            }, (pos, existing) => {
-                if(existing.LastChange <= chunk.LastChange) return chunk;
-                return existing;
-            });
-            renderer.NotifyChunkAdded(chunkPos);
-        }
-        Profiler.Pop("UpdateChunkExistence");
     }
     public void Draw(Camera cam, Vector3i playerChunk)
     {

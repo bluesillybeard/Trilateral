@@ -123,9 +123,6 @@ class ChunkDrawObject
             drawable.model.mesh.Dispose();
         }
     }
-
-    public ExecutorTask? gpuTask;
-
     public void Draw(Matrix4 cameraTransform, Vector3i playerChunk)
     {
         var offset = pos - playerChunk;

@@ -2,6 +2,7 @@ namespace Voxelesque.World;
 
 using System;
 using System.Collections.Generic;
+using OpenTK.Mathematics;
 
 //This class uses a few optimizations to make things nice and memory efficient without sacrificing too much speed.
 // Memory optimizations:
@@ -24,12 +25,32 @@ public class Chunk
     //when the chunk was last modified
     DateTime lastChange;
     public DateTime LastChange{get=>lastChange;}
+    public Vector3i pos;
 
     private ushort[]? blocks;
     List<Block?>? idToBlock;
     private Dictionary<string, ushort>? blockToId;
 
+    public bool IsEmpty()
+    {
+        if(blockToId is null)return true;
+        if(blocks is null)return true;
+        foreach(uint block in blocks)
+        {
+            if(block != 0)return false;
+        }
+        return true;
+    }
 
+    public void Optimize()
+    {
+        if(this.IsEmpty())
+        {
+            blocks = null;
+            idToBlock = null;
+            blockToId = null;
+        }
+    }
     private ushort GetOrAdd(Block block)
     {
         if(idToBlock is null || blockToId is null)
@@ -59,16 +80,18 @@ public class Chunk
         blockToId.Add(block.name, id);
     }
     //creates a new empty chunk
-    public Chunk()
+    public Chunk(Vector3i pos)
     {
         this.blocks = null;
         idToBlock = null;
         blockToId = null;
         lastChange = DateTime.Now;
+        this.pos = pos;
     }
 
-    public Chunk(Block?[] initBlocks)
+    public Chunk(Block?[] initBlocks, Vector3i pos)
     {
+        this.pos = pos;
         if(initBlocks.Length != Length)
         {
             throw new Exception("Cannot create a chunk with the incorrect length!");
