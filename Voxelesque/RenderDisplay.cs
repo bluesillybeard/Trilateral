@@ -7,6 +7,7 @@ using System.Linq;
 using System.Collections.Generic;
 using BasicGUI;
 using vmodel;
+using Voxelesque.Utility;
 
 namespace Voxelesque;
 
@@ -18,8 +19,8 @@ public sealed class RenderDisplay : IDisplay
         this.defaultFont = defaultFontTexture;
         //position, textureCoords, color, blend between using the texture and using the color
         mesh = new MeshBuilder(new Attributes(new EAttribute[]{EAttribute.position, EAttribute.textureCoords, EAttribute.rgbaColor, EAttribute.scalar}));
-        //first shader, for drawing colored objects
-        shader = VRender.Render.GetShader(
+        //TODO: use a system that allows the use of multiple shaders and stuff.
+        shader = VRenderLib.VRender.Render.GetShader(
             //vertex shader code
             @"
             #version 330 core
@@ -63,45 +64,37 @@ public sealed class RenderDisplay : IDisplay
 
     private MeshBuilder mesh;
     private IRenderShader shader;
-    private IRenderMesh? renderMesh;
     public void BeginFrame()
     {
         mesh.Clear();
-        if(renderMesh != null)renderMesh.Dispose();
     }
     public void EndFrame()
     {
         //TODO: reuse mesh buffer
         //TODO: ability to use non-default font
         var vmesh = mesh.ToMesh();
-        if(vmesh.vertices.Length % mesh.attributes.TotalAttributes() != 0)
-        {
-            System.Console.Error.WriteLine("bro this aint right");
-        }
-        //Any normal or low priority tasks submitted during a rendering cycle will be witheld until the end of the frame.
-        // There is a catch for this, but it only allows one task per two seconds. It's only meant help with debugging the source of the issue.
-        // But, VRender is written so that these functions can be placed in a high-priority task like so, to avoid that issue.
-
-        var task = VRender.Render.SubmitToQueueHighPriority(()=>{
-            return VRender.Render.LoadMesh(vmesh);
-        }, "LoadGUIMesh");
-        task.WaitUntilDone();
-        renderMesh = task.GetResult();
-        if(renderMesh is null)
-        {
-            System.Console.Error.WriteLine("Could not upload GUI Mesh!" + task.GetException());
-            return;
-        }
+        // if(vmesh.vertices.Length % mesh.attributes.TotalAttributes() != 0)
+        // {
+        //     System.Console.Error.WriteLine("bro this aint right");
+        // }
+        var meshTask = VRender.Render.SubmitToQueueHighPriority<IRenderMesh>( ()=>{
+            return VRenderLib.VRender.Render.LoadMesh(vmesh);
+        }, "UploadGUIMesh");
+        Profiler.Push("GUIWaitMesh");
+        meshTask.WaitUntilDone();
+        Profiler.Pop("GUIWaitMesh");
+        var gpumesh = meshTask.GetResult();
+        if(gpumesh is null)throw new Exception("Mesh didn't upload", meshTask.GetException());
         VRender.Render.Draw(
-            defaultFont, renderMesh, shader, Enumerable.Empty<KeyValuePair<string, object>>(), false
+            defaultFont, gpumesh, shader, Enumerable.Empty<KeyValuePair<string, object>>(), false
         );
-
+        gpumesh.Dispose();
     }
     public void DrawPixel(int x, int y, uint rgb, byte depth = 0)
     {
         (var glX, var glY) = PixelToGL(x, y);
         (var glXp, var glYp) = PixelToGL(x+1, y+1);
-        VRender.ColorFromRGBA(out var r, out byte g, out byte b, out byte a, rgb);
+        VRenderLib.VRender.ColorFromRGBA(out var r, out byte g, out byte b, out byte a, rgb);
         //We can get away with drawing a single triangle
         mesh.AddVertex(glX, glY, 0, 0, 0.5f, r/256f, g/256f, b/256f, a/256f, 1);
         mesh.AddVertex(glX, glYp, 0, 0, 0.5f, r/256f, g/256f, b/256f, a/256f, 1);
@@ -112,7 +105,7 @@ public sealed class RenderDisplay : IDisplay
         //Filling a rectangle is SUPER easy lol.
         (var glX0, var glY0) = PixelToGL(x0, y0);
         (var glX1, var glY1) = PixelToGL(x1, y1);
-        VRender.ColorFromRGBA(out var r, out byte g, out byte b, out byte a, rgb);
+        VRenderLib.VRender.ColorFromRGBA(out var r, out byte g, out byte b, out byte a, rgb);
 
         //TODO: depth
         //pos(3), texcoord(2), color(4)
@@ -127,7 +120,7 @@ public sealed class RenderDisplay : IDisplay
     }
     public void DrawLine(int x1, int y1, int x2, int y2, uint rgb, byte depth = 0)
     {
-        var size = VRender.Render.WindowSize();
+        var size = VRenderLib.VRender.Render.WindowSize();
         //we need to create a matrix transform that will turn our unit square into a pixel-sized object.
 
         //start point
@@ -143,9 +136,9 @@ public sealed class RenderDisplay : IDisplay
         //end point + 1 pixel
         float glXf1 = ((float)(x2 + 0.5f)/(float)size.X - 0.5f) * 2;
         float glYf1 = -((float)(y2 + 0.5f)/(float)size.Y - 0.5f) * 2;
-        
+
         //We need to convert the RGBA color into a vec4
-        VRender.ColorFromRGBA(out var r, out byte g, out byte b, out byte a, rgb);
+        VRenderLib.VRender.ColorFromRGBA(out var r, out byte g, out byte b, out byte a, rgb);
 
         //We add the vertices to the batch thingy
         //TODO: depth
@@ -196,7 +189,7 @@ public sealed class RenderDisplay : IDisplay
         }
         (var glx, var gly) = PixelToGL(bounds.X ?? 0, bounds.Y ?? 0);
         //This is why we need a custom shader - so that the text color and tint color can be blended nicely.
-        VRender.ColorFromRGBA(out var r, out byte g, out byte b, out byte a, rgba);
+        VRenderLib.VRender.ColorFromRGBA(out var r, out byte g, out byte b, out byte a, rgba);
         //Don't worry about re-generating the mesh every time.
         // the mesh generator has a cache so it will reuse them if it can.
         var nullableMesh = VRenderLib.Utility.MeshGenerators.BasicText(text, false, false, out var err);
@@ -205,7 +198,7 @@ public sealed class RenderDisplay : IDisplay
         var tmesh = nullableMesh.Value;
         uint attributes = tmesh.attributes.TotalAttributes();
         float[] vertices = tmesh.vertices;
-        Vector2i screenSize = VRender.Render.WindowSize();
+        Vector2i screenSize = VRenderLib.VRender.Render.WindowSize();
         Vector2 scale = new Vector2(fontSize*2, fontSize*2)/screenSize;
         foreach(uint index in tmesh.indices)
         {
@@ -367,7 +360,7 @@ public sealed class RenderDisplay : IDisplay
 
     private (float, float) PixelToGL(int x, int y)
     {
-        Vector2 size = VRender.Render.WindowSize();
+        Vector2 size = VRenderLib.VRender.Render.WindowSize();
         float glX = (x/(float)size.X - 0.5f) * 2;
         float glY = -(y/(float)size.Y - 0.5f) * 2;
         return (glX, glY);

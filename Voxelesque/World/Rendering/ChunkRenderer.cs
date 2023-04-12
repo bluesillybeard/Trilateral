@@ -3,84 +3,135 @@ namespace Voxelesque.World;
 using OpenTK.Mathematics;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
+using System;
 using vmodel;
 using VRenderLib;
 using VRenderLib.Utility;
+using VRenderLib.Threading;
 using Utility;
 
 public sealed class ChunkRenderer
 {
     public static readonly Attributes chunkAttributes = new Attributes(new EAttribute[]{EAttribute.position, EAttribute.textureCoords, EAttribute.normal});
+    private UnorderedLocalThreadPool chunkDrawPool;
+    //TODO: Use different types, instead of it all being draw objects.
+    private Dictionary<Vector3i, ChunkDrawObject> chunkDrawObjects; //Chunks that are ready to be drawn.
+    private Dictionary<Vector3i, ChunkDrawObjectUploading> chunksBeingUploaded; //Chunks that are in the provess of being uploaded to the GPU
+    private Dictionary<Vector3i, ChunkDrawObjectBuilding> chunksBeingBuilt; //chunks that are in the process of being built
+    private ConcurrentDictionary<Vector3i, object?> chunksInWait; //Chunks that are waiting to be built
+    private ConcurrentBag<Vector3i> chunksToRemove; //chunks that are waiting to be removed
 
-    private ConcurrentDictionary<Vector3i, ChunkDrawObject> chunkDrawObjects;
     public ChunkRenderer()
     {
-        chunkDrawObjects = new ConcurrentDictionary<Vector3i, ChunkDrawObject>();
+        chunkDrawObjects = new Dictionary<Vector3i, ChunkDrawObject>();
+        chunksBeingUploaded = new Dictionary<Vector3i, ChunkDrawObjectUploading>();
+        chunksBeingBuilt = new Dictionary<Vector3i, ChunkDrawObjectBuilding>();
+        chunksInWait = new ConcurrentDictionary<Vector3i, object?>();
+        chunksToRemove = new ConcurrentBag<Vector3i>();
+        chunkDrawPool = new UnorderedLocalThreadPool();
     }
 
     public void DrawChunks(Camera camera, Vector3i playerChunk)
     {
         foreach(KeyValuePair<Vector3i, ChunkDrawObject> obj in chunkDrawObjects)
         {
-            var pos = obj.Key - playerChunk;
-            var drawObject = obj.Value;
-            if(drawObject.InProgress)
-            {
-                continue; //Skip ones that aren't finished
-            }
-            //We need to make a translation for the position, since the mesh is only relative to the chunk's origin, not the actual origin.
-            var transform = Matrix4.CreateTranslation(pos.X * Chunk.Size * MathBits.XScale, pos.Y * Chunk.Size * 0.5f, pos.Z * Chunk.Size * 0.25f);
-            //Now we draw it
-            var uniforms = new KeyValuePair<string, object>[]{
-                new KeyValuePair<string, object>("model", transform),
-                new KeyValuePair<string, object>("camera", camera.GetTransform())
-            };
-            foreach(var drawable in drawObject.Drawables)
-            {
-                VRender.Render.Draw(
-                    drawable.model.texture, drawable.model.mesh,
-                    drawable.shader, uniforms, true
-                );
-            }
+            obj.Value.Draw(camera.GetTransform(), playerChunk);
         }
     }
 
     public void NotifyChunkDeleted(Vector3i pos)
     {
-        if(this.chunkDrawObjects.Remove(pos, out var drawObject)){
-            drawObject.Dispose();
-        }
+        chunksToRemove.Add(pos);
+    }
+
+    public void NotifyChunkAdded(Vector3i pos)
+    {
+        chunksInWait.TryAdd(pos, null);
+    }
+
+    private void BuildChunk(Vector3i pos, Chunk[] chunks)
+    {
+        var obj = new ChunkDrawObjectBuilding(pos);
+        chunksBeingBuilt.Add(pos, obj);
+        obj.InProgress = true;
+        chunkDrawPool.SubmitTask(() => {
+            obj.Build(chunks);
+        }, "BuildChunk"+pos);
     }
 
     public void Update(ChunkManager chunkManager)
     {
         Profiler.Push("ChunkRendererUpdate");
-        //For every chunk in the manager
-        foreach(var pair in chunkManager.Chunks)
+        //Go through the chunks waiting to be removed
+        foreach(var pos in chunksToRemove)
         {
-            var pos = pair.Key;
-            var chunk = pair.Value;
-            //If the chunk has been built before but needs to be updated
-            if(chunkDrawObjects.TryGetValue(pos, out var oldDrawObject))
+            //Not sure why it's complaining about nullability here.
+            // just ignore it for now.
+            #nullable disable
+            chunksInWait.Remove(pos, out var _);
+            #nullable restore
+            if(chunksBeingBuilt.Remove(pos, out var building))
             {
-                if(oldDrawObject.LastUpdate < chunk.LastChange)
-                {
-                    var adjacentChunks = GetAdjacentChunks(chunkManager, pos);
-                    if(adjacentChunks is null)continue;
-                    oldDrawObject.BeginBuilding(pos, adjacentChunks);
-                }
+                building.Cancelled = true;
             }
-            else
+            else if(chunksBeingUploaded.Remove(pos, out var uploading))
             {
-                var adjacentChunks = GetAdjacentChunks(chunkManager, pos);
-                if(adjacentChunks is null)continue;
-                var draw = new ChunkDrawObject();
-                if(!chunkDrawObjects.TryAdd(pos, draw)){
-                    System.Console.WriteLine("Failed to add draw object for " + pos);
-                    continue;
-                }
-                draw.BeginBuilding(pos, adjacentChunks);
+                uploading.Cancelled = true;
             }
+            else if(chunkDrawObjects.Remove(pos, out var draw))
+            {
+                draw.Dispose();
+            }
+        }
+        chunksToRemove.Clear();
+        //go through the chunks waiting to be built
+        List<Vector3i> noLongerWaiting = new List<Vector3i>();
+        foreach(var pos in chunksInWait.Keys)
+        {
+            var adj = GetAdjacentChunks(chunkManager, pos);
+            if(adj is null)continue;
+            BuildChunk(pos, adj);
+            noLongerWaiting.Add(pos);
+        }
+        foreach(var pos in noLongerWaiting)
+        {
+            //Not sure why it's complaining about nullability here.
+            // just ignore it for now.
+            #nullable disable
+            chunksInWait.Remove(pos, out var _);
+            #nullable restore
+        }
+        //Chunks that are being built or just finished building
+        List<ChunkDrawObjectBuilding> chunksFinishedBuilding = new List<ChunkDrawObjectBuilding>();
+        foreach(var chunk in chunksBeingBuilt)
+        {
+            if(!chunk.Value.InProgress)
+            {
+                //If it finished building
+                chunksFinishedBuilding.Add(chunk.Value);
+            }
+        }
+        foreach(var chunk in chunksFinishedBuilding)
+        {
+            chunksBeingBuilt.Remove(chunk.pos);
+            var uploading = new ChunkDrawObjectUploading(chunk.pos, chunk.LastUpdate);
+            chunksBeingUploaded.Add(chunk.pos, uploading);
+            uploading.SendToGPU(chunk);
+        }
+        chunksFinishedBuilding.Clear();
+        List<ChunkDrawObjectUploading> chunksFinishedUploading = new List<ChunkDrawObjectUploading>();
+        //Go through the chunks that are being uploaded or are done uploading
+        foreach(var chunk in chunksBeingUploaded)
+        {
+            if(!chunk.Value.InProgress)
+            {
+                chunksFinishedUploading.Add(chunk.Value);
+            }
+        }
+        foreach(var chunk in chunksFinishedUploading)
+        {
+            chunksBeingUploaded.Remove(chunk.pos);
+            chunkDrawObjects.Add(chunk.pos, new ChunkDrawObject(chunk));
         }
         Profiler.Pop("ChunkRendererUpdate");
     }
@@ -101,5 +152,10 @@ public sealed class ChunkRenderer
         }
         Profiler.Pop("GetAdjacentChunks");
         return adjacentChunks;
+    }
+
+    public void Dispose()
+    {
+        chunkDrawPool.Stop();
     }
 }

@@ -4,63 +4,32 @@ using OpenTK.Mathematics;
 using VRenderLib.Interface;
 using System.Collections.Generic;
 using System;
-using System.Threading.Tasks;
+using VRenderLib.Threading;
 using System.IO;
 using vmodel;
 using VRenderLib;
 using Voxelesque.Utility;
 
-//An object that represents a chunk
-struct ChunkDrawObject{
-
-    static TimeSpan totalDelta;
-    public List<(RenderModel model, IRenderShader shader)> Drawables;
-    public DateTime LastUpdate; //when the chunk was last updated
-    private Task? UpdateTask;
-    public bool InProgress {get => UpdateTask is not null && !UpdateTask.IsCompleted;}
-
-    public ChunkDrawObject()
+class ChunkDrawObjectBuilding
+{
+    public ChunkDrawObjectBuilding(Vector3i pos)
     {
-        Drawables = new List<(RenderModel model, IRenderShader shader)>(0);
+        this.pos = pos;
+        builds = new List<ChunkBuildObject>();
         LastUpdate = DateTime.Now;
-        UpdateTask = null;
     }
+    public readonly DateTime LastUpdate;
+    public readonly Vector3i pos;
+    public readonly List<ChunkBuildObject> builds;
+    public bool InProgress;
+    public bool Cancelled;
 
-    public void BeginBuilding(Vector3i pos, Chunk[] adjacent)
+    public void Build(Chunk[] chunks)
     {
-        Profiler.Push("ChunkBeginBuilding");
-        //TODO: cancel current task and make a new one
-        if(InProgress)return;
-        LastUpdate = DateTime.Now;
-        var me = this;
-        UpdateTask = Task.Run(
-            () => {
-                try{
-                    me.Build(pos, adjacent);
-                } catch (Exception e)
-                {
-                    System.Console.Error.WriteLine("Error while building chunk: " + e.Message);
-                }
-            }
-        );
-        Profiler.Pop("ChunkBeginBuilding");
-    }
-
-    public void Dispose()
-    {
-        foreach(var d in Drawables)
-        {
-            d.model.mesh.Dispose();
-            //We don't dispose textures since they are persistent.
-        }
-    }
-    private void Build(Vector3i pos, Chunk[] adjacent)
-    {
+        InProgress = true;
+        if(Cancelled)return;
         Profiler.Push("ChunkBuild");
-        Profiler.Push("ChunkBuildBlocks");
-        DateTime startTime = DateTime.Now;
-        Chunk chunk = adjacent[0];
-        var objects = new List<ChunkBuildObject>();
+        Chunk chunk = chunks[0];        
         for(uint x=0; x<Chunk.Size; x++){
             for(uint y=0; y<Chunk.Size; y++){
                 for(uint z=0; z<Chunk.Size; z++){
@@ -71,13 +40,13 @@ struct ChunkDrawObject{
                     Block block = blockOrNone;
                     if(!block.draw)continue;
                     int buildObjectHash = ChunkBuildObject.HashCodeOf(block.texture, block.shader);
-                    var index = objects.FindIndex((obj) => {return obj.GetHashCode() == buildObjectHash;});
+                    var index = builds.FindIndex((obj) => {return obj.GetHashCode() == buildObjectHash;});
                     if(index == -1){
-                        index = objects.Count;
-                        objects.Add(new ChunkBuildObject(block.texture, block.shader, block.model.texture));
+                        index = builds.Count;
+                        builds.Add(new ChunkBuildObject(block.texture, block.shader, block.model.texture));
                     }
-                    var buildObject = objects[index];
-                    if(!buildObject.AddBlock(x, y, z, block, pos, adjacent))
+                    var buildObject = builds[index];
+                    if(!buildObject.AddBlock(x, y, z, block, pos, chunks))
                     {
                         //If adding the block failed (for whatever reason), cancel building this chunk.
                         return;
@@ -85,19 +54,98 @@ struct ChunkDrawObject{
                 }
             }
         }
-        Profiler.Pop("ChunkBuildBlocks");
-        Profiler.Push("ChunkBuildMesh");
-        foreach(ChunkBuildObject build in objects)
-        {
-            var shader = build.shader;
-            var cpuMesh = build.mesh.ToMesh();
-            var mesh = VRender.Render.LoadMesh(cpuMesh);
-            var texture = build.texture;
-            Drawables.Add((new RenderModel(mesh, texture), shader));
-        }
-        totalDelta += (DateTime.Now - startTime);
-        Profiler.Push("ChunkBuildMesh");
         Profiler.Pop("ChunkBuild");
+        //There is a possibility it was cancelled during the process of building
+        InProgress = false;
+        if(Cancelled)return;
+    }
+}
+
+class ChunkDrawObjectUploading
+{
+    public ChunkDrawObjectUploading(Vector3i pos, DateTime time)
+    {
+        this.pos = pos;
+        this.time = time;
+        drawables = new List<(RenderModel model, IRenderShader shader)>();
+    }
+    public readonly DateTime time;
+    public Vector3i pos;
+    public bool InProgress;
+    public bool Cancelled;
+    public List<(RenderModel model, IRenderShader shader)> drawables;
+
+    public void SendToGPU(ChunkDrawObjectBuilding built)
+    {
+        var builds = built.builds;
+        if(Cancelled)return;
+        InProgress = true;
+        VRender.Render.SubmitToQueue(
+            () => {
+                if(Cancelled)return;
+                foreach(ChunkBuildObject build in builds)
+                {
+                    var cpuMesh = build.mesh.ToMesh();
+                    var mesh = VRender.Render.LoadMesh(cpuMesh);
+                    drawables.Add((new RenderModel(mesh, build.texture), build.shader));
+                }
+                InProgress = false;
+                if(Cancelled)
+                {
+                    foreach(var d in drawables)
+                    {
+                        d.model.mesh.Dispose();
+                    }
+                }
+            }, "UploadMesh" + pos
+        );
+
+    }
+}
+
+class ChunkDrawObject
+{
+    public readonly DateTime LastUpdate; //when the chunk was last updated
+    public readonly Vector3i pos;
+    public readonly List<(RenderModel model, IRenderShader shader)> drawables;
+
+    public ChunkDrawObject(ChunkDrawObjectUploading obj)
+    {
+        this.pos = obj.pos;
+        this.LastUpdate = obj.time;
+        this.drawables = obj.drawables;
+    }
+
+    public void Dispose()
+    {
+        foreach(var drawable in drawables)
+        {
+            drawable.model.mesh.Dispose();
+        }
+    }
+
+    public ExecutorTask? gpuTask;
+
+    public void Draw(Matrix4 cameraTransform, Vector3i playerChunk)
+    {
+        var offset = pos - playerChunk;
+        //We need to make a translation for the position, since the mesh is only relative to the chunk's origin, not the actual origin.
+        Matrix4 transform = Matrix4.CreateTranslation(offset.X * Chunk.Size * MathBits.XScale, offset.Y * Chunk.Size * 0.5f, offset.Z * Chunk.Size * 0.25f);
+        //Now we draw it
+        var uniforms = new KeyValuePair<string, object>[]{
+            new KeyValuePair<string, object>("model", transform),
+            new KeyValuePair<string, object>("camera", cameraTransform)
+        };
+        if(drawables is null)return;
+        foreach(var drawable in drawables)
+        {
+            
+            VRender.Render.Draw(
+                drawable.model.texture, drawable.model.mesh,
+                drawable.shader, uniforms, true
+            );
+            
+        }
     }
 
     public static readonly Vector3i[] adjacencyList = new Vector3i[]{
@@ -144,5 +192,19 @@ struct ChunkDrawObject{
     {
         int num = (adjacency.X+1) + 3*(adjacency.Y+1) + 9*(adjacency.Z+1);
         return reverseAdjacency[num];
+    }
+
+    public override bool Equals(object? obj)
+    {
+        if(obj is ChunkDrawObject o)
+        {
+            return o.pos.Equals(this.pos);
+        }
+        return false;
+    }
+
+    public override int GetHashCode()
+    {
+        return pos.GetHashCode();
     }
 }

@@ -3,6 +3,7 @@ namespace Voxelesque.World;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
+using System.Threading;
 using System;
 
 using OpenTK.Mathematics;
@@ -16,6 +17,7 @@ public sealed class ChunkManager
     private IChunkGenerator generator;
     public ChunkManager(IChunkGenerator generator)
     {
+        //ThreadPool.SetMaxThreads(8, 8);
         this.generator = generator;
         chunks = new ConcurrentDictionary<Vector3i, Chunk>();//new Dictionary<Vector3i, Chunk>();
         renderer = new ChunkRenderer();
@@ -35,13 +37,15 @@ public sealed class ChunkManager
     private Task? UpdateTask;
     public void Update(Vector3 playerPosition, float distance)
     {
+        renderer.Update(this);
         if(UpdateTask is null || UpdateTask.IsCompleted)
         {
             Profiler.Push("ChunkUpdateBegin");
+            //TODO: make this its own thread with a simple synchronization system,
+            // Rather than relying on C#'s task scheduling.
             UpdateTask = Task.Run(() => {
                 try{
                     UpdateSync(playerPosition, distance);
-                    renderer.Update(this);
                 } catch (Exception e)
                 {
                     System.Console.Error.WriteLine("Exception: " + e.Message + "\nstack trace:" + e.StackTrace);
@@ -51,17 +55,18 @@ public sealed class ChunkManager
         }
     }
 
-    private void UpdateSync(Vector3 playerPosition, float distance)
+    private bool UpdateSync(Vector3 playerPosition, float distance)
     {
+        bool modified = false;
         Profiler.Push("ChunkUpdate");
         Vector3i chunkRange = MathBits.GetChunkPos(new Vector3(distance, distance, distance));
         Vector3i playerChunk = MathBits.GetChunkPos(playerPosition);
         float distanceSquared = distance * distance;
-        UnloadDistantChunks(playerPosition, distanceSquared);
+        modified = UnloadDistantChunks(playerPosition, distanceSquared);
         //First, generate a list of chunks that need to be loaded.
         // TODO: If there are multiple players, this code will absolute screw up massively.
         int totalChunks = 2*2*2*chunkRange.X*chunkRange.Y*chunkRange.Z - chunks.Count;
-        if(totalChunks == 0)return;
+        if(totalChunks == 0)return modified;
         Profiler.Push("GenerateLoadList");
         List<Vector3i> chunksToLoad = new List<Vector3i>(totalChunks);
         for(int cx=-chunkRange.X; cx<chunkRange.X; cx++)
@@ -74,6 +79,7 @@ public sealed class ChunkManager
                     if(!chunks.ContainsKey(chunkPos))
                     {
                         chunksToLoad.Add(chunkPos);
+                        modified = true;
                     }
                 }
             }
@@ -90,10 +96,12 @@ public sealed class ChunkManager
         });
         Profiler.Pop("LoadChunks");
         Profiler.Pop("ChunkUpdate");
+        return modified;
     }
 
-    private void UnloadDistantChunks(Vector3 playerPosition, float distanceSquared)
+    private bool UnloadDistantChunks(Vector3 playerPosition, float distanceSquared)
     {
+        bool mod = false;
         Profiler.Push("UnloadChunks");
         List<Vector3i> chunksToRemove = new List<Vector3i>();
         lock(chunks){
@@ -110,9 +118,11 @@ public sealed class ChunkManager
             foreach(Vector3i c in chunksToRemove)
             {
                 UnloadChunk(c);
+                mod = true;
             }
         }
         Profiler.Pop("UnloadChunks");
+        return mod;
     }
 
     private void UpdateChunk(Vector3i chunkPos, float distanceSquared, Vector3 playerPosition)
@@ -127,7 +137,8 @@ public sealed class ChunkManager
             }, (pos, existing) => {
                 if(existing.LastChange <= chunk.LastChange) return chunk;
                 return existing;
-            }); 
+            });
+            renderer.NotifyChunkAdded(chunkPos);
         }
         Profiler.Pop("UpdateChunkExistence");
     }
@@ -136,6 +147,7 @@ public sealed class ChunkManager
         renderer.DrawChunks(cam, playerChunk);
     }
     public IReadOnlyDictionary<Vector3i, Chunk> Chunks{get => chunks;}
+    public int NumChunks {get => chunks.Count;}
     public Chunk? GetChunk(Vector3i position)
     {
         if(chunks.TryGetValue(position, out var c)){
@@ -208,5 +220,10 @@ public sealed class ChunkManager
         //Then set the actual block itself
         chunk.SetBlock(block, MathBits.Mod(pos.X, Chunk.Size), MathBits.Mod(pos.Y, Chunk.Size), MathBits.Mod(pos.Z, Chunk.Size));
         return true;
+    }
+
+    public void Dispose()
+    {
+        renderer.Dispose();
     }
 }

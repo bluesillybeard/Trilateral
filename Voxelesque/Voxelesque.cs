@@ -10,6 +10,7 @@ using VRenderLib.Interface;
 using VRenderLib.Utility;
 
 using System;
+using System.Threading;
 
 using vmodel;
 
@@ -105,6 +106,7 @@ public sealed class Voxelesque
         ));
     }
     void Update(TimeSpan delta){
+        if(!firstFrame)Profiler.Pop("Wait");
         Profiler.Push("Update");
         Profiler.Push("DebugText");
         time += delta;
@@ -120,21 +122,26 @@ public sealed class Voxelesque
             + "Camera Rotation: " + camera.Rotation + '\n'
             + "FPS: " + (int)(1/(frameDelta.Ticks/(double)TimeSpan.TicksPerSecond)) + '\n'
             + "UPS: " + (int)(1/(delta.Ticks/(double)TimeSpan.TicksPerSecond)) + '\n'
-            + "block:" + block
+            + "block:" + block + '\n'
+            + "existing chunks:" + chunks.NumChunks + '\n'
+
         );
         Profiler.Pop("DebugText");
 
         UpdateCamera(delta);
-        chunks.Update(camera.Position + MathBits.GetChunkWorldPosUncentered(playerChunk), 400);
+        chunks.Update(camera.Position + MathBits.GetChunkWorldPosUncentered(playerChunk), 200);
         Profiler.Push("GUIIterate");
         gui.Iterate();
         Vector2i size = VRender.Render.WindowSize();
         gui.SetSize(size.X, size.Y);
         Profiler.Pop("GUIIterate");
         Profiler.Pop("Update");
+        if(!firstFrame)Profiler.Push("Wait");
     }
 
+    bool firstFrame = true;
     void Render(TimeSpan delta){
+        if(!firstFrame)Profiler.Pop("Wait");
         Profiler.Push("Render");
         totalFrames++;
         try{
@@ -151,6 +158,8 @@ public sealed class Voxelesque
             Console.Error.WriteLine("Error rendering chunk: " + e.Message + "\ntacktrace: " + e.StackTrace);
         }
         Profiler.Pop("Render");
+        Profiler.Push("Wait");
+        firstFrame = false;
     }
 
     void UpdateCamera(TimeSpan delta)
@@ -199,6 +208,7 @@ public sealed class Voxelesque
 
     void Dispose()
     {
+        chunks.Dispose();
         System.Console.WriteLine("average fps:" + totalFrames/((time-start).Ticks/(double)TimeSpan.TicksPerSecond));
     }
 }
