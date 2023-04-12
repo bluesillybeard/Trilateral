@@ -57,6 +57,7 @@ public sealed class ChunkManager
 
     private bool UpdateSync(Vector3 playerPosition, float distance)
     {
+        if(distance < 0)return false;
         bool modified = false;
         Profiler.Push("ChunkUpdate");
         Vector3i chunkRange = MathBits.GetChunkPos(new Vector3(distance, distance, distance));
@@ -66,7 +67,11 @@ public sealed class ChunkManager
         //First, generate a list of chunks that need to be loaded.
         // TODO: If there are multiple players, this code will absolute screw up massively.
         int totalChunks = 2*2*2*chunkRange.X*chunkRange.Y*chunkRange.Z - chunks.Count;
-        if(totalChunks == 0)return modified;
+        if(totalChunks == 0)
+        {
+            Profiler.Pop("ChunkUpdate");
+            return modified;
+        }
         Profiler.Push("GenerateLoadList");
         List<Vector3i> chunksToLoad = new List<Vector3i>(totalChunks);
         for(int cx=-chunkRange.X; cx<chunkRange.X; cx++)
@@ -97,6 +102,11 @@ public sealed class ChunkManager
             Vector3 chunkWorldPos = MathBits.GetChunkWorldPos(chunkToLoad);
             if(Vector3.DistanceSquared(chunkWorldPos, playerPosition) < distanceSquared)
             {
+                if(newChunks.Count >= 100)
+                {
+                    Profiler.Pop("UpdateChunkExistence");
+                    return;
+                }
                 var chunk = LoadChunk(chunkToLoad);
                 chunks.AddOrUpdate(chunkToLoad, (a) => {
                     return chunk;

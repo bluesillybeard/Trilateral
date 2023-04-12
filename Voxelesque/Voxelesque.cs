@@ -101,7 +101,9 @@ public sealed class Voxelesque
             noise
         ));
     }
+    float renderDistance = 0;
     void Update(TimeSpan delta){
+
         if(!firstFrame)Profiler.Pop("Wait");
         Profiler.Push("Update");
         Profiler.Push("DebugText");
@@ -120,12 +122,13 @@ public sealed class Voxelesque
             + "UPS: " + (int)(1/(delta.Ticks/(double)TimeSpan.TicksPerSecond)) + '\n'
             + "block:" + block + '\n'
             + "existing chunks:" + chunks.NumChunks + '\n'
+            + "render distance:" + renderDistance + '\n'
 
         );
         Profiler.Pop("DebugText");
 
         UpdateCamera(delta);
-        chunks.Update(camera.Position + MathBits.GetChunkWorldPosUncentered(playerChunk), 200);
+        chunks.Update(camera.Position + MathBits.GetChunkWorldPosUncentered(playerChunk), renderDistance);
         Profiler.Push("GUIIterate");
         gui.Iterate();
         Vector2i size = VRender.Render.WindowSize();
@@ -137,6 +140,20 @@ public sealed class Voxelesque
 
     bool firstFrame = true;
     void Render(TimeSpan delta){
+        double deltaSeconds = delta.Ticks/(double)TimeSpan.TicksPerSecond;
+        if(deltaSeconds < 1/30.0) //30fps target when loading chunks
+        {
+            renderDistance += 0.15f;
+        }
+        else if(renderDistance >= 5 && deltaSeconds > 1/30f)
+        {
+            renderDistance -= 0.05f;
+        }
+        
+        if(renderDistance > 500)
+        {
+            renderDistance = 500;
+        }
         if(!firstFrame)Profiler.Pop("Wait");
         Profiler.Push("Render");
         totalFrames++;

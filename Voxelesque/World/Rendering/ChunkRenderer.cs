@@ -4,6 +4,7 @@ using OpenTK.Mathematics;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Threading;
+using System;
 using vmodel;
 using VRenderLib;
 using VRenderLib.Utility;
@@ -51,7 +52,7 @@ public sealed class ChunkRenderer
         foreach(Chunk c in chunks)
         {
             //If the chunk is empty, just skip it.
-            if(c.IsEmpty())return;
+            if(c.IsEmpty())continue;
             newChunks.Add(c.pos);
         }
         
@@ -60,7 +61,7 @@ public sealed class ChunkRenderer
     private void BuildChunk(Vector3i pos, Chunk[] chunks)
     {
         var obj = new ChunkDrawObjectBuilding(pos);
-        chunksBeingBuilt.Add(pos, obj);
+        chunksBeingBuilt.TryAdd(pos, obj);
         obj.InProgress = true;
         chunkDrawPool.SubmitTask(() => {
             obj.Build(chunks);
@@ -69,6 +70,9 @@ public sealed class ChunkRenderer
 
     public void Update(ChunkManager chunkManager)
     {
+        //TODO: make time limit adjust to target framerate
+        DateTime start = DateTime.Now;
+        TimeSpan timeLimit = new TimeSpan(TimeSpan.TicksPerSecond/60);
         Profiler.Push("ChunkRendererUpdate");
         Profiler.Push("ChunksToRemove");
         //Go through the chunks waiting to be removed
@@ -102,6 +106,7 @@ public sealed class ChunkRenderer
         newChunks.Clear();
         foreach(var pos in chunksInWait)
         {
+            if(DateTime.Now - start > timeLimit)break;
             var adj = GetAdjacentChunks(chunkManager, pos);
             if(adj is null)
             {
@@ -126,6 +131,11 @@ public sealed class ChunkRenderer
         List<ChunkDrawObjectBuilding> chunksFinishedBuilding = new List<ChunkDrawObjectBuilding>();
         foreach(var chunk in chunksBeingBuilt)
         {
+            if(DateTime.Now - start > timeLimit)break;
+            if(chunksFinishedBuilding.Count > 10)
+            {
+                break;
+            }
             if(!chunk.Value.InProgress)
             {
                 //If it finished building
@@ -146,6 +156,7 @@ public sealed class ChunkRenderer
         //Go through the chunks that are being uploaded or are done uploading
         foreach(var chunk in chunksBeingUploaded)
         {
+            if(DateTime.Now - start > timeLimit)break;
             if(!chunk.Value.InProgress)
             {
                 chunksFinishedUploading.Add(chunk.Value);
@@ -162,19 +173,16 @@ public sealed class ChunkRenderer
 
     private Chunk[]? GetAdjacentChunks(ChunkManager m, Vector3i pos)
     {
-        Profiler.Push("GetAdjacentChunks");
         //If the chunk has not been built before (It's a new chunk)
         Chunk[] adjacentChunks = new Chunk[ChunkDrawObject.adjacencyList.Length];
         for(uint i=0; i<adjacentChunks.Length; i++)
         {
             var c = m.GetChunk(pos + ChunkDrawObject.adjacencyList[i]);
             if(c is null){
-                Profiler.Pop("GetAdjacentChunks");
                 return null; //We don't want to build chunks that don't have all adjacent ones available.
             }
             adjacentChunks[i] = c;
         }
-        Profiler.Pop("GetAdjacentChunks");
         return adjacentChunks;
     }
 
