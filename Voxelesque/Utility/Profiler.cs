@@ -16,20 +16,20 @@ public static class Profiler
     private static DateTime start = DateTime.Now;
     public static void Push(string name)
     {
-        lock(stream)stream.Write(ASCIIEncoding.ASCII.GetBytes($"s\t{name}\t{Environment.CurrentManagedThreadId}\t{(DateTime.Now-start).Ticks}\n"));
+        //lock(stream)stream.Write(ASCIIEncoding.ASCII.GetBytes($"s\t{name}\t{Environment.CurrentManagedThreadId}\t{(DateTime.Now-start).Ticks}\n"));
     }
 
     public static void Pop(string name)
     {
-        lock(stream)stream.Write(ASCIIEncoding.ASCII.GetBytes($"e\t{name}\t{Environment.CurrentManagedThreadId}\t{(DateTime.Now-start).Ticks}\n"));
+        //lock(stream)stream.Write(ASCIIEncoding.ASCII.GetBytes($"e\t{name}\t{Environment.CurrentManagedThreadId}\t{(DateTime.Now-start).Ticks}\n"));
     }
 
     public static void Dispose()
     {
-        lock(stream)
-        {
-            stream.Flush();
-            stream.Dispose();
-        }
+        // lock(stream)
+        // {
+        //     stream.Flush();
+        //     stream.Dispose();
+        // }
     }
 }

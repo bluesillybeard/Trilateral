@@ -1,7 +1,7 @@
 namespace Voxelesque.World;
 
 using OpenTK.Mathematics;
-using VRender.Interface;
+using VRenderLib.Interface;
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;

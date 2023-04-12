@@ -8,7 +8,7 @@ using System;
 using OpenTK.Mathematics;
 
 using Utility;
-using VRender.Utility;
+using VRenderLib.Utility;
 public sealed class ChunkManager
 {
     private ConcurrentDictionary<Vector3i, Chunk> chunks;

@@ -1,7 +1,7 @@
 ﻿using System;
 
-using VRender.Interface;
-using VRender;
+using VRenderLib.Interface;
+using VRenderLib;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -26,9 +26,9 @@ namespace Voxelesque.Game
                 WindowTitle = "Voxelesque",
                 size = new OpenTK.Mathematics.Vector2i(800, 600),
             };
-            VRenderLib.InitRender(settings);
-            VRenderLib.Render.OnStart += Start;
-            VRenderLib.Render.Run();
+            VRender.InitRender(settings);
+            VRender.Render.OnStart += Start;
+            VRender.Render.Run();
             Utility.Profiler.Dispose();
         }
 
