@@ -12,24 +12,20 @@ using System.Threading;
 // and it needs to represent each breakdown hirarchically. (Perhaps just output a JSON file?)
 public static class Profiler
 {
-    private static FileStream stream = new FileStream(("proflog" + DateTime.Now + ".vprofile").Replace(' ', '_').Replace('/', '.'), FileMode.CreateNew);
     private static DateTime start = DateTime.Now;
+    static ProfileReport report = new ProfileReport();
     public static void Push(string name)
     {
-        //lock(stream)stream.Write(ASCIIEncoding.ASCII.GetBytes($"s\t{name}\t{Environment.CurrentManagedThreadId}\t{(DateTime.Now-start).Ticks}\n"));
+        report.Push(name, Environment.CurrentManagedThreadId, DateTime.Now-start);
     }
 
     public static void Pop(string name)
     {
-        //lock(stream)stream.Write(ASCIIEncoding.ASCII.GetBytes($"e\t{name}\t{Environment.CurrentManagedThreadId}\t{(DateTime.Now-start).Ticks}\n"));
+        report.Pop(name, Environment.CurrentManagedThreadId, DateTime.Now-start);
     }
 
     public static void Dispose()
     {
-        // lock(stream)
-        // {
-        //     stream.Flush();
-        //     stream.Dispose();
-        // }
+        System.Console.WriteLine(report.ToString());
     }
 }
