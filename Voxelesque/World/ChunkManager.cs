@@ -10,17 +10,20 @@ using OpenTK.Mathematics;
 
 using Utility;
 using VRenderLib.Utility;
+using VRenderLib.Threading;
 public sealed class ChunkManager
 {
     private ConcurrentDictionary<Vector3i, Chunk> chunks;
-    private ChunkRenderer renderer;
+    public readonly ChunkRenderer renderer;
     private IChunkGenerator generator;
+    private UnorderedLocalThreadPool pool;
     public ChunkManager(IChunkGenerator generator)
     {
         //ThreadPool.SetMaxThreads(8, 8);
         this.generator = generator;
         chunks = new ConcurrentDictionary<Vector3i, Chunk>();//new Dictionary<Vector3i, Chunk>();
         renderer = new ChunkRenderer();
+        pool = new UnorderedLocalThreadPool(int.Max(1, Environment.ProcessorCount/2));
     }
     private Chunk LoadChunk(Vector3i pos)
     {
@@ -91,34 +94,40 @@ public sealed class ChunkManager
         }
         Profiler.Pop("GenerateLoadList");
         Profiler.Push("LoadChunks");
-        ParallelOptions options = new ParallelOptions();
         //Eating up all the threads in the world is a bad idea, it causes the game thread and render thread to have less time allocated to them,
         // Decreasing framerate for no real reason.
-        options.MaxDegreeOfParallelism = Environment.ProcessorCount/2;
         ConcurrentBag<Chunk> newChunks = new ConcurrentBag<Chunk>();
-        Parallel.For(0, chunksToLoad.Count, options, (index) => {
+        for(int index = 0; index < chunksToLoad.Count; index++){
             Vector3i chunkToLoad = chunksToLoad[index];
-            Profiler.Push("UpdateChunkExistence");
-            Vector3 chunkWorldPos = MathBits.GetChunkWorldPos(chunkToLoad);
-            if(Vector3.DistanceSquared(chunkWorldPos, playerPosition) < distanceSquared)
-            {
-                if(newChunks.Count >= 100)
-                {
+            pool.SubmitTask(
+                ()=>{
+                    Profiler.Push("UpdateChunkExistence");
+                    Vector3 chunkWorldPos = MathBits.GetChunkWorldPos(chunkToLoad);
+                    if(Vector3.DistanceSquared(chunkWorldPos, playerPosition) < distanceSquared)
+                    {
+                        if(newChunks.Count >= 100)
+                        {
+                            Profiler.Pop("UpdateChunkExistence");
+                            return;
+                        }
+                        var chunk = LoadChunk(chunkToLoad);
+                        chunk.Optimize();
+                        newChunks.Add(chunk);
+                    }
                     Profiler.Pop("UpdateChunkExistence");
-                    return;
-                }
-                var chunk = LoadChunk(chunkToLoad);
-                chunks.AddOrUpdate(chunkToLoad, (a) => {
-                    return chunk;
-                }, (pos, existing) => {
-                    if(existing.LastChange <= chunk.LastChange) return chunk;
-                    return existing;
-                });
-                chunk.Optimize();
-                newChunks.Add(chunk);
-            }
-            Profiler.Pop("UpdateChunkExistence");
-        });
+                },"LoadChunk"+chunkToLoad);
+        }
+        //Wait for the pool to be done.
+        pool.SubmitTask(null, "wait").WaitUntilDone();
+        foreach(Chunk chunk in newChunks)
+        {
+            chunks.AddOrUpdate(chunk.pos, (a) => {
+                return chunk;
+            }, (pos, existing) => {
+                if(existing.LastChange <= chunk.LastChange) return chunk;
+                return existing;
+            });
+        }
         renderer.NotifyChunksAdded(newChunks);
         Profiler.Pop("LoadChunks");
         Profiler.Pop("ChunkUpdate");
@@ -233,5 +242,6 @@ public sealed class ChunkManager
     public void Dispose()
     {
         renderer.Dispose();
+        pool.Stop();
     }
 }

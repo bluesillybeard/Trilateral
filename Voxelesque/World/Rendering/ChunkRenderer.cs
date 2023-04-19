@@ -17,9 +17,13 @@ public sealed class ChunkRenderer
     private UnorderedLocalThreadPool chunkDrawPool;
     //TODO: Use different types, instead of it all being draw objects.
     private Dictionary<Vector3i, ChunkDrawObject> chunkDrawObjects; //Chunks that are ready to be drawn.
+    public int DrawableChunks {get => chunkDrawObjects.Count;}
     private Dictionary<Vector3i, ChunkDrawObjectUploading> chunksBeingUploaded; //Chunks that are in the provess of being uploaded to the GPU
+    public int UploadingChunks {get => chunksBeingUploaded.Count;}
     private Dictionary<Vector3i, ChunkDrawObjectBuilding> chunksBeingBuilt; //chunks that are in the process of being built
+    public int BuildingChunks {get => chunksBeingBuilt.Count;}
     private List<Vector3i> chunksInWait; //Chunks that are waiting to be built
+    public int WaitingChunks {get => chunksInWait.Count;}
     private ConcurrentBag<Vector3i> newChunks;
     private ConcurrentBag<Vector3i> chunksToRemove; //chunks that are waiting to be removed
 
@@ -31,7 +35,7 @@ public sealed class ChunkRenderer
         chunksInWait = new List<Vector3i>();
         newChunks = new ConcurrentBag<Vector3i>();
         chunksToRemove = new ConcurrentBag<Vector3i>();
-        chunkDrawPool = new UnorderedLocalThreadPool();
+        chunkDrawPool = new UnorderedLocalThreadPool(int.Max(1, Environment.ProcessorCount/2));
     }
 
     public void DrawChunks(Camera camera, Vector3i playerChunk)
@@ -49,13 +53,14 @@ public sealed class ChunkRenderer
 
     public void NotifyChunksAdded(IEnumerable<Chunk> chunks)
     {
+        Profiler.Push("NotifyChunksAdded");
         foreach(Chunk c in chunks)
         {
             //If the chunk is empty, just skip it.
             if(c.IsEmpty())continue;
             newChunks.Add(c.pos);
         }
-        
+        Profiler.Pop("NotifyChunksAdded");
     }
 
     private void BuildChunk(Vector3i pos, Chunk[] chunks)
@@ -67,12 +72,9 @@ public sealed class ChunkRenderer
             obj.Build(chunks);
         }, "BuildChunk"+pos);
     }
-
+    uint updatesSinceLastChunksInWaitIteration = 0;
     public void Update(ChunkManager chunkManager)
     {
-        //TODO: make time limit adjust to target framerate
-        DateTime start = DateTime.Now;
-        TimeSpan timeLimit = new TimeSpan(TimeSpan.TicksPerSecond/60);
         Profiler.Push("ChunkRendererUpdate");
         Profiler.Push("ChunksToRemove");
         //Go through the chunks waiting to be removed
@@ -98,40 +100,44 @@ public sealed class ChunkRenderer
         }
         chunksToRemove.Clear();
         Profiler.Pop("ChunksToRemove");
-        Profiler.Push("ChunksInWait");
+        
         //go through the chunks waiting to be built
         //If this line isn't here, it takes AGES to wait for this thread's turn to use ChunksInWait.
-        List<Vector3i> noLongerWaiting = new List<Vector3i>();
-        chunksInWait.AddRange(newChunks);
-        newChunks.Clear();
-        foreach(var pos in chunksInWait)
+       
+        //ChunksInWait tends to have an insane number of chunks to update,
+        // And it doesn't even need to be updated that frequently.
+        // Often, a lot of time is wasted on looking at chunks that don't have all their neighbors.
+        // So, we limit it to only run once per second.
+        updatesSinceLastChunksInWaitIteration++;
+        if(updatesSinceLastChunksInWaitIteration > 30)
         {
-            if(DateTime.Now - start > timeLimit)break;
-            var adj = GetAdjacentChunks(chunkManager, pos);
-            if(adj is null)
+            updatesSinceLastChunksInWaitIteration = 0;
+            Profiler.Push("ChunksInWait");
+            Profiler.Push("AddNew");
+            chunksInWait.AddRange(newChunks);
+            newChunks.Clear();
+            Profiler.Pop("AddNew");
+            //foreach(var pos in chunksInWait)
+            for(int i=chunksInWait.Count-1; i>=0; --i)
             {
-                continue;
+                var pos = chunksInWait[i];
+                //TODO: GetAdjacentChunks may be fast, but it's an EXTREMELY hot path.
+                // In testing, it was called 10962726 times, literally 4 orders of magnitude more than the actual building of chunks
+                var adj = GetAdjacentChunks(chunkManager, pos);
+                if(adj is null)
+                {
+                    continue;
+                }
+                BuildChunk(pos, adj);
+                chunksInWait.RemoveAt(i--);
             }
-            BuildChunk(pos, adj);
-            noLongerWaiting.Add(pos);
+            Profiler.Pop("ChunksInWait");
         }
-        Profiler.Pop("ChunksInWait");
-        Profiler.Push("ChunksNoLongerWaiting");
-        foreach(var pos in noLongerWaiting)
-        {
-            //Not sure why it's complaining about nullability here.
-            // just ignore it for now.
-            #nullable disable
-            chunksInWait.Remove(pos);
-            #nullable restore
-        }
-        Profiler.Pop("ChunksNoLongerWaiting");
         Profiler.Push("ChunksBeingBuilt");
         //Chunks that are being built or just finished building
         List<ChunkDrawObjectBuilding> chunksFinishedBuilding = new List<ChunkDrawObjectBuilding>();
         foreach(var chunk in chunksBeingBuilt)
         {
-            if(DateTime.Now - start > timeLimit)break;
             if(chunksFinishedBuilding.Count > 10)
             {
                 break;
@@ -156,7 +162,6 @@ public sealed class ChunkRenderer
         //Go through the chunks that are being uploaded or are done uploading
         foreach(var chunk in chunksBeingUploaded)
         {
-            if(DateTime.Now - start > timeLimit)break;
             if(!chunk.Value.InProgress)
             {
                 chunksFinishedUploading.Add(chunk.Value);

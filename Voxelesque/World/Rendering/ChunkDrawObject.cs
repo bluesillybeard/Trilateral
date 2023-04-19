@@ -29,16 +29,14 @@ class ChunkDrawObjectBuilding
         InProgress = true;
         if(Cancelled)return;
         Profiler.Push("ChunkBuild");
-        Chunk chunk = chunks[0];        
+        Chunk chunk = chunks[0];
         for(uint x=0; x<Chunk.Size; x++){
             for(uint y=0; y<Chunk.Size; y++){
                 for(uint z=0; z<Chunk.Size; z++){
-                    Block? blockOrNone = chunk.GetBlock(x, y, z);
-                    if(blockOrNone is null){
+                    Block? block = chunk.GetBlock(x, y, z);
+                    if(block is null){
                         continue;
                     }
-                    Block block = blockOrNone;
-                    if(!block.draw)continue;
                     int buildObjectHash = ChunkBuildObject.HashCodeOf(block.texture, block.shader);
                     var index = builds.FindIndex((obj) => {return obj.GetHashCode() == buildObjectHash;});
                     if(index == -1){
@@ -80,9 +78,10 @@ class ChunkDrawObjectUploading
         var builds = built.builds;
         if(Cancelled)return;
         InProgress = true;
-        VRender.Render.SubmitToQueue(
+        VRender.Render.SubmitToQueueLowPriority(
             () => {
                 if(Cancelled)return;
+                Profiler.Push("UploadChunk");
                 foreach(ChunkBuildObject build in builds)
                 {
                     var cpuMesh = build.mesh.ToMesh();
@@ -97,6 +96,7 @@ class ChunkDrawObjectUploading
                         d.model.mesh.Dispose();
                     }
                 }
+                Profiler.Pop("UploadChunk");
             }, "UploadMesh" + pos
         );
 

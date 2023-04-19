@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using BasicGUI;
 using vmodel;
 using Voxelesque.Utility;
-
+using VRenderLib.Threading;
 namespace Voxelesque;
 
 public sealed class RenderDisplay : IDisplay
@@ -64,31 +64,39 @@ public sealed class RenderDisplay : IDisplay
 
     private MeshBuilder mesh;
     private IRenderShader shader;
+    private ExecutorTask<IRenderMesh>? meshTask;
+    private IRenderMesh? gpuMesh;
     public void BeginFrame()
     {
+        // Start uploading the mesh when a frame starts, so it has the entire frame to finish
+        var vmesh = mesh.ToMesh();
+        meshTask = VRender.Render.SubmitToQueueHighPriority<IRenderMesh>( ()=>{
+            Profiler.Push("UploadGUIMesh");
+            var mesh = VRenderLib.VRender.Render.LoadMesh(vmesh);
+            Profiler.Pop("UploadGUIMesh");
+            return mesh;
+        }, "UploadGUIMesh");
         mesh.Clear();
     }
     public void EndFrame()
     {
-        //TODO: reuse mesh buffer
-        //TODO: ability to use non-default font
-        var vmesh = mesh.ToMesh();
-        // if(vmesh.vertices.Length % mesh.attributes.TotalAttributes() != 0)
-        // {
-        //     System.Console.Error.WriteLine("bro this aint right");
-        // }
-        var meshTask = VRender.Render.SubmitToQueueHighPriority<IRenderMesh>( ()=>{
-            return VRenderLib.VRender.Render.LoadMesh(vmesh);
-        }, "UploadGUIMesh");
-        Profiler.Push("GUIWaitMesh");
-        meshTask.WaitUntilDone();
-        Profiler.Pop("GUIWaitMesh");
-        var gpumesh = meshTask.GetResult();
-        if(gpumesh is null)throw new Exception("Mesh didn't upload", meshTask.GetException());
-        VRender.Render.Draw(
-            defaultFont, gpumesh, shader, Enumerable.Empty<KeyValuePair<string, object>>(), false
-        );
-        gpumesh.Dispose();
+        if(meshTask is not null)
+        {
+            Profiler.Push("GUIWaitMesh");
+            meshTask.WaitUntilDone();
+            Profiler.Pop("GUIWaitMesh");
+            gpuMesh = meshTask.GetResult();
+        }
+    }
+
+    public void DrawToScreen()
+    {
+        if(gpuMesh is not null)
+        {
+            VRender.Render.Draw(
+                defaultFont, gpuMesh, shader, Enumerable.Empty<KeyValuePair<string, object>>(), false
+            );
+        }
     }
     public void DrawPixel(int x, int y, uint rgb, byte depth = 0)
     {

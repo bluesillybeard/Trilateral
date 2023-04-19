@@ -31,6 +31,7 @@ public sealed class Voxelesque
     Camera camera;
     Matrix4 previousCameraTransform;
     BasicGUIPlane gui;
+    RenderDisplay renderDisplay;
     TextElement debug;
     TimeSpan frameDelta;
     ChunkManager chunks;
@@ -52,7 +53,8 @@ public sealed class Voxelesque
             ascii = asciiOrNull;
         }
         chunkShader = render.GetShader(new ShaderFeatures(ChunkRenderer.chunkAttributes, true, true));
-        gui = new BasicGUIPlane(size.X, size.Y, new RenderDisplay(ascii));
+        renderDisplay = new RenderDisplay(ascii);
+        gui = new BasicGUIPlane(size.X, size.Y, renderDisplay);
         random = new Random();
         camera = new Camera(new Vector3(0f, 10f, 0f), Vector3.Zero, 90, size);
         debug = new TextElement(new LayoutContainer(gui.GetRoot(), VAllign.top, HAllign.left), 0xFFFFFFFF, 10, "", ascii, gui.GetDisplay(), 0);
@@ -101,7 +103,6 @@ public sealed class Voxelesque
             noise
         ));
     }
-    float renderDistance = 0;
     void Update(TimeSpan delta){
 
         if(!firstFrame)Profiler.Pop("Wait");
@@ -122,17 +123,23 @@ public sealed class Voxelesque
             + "UPS: " + (int)(1/(delta.Ticks/(double)TimeSpan.TicksPerSecond)) + '\n'
             + "block:" + block + '\n'
             + "existing chunks:" + chunks.NumChunks + '\n'
-            + "render distance:" + renderDistance + '\n'
-
+            + "waiting chunks:" + chunks.renderer.WaitingChunks + '\n'
+            + "building chunks:" + chunks.renderer.BuildingChunks + '\n'
+            + "uploading chunks:" + chunks.renderer.UploadingChunks + '\n'
+            + "drawable chunks:" + chunks.renderer.DrawableChunks + '\n'
         );
         Profiler.Pop("DebugText");
 
         UpdateCamera(delta);
-        chunks.Update(camera.Position + MathBits.GetChunkWorldPosUncentered(playerChunk), renderDistance);
+        chunks.Update(camera.Position + MathBits.GetChunkWorldPosUncentered(playerChunk), 400);
         Profiler.Push("GUIIterate");
         gui.Iterate();
         Vector2i size = VRender.Render.WindowSize();
         gui.SetSize(size.X, size.Y);
+        //We "draw" the GUI here.
+        // RenderDisplay only collects the mesh when drawing,
+        // Nothing actually gets drawn until a special function is called.
+        gui.Draw();
         Profiler.Pop("GUIIterate");
         Profiler.Pop("Update");
         if(!firstFrame)Profiler.Push("Wait");
@@ -141,19 +148,6 @@ public sealed class Voxelesque
     bool firstFrame = true;
     void Render(TimeSpan delta){
         double deltaSeconds = delta.Ticks/(double)TimeSpan.TicksPerSecond;
-        if(deltaSeconds < 1/30.0) //30fps target when loading chunks
-        {
-            renderDistance += 0.15f;
-        }
-        else if(renderDistance >= 5 && deltaSeconds > 1/30f)
-        {
-            renderDistance -= 0.05f;
-        }
-        
-        if(renderDistance > 500)
-        {
-            renderDistance = 500;
-        }
         if(!firstFrame)Profiler.Pop("Wait");
         Profiler.Push("Render");
         totalFrames++;
@@ -162,7 +156,8 @@ public sealed class Voxelesque
             chunks.Draw(camera, playerChunk);
             Profiler.Pop("RenderChunks");
             Profiler.Push("RenderGUI");
-            gui.Draw();
+            //This renders the mesh that was collected during the update method.
+            renderDisplay.DrawToScreen();
             Profiler.Pop("RenderGUI");
             VRender.Render.EndRenderQueue();
             frameDelta = delta;
