@@ -14,7 +14,7 @@ using Utility;
 public sealed class ChunkRenderer
 {
     public static readonly Attributes chunkAttributes = new Attributes(new EAttribute[]{EAttribute.position, EAttribute.textureCoords, EAttribute.normal});
-    private UnorderedLocalThreadPool chunkDrawPool;
+    private LocalThreadPool chunkDrawPool;
     //TODO: Use different types, instead of it all being draw objects.
     private Dictionary<Vector3i, ChunkDrawObject> chunkDrawObjects; //Chunks that are ready to be drawn.
     public int DrawableChunks {get => chunkDrawObjects.Count;}
@@ -35,7 +35,7 @@ public sealed class ChunkRenderer
         chunksInWait = new List<Vector3i>();
         newChunks = new ConcurrentBag<Vector3i>();
         chunksToRemove = new ConcurrentBag<Vector3i>();
-        chunkDrawPool = new UnorderedLocalThreadPool(int.Max(1, Environment.ProcessorCount/2));
+        chunkDrawPool = new LocalThreadPool(int.Max(1, Environment.ProcessorCount/2));
     }
 
     public void DrawChunks(Camera camera, Vector3i playerChunk)

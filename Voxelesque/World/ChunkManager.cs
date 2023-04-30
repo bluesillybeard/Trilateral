@@ -25,15 +25,13 @@ public sealed class ChunkManager
         this.generator = generator;
         chunks = new ConcurrentDictionary<Vector3i, Chunk>();//new Dictionary<Vector3i, Chunk>();
         renderer = new ChunkRenderer();
-        pool = new LocalThreadPool(int.Max(1, Environment.ProcessorCount/2));
+        pool = new LocalThreadPool(int.Max(1, (int)(Environment.ProcessorCount*0.75f)));
         chunksBeingLoaded = new HashSet<Vector3i>();
         chunksFinishedLoading = new ConcurrentBag<Chunk>();
     }
     private Chunk LoadChunk(Vector3i pos)
     {
-        Profiler.Push("LoadChunk");
         var chunk = generator.GenerateChunk(pos.X, pos.Y, pos.Z);
-        Profiler.Pop("LoadChunk");
         return chunk;
     }
     private void UnloadChunk(Vector3i pos)
@@ -105,9 +103,15 @@ public sealed class ChunkManager
             var chunkPos = chunkLoadList.Dequeue();
             chunksBeingLoaded.Add(chunkPos);
             pool.SubmitTask(() => {
+                Profiler.Push("LoadChunk");
+                Profiler.Push("Generate");
                 var chunk = LoadChunk(chunkPos);
                 chunk.Optimize();
+                Profiler.Pop("Generate");
+                Profiler.Push("Add");
                 chunksFinishedLoading.Add(chunk);
+                Profiler.Pop("Add");
+                Profiler.Pop("LoadChunk");
             }, "LoadChunk");
         }
         Profiler.Pop("ChunkStartLoad");

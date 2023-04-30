@@ -138,7 +138,16 @@ public class Chunk
         uint index = x + Size*y + Size*Size*z;
         SetBlock(block, index);
     }
-
+    /**
+    <summary>
+    Notifies that this chunk has been changed.
+    It would automatically do this, but DateTime.Now
+    has a very large performance peanalty when called 
+    for every single modification, so this method
+    allows for a large set of blocks to be modified
+    without repeadetly getting the current time.
+    </summary>
+    */
     public void UpdateLastChange()
     {
         lastChange = DateTime.Now;

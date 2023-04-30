@@ -73,14 +73,16 @@ class ChunkDrawObjectUploading
     public bool Cancelled;
     public List<(RenderModel model, IRenderShader shader)> drawables;
 
-    public void SendToGPU(ChunkDrawObjectBuilding built)
+    public ExecutorTask SendToGPU(ChunkDrawObjectBuilding built)
     {
         var builds = built.builds;
-        if(Cancelled)return;
         InProgress = true;
-        VRender.Render.SubmitToQueueLowPriority(
+        return VRender.Render.SubmitToQueueLowPriority(
             () => {
-                if(Cancelled)return;
+                if(Cancelled){
+                    InProgress = false;
+                    return;
+                }
                 Profiler.Push("UploadChunk");
                 foreach(ChunkBuildObject build in builds)
                 {

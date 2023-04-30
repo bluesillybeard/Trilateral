@@ -110,7 +110,7 @@ public sealed class Voxelesque
         Profiler.Push("Update");
         Profiler.Push("DebugText");
         time += delta;
-        Block? b = chunks.GetBlock(MathBits.GetBlockPos(camera.Position));
+        Block? b = chunks.GetBlock(MathBits.GetBlockPos(camera.Position) + playerChunk*Chunk.Size);
         string block = "none";
         if(b is not null)
         {
@@ -132,7 +132,7 @@ public sealed class Voxelesque
         Profiler.Pop("DebugText");
 
         UpdateCamera(delta);
-        chunks.Update(playerChunk, 100);
+        chunks.Update(playerChunk, 200);
         Profiler.Push("GUIIterate");
         gui.Iterate();
         Vector2i size = VRender.Render.WindowSize();

@@ -58,8 +58,8 @@ using FNLfloat = System.Single;
 
 public class FastNoiseLite
 {
-    private const short INLINE = 256; // MethodImplOptions.AggressiveInlining;
-    private const short OPTIMISE = 512; // MethodImplOptions.AggressiveOptimization;
+    private const MethodImplOptions INLINE = MethodImplOptions.AggressiveInlining;
+    private const MethodImplOptions OPTIMISE =MethodImplOptions.AggressiveOptimization;
 
     public enum NoiseType 
     { 
