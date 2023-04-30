@@ -43,11 +43,16 @@ public sealed class ChunkManager
     }
     public void Update(Vector3i playerChunk, float loadDistance)
     {
+        float loadDistanceSquared = loadDistance*loadDistance;
+        //NOTE: this is the position of the chunk the player is in.
+        // NOT the actual exact position of the player
+        Vector3 playerPos = MathBits.GetChunkWorldPos(playerChunk);
         Profiler.Push("ChunkUnload");
         List<Vector3i> chunksToUnload = new List<Vector3i>();
         foreach(var c in chunks)
         {
-            if((c.Key - playerChunk).EuclideanLength > loadDistance)
+            var chunkWorldPos = MathBits.GetChunkWorldPos(c.Key);
+            if(Vector3.DistanceSquared(playerPos, chunkWorldPos) > loadDistanceSquared)
             {
                 chunksToUnload.Add(c.Key);
             }
@@ -81,14 +86,14 @@ public sealed class ChunkManager
             {
                 for(int cz=-chunkRange.Z; cz<chunkRange.Z; ++cz)
                 {
-                    var pos = new Vector3i(cx, cy, cz) + playerChunk;
-                    var chunkDistance = (pos - playerChunk).EuclideanLength;
+                    var chunkPos = new Vector3i(cx, cy, cz) + playerChunk;
+                    var chunkDistance = Vector3.DistanceSquared(playerPos, MathBits.GetChunkWorldPos(chunkPos));
                     if(
-                    chunkDistance < loadDistance &&
-                    !chunksBeingLoaded.Contains(pos) &&
-                    !chunks.ContainsKey(pos)
+                    chunkDistance < loadDistanceSquared &&
+                    !chunksBeingLoaded.Contains(chunkPos) &&
+                    !chunks.ContainsKey(chunkPos)
                     ){
-                        chunkLoadList.Enqueue(pos, chunkDistance);
+                        chunkLoadList.Enqueue(chunkPos, chunkDistance);
                     }
                 }
             }
