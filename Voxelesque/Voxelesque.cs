@@ -105,7 +105,8 @@ public sealed class Voxelesque
     }
     void Update(TimeSpan delta){
 
-        if(!firstFrame)Profiler.Pop("Wait");
+        if(postUpdateActive)Profiler.Pop("PostUpdate");
+        if(postFrameActive)Profiler.Pop("PostFrame");
         Profiler.Push("Update");
         Profiler.Push("DebugText");
         time += delta;
@@ -131,24 +132,27 @@ public sealed class Voxelesque
         Profiler.Pop("DebugText");
 
         UpdateCamera(delta);
-        chunks.Update(camera.Position + MathBits.GetChunkWorldPosUncentered(playerChunk), 400);
+        chunks.Update(camera.Position + MathBits.GetChunkWorldPosUncentered(playerChunk), 200);
         Profiler.Push("GUIIterate");
         gui.Iterate();
         Vector2i size = VRender.Render.WindowSize();
         gui.SetSize(size.X, size.Y);
         //We "draw" the GUI here.
-        // RenderDisplay only collects the mesh when drawing,
-        // Nothing actually gets drawn until a special function is called.
+        // RenderDisplay only collects the mesh when "drawing",
+        // Nothing actually gets rendered until DrawToScreen is called.
         gui.Draw();
         Profiler.Pop("GUIIterate");
         Profiler.Pop("Update");
-        if(!firstFrame)Profiler.Push("Wait");
+        Profiler.Push("PostUpdate");
+        postUpdateActive = true;
     }
 
-    bool firstFrame = true;
+    bool postFrameActive = false;
+    bool postUpdateActive = false;
     void Render(TimeSpan delta){
         double deltaSeconds = delta.Ticks/(double)TimeSpan.TicksPerSecond;
-        if(!firstFrame)Profiler.Pop("Wait");
+        if(postFrameActive)Profiler.Pop("PostFrame");
+        if(postUpdateActive)Profiler.Pop("PostUpdate");
         Profiler.Push("Render");
         totalFrames++;
         try{
@@ -166,8 +170,8 @@ public sealed class Voxelesque
             Console.Error.WriteLine("Error rendering chunk: " + e.Message + "\ntacktrace: " + e.StackTrace);
         }
         Profiler.Pop("Render");
-        Profiler.Push("Wait");
-        firstFrame = false;
+        Profiler.Push("PostFrame");
+        postFrameActive = true;
     }
 
     void UpdateCamera(TimeSpan delta)

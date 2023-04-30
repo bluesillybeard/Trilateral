@@ -124,8 +124,8 @@ public sealed class ChunkManager
             chunks.AddOrUpdate(chunk.pos, (a) => {
                 return chunk;
             }, (pos, existing) => {
-                if(existing.LastChange <= chunk.LastChange) return chunk;
-                return existing;
+                System.Console.Error.WriteLine("Warning: chunk " + chunk.pos + " already existed in database!");
+                return chunk;
             });
         }
         renderer.NotifyChunksAdded(newChunks);

@@ -152,7 +152,10 @@ public sealed class ChunkRenderer
         {
             chunksBeingBuilt.Remove(chunk.pos);
             var uploading = new ChunkDrawObjectUploading(chunk.pos, chunk.LastUpdate);
-            chunksBeingUploaded.Add(chunk.pos, uploading);
+            if(!chunksBeingUploaded.TryAdd(chunk.pos, uploading))
+            {
+                System.Console.Error.WriteLine("ERROR: Failed to add ChunkDrawObjectUploading " + chunk.pos);
+            }
             uploading.SendToGPU(chunk);
         }
         chunksFinishedBuilding.Clear();
@@ -170,7 +173,12 @@ public sealed class ChunkRenderer
         foreach(var chunk in chunksFinishedUploading)
         {
             chunksBeingUploaded.Remove(chunk.pos);
-            chunkDrawObjects.Add(chunk.pos, new ChunkDrawObject(chunk));
+            var draw = new ChunkDrawObject(chunk);
+            if(!chunkDrawObjects.TryAdd(chunk.pos, draw))
+            {
+                System.Console.Error.WriteLine("Error: Failed to add ChunkDrawObject:" + chunk.pos);
+                draw.Dispose();
+            }
         }
         Profiler.Pop("ChunksBeingUploaded");
         Profiler.Pop("ChunkRendererUpdate");
