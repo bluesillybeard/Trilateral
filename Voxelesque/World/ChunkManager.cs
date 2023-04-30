@@ -13,17 +13,21 @@ using VRenderLib.Utility;
 using VRenderLib.Threading;
 public sealed class ChunkManager
 {
-    private ConcurrentDictionary<Vector3i, Chunk> chunks;
+    private readonly ConcurrentDictionary<Vector3i, Chunk> chunks;
     public readonly ChunkRenderer renderer;
-    private IChunkGenerator generator;
-    private UnorderedLocalThreadPool pool;
+    private readonly IChunkGenerator generator;
+    private readonly LocalThreadPool pool;
+    //TODO: Figure out the best data structure for this.
+    private readonly HashSet<Vector3i> chunksBeingLoaded; 
+    private readonly ConcurrentBag<Chunk> chunksFinishedLoading;
     public ChunkManager(IChunkGenerator generator)
     {
-        //ThreadPool.SetMaxThreads(8, 8);
         this.generator = generator;
         chunks = new ConcurrentDictionary<Vector3i, Chunk>();//new Dictionary<Vector3i, Chunk>();
         renderer = new ChunkRenderer();
-        pool = new UnorderedLocalThreadPool(int.Max(1, Environment.ProcessorCount/2));
+        pool = new LocalThreadPool(int.Max(1, Environment.ProcessorCount/2));
+        chunksBeingLoaded = new HashSet<Vector3i>();
+        chunksFinishedLoading = new ConcurrentBag<Chunk>();
     }
     private Chunk LoadChunk(Vector3i pos)
     {
@@ -37,128 +41,74 @@ public sealed class ChunkManager
         this.chunks.Remove(pos, out var _);
         renderer.NotifyChunkDeleted(pos);
     }
-    private Task? UpdateTask;
-    public void Update(Vector3 playerPosition, float distance)
+    public void Update(Vector3i playerChunk, float loadDistance)
     {
+        Profiler.Push("ChunkUnload");
+        List<Vector3i> chunksToUnload = new List<Vector3i>();
+        foreach(var c in chunks)
+        {
+            if((c.Key - playerChunk).EuclideanLength > loadDistance)
+            {
+                chunksToUnload.Add(c.Key);
+            }
+        }
+        foreach(var c in chunksToUnload)
+        {
+            UnloadChunk(c);
+        }
+        Profiler.Pop("ChunkUnload");
+        Profiler.Push("ChunksFinishedLoading");
+        pool.Pause();
+        foreach(var chunk in chunksFinishedLoading)
+        {
+            chunksBeingLoaded.Remove(chunk.pos);
+            if(!chunks.TryAdd(chunk.pos, chunk)){
+                System.Console.Error.WriteLine("Failed to add chunk " + chunk.pos);
+                continue;
+            }
+        }
+        renderer.NotifyChunksAdded(chunksFinishedLoading);
+        chunksFinishedLoading.Clear();
+        pool.Unpause();
+        Profiler.Pop("ChunksFinishedLoading");
+        Profiler.Push("ChunkLoadList");
+        //It may be called a queue, but it's actually behaves more like a sorted bag.
+        PriorityQueue<Vector3i, float> chunkLoadList = new PriorityQueue<Vector3i, float>();
+        Vector3i chunkRange = MathBits.GetChunkPos(new Vector3(loadDistance, loadDistance, loadDistance));
+        for(int cx=-chunkRange.X; cx<chunkRange.X; ++cx)
+        {
+            for(int cy=-chunkRange.Y; cy<chunkRange.Y; ++cy)
+            {
+                for(int cz=-chunkRange.Z; cz<chunkRange.Z; ++cz)
+                {
+                    var pos = new Vector3i(cx, cy, cz) + playerChunk;
+                    var chunkDistance = (pos - playerChunk).EuclideanLength;
+                    if(
+                    chunkDistance < loadDistance &&
+                    !chunksBeingLoaded.Contains(pos) &&
+                    !chunks.ContainsKey(pos)
+                    ){
+                        chunkLoadList.Enqueue(pos, chunkDistance);
+                    }
+                }
+            }
+        }
+        Profiler.Pop("ChunkLoadList");
+        Profiler.Push("ChunkStartLoad");
+        while(chunkLoadList.Count > 0)
+        {
+            var chunkPos = chunkLoadList.Dequeue();
+            chunksBeingLoaded.Add(chunkPos);
+            pool.SubmitTask(() => {
+                var chunk = LoadChunk(chunkPos);
+                chunk.Optimize();
+                chunksFinishedLoading.Add(chunk);
+            }, "LoadChunk");
+        }
+        Profiler.Pop("ChunkStartLoad");
         renderer.Update(this);
-        if(UpdateTask is null || UpdateTask.IsCompleted)
-        {
-            Profiler.Push("ChunkUpdateBegin");
-            //TODO: make this its own thread with a simple synchronization system,
-            // Rather than relying on C#'s task scheduling.
-            UpdateTask = Task.Run(() => {
-                try{
-                    UpdateSync(playerPosition, distance);
-                } catch (Exception e)
-                {
-                    System.Console.Error.WriteLine("Exception: " + e.Message + "\nstack trace:" + e.StackTrace);
-                }
-            });
-            Profiler.Pop("ChunkUpdateBegin");
-        }
     }
 
-    private bool UpdateSync(Vector3 playerPosition, float distance)
-    {
-        if(distance < 0)return false;
-        bool modified = false;
-        Profiler.Push("ChunkUpdate");
-        Vector3i chunkRange = MathBits.GetChunkPos(new Vector3(distance, distance, distance));
-        Vector3i playerChunk = MathBits.GetChunkPos(playerPosition);
-        float distanceSquared = distance * distance;
-        modified = UnloadDistantChunks(playerPosition, distanceSquared);
-        //First, generate a list of chunks that need to be loaded.
-        // TODO: If there are multiple players, this code will absolute screw up massively.
-        int totalChunks = 2*2*2*chunkRange.X*chunkRange.Y*chunkRange.Z - chunks.Count;
-        if(totalChunks == 0)
-        {
-            Profiler.Pop("ChunkUpdate");
-            return modified;
-        }
-        Profiler.Push("GenerateLoadList");
-        List<Vector3i> chunksToLoad = new List<Vector3i>(totalChunks);
-        for(int cx=-chunkRange.X; cx<chunkRange.X; cx++)
-        {
-            for (int cy = -chunkRange.Y; cy < chunkRange.Y; cy++)
-            {
-                for (int cz = -chunkRange.Z; cz < chunkRange.Z; cz++)
-                {
-                    Vector3i chunkPos = playerChunk + new Vector3i(cx, cy, cz);
-                    if(!chunks.ContainsKey(chunkPos))
-                    {
-                        chunksToLoad.Add(chunkPos);
-                        modified = true;
-                    }
-                }
-            }
-        }
-        Profiler.Pop("GenerateLoadList");
-        Profiler.Push("LoadChunks");
-        //Eating up all the threads in the world is a bad idea, it causes the game thread and render thread to have less time allocated to them,
-        // Decreasing framerate for no real reason.
-        ConcurrentBag<Chunk> newChunks = new ConcurrentBag<Chunk>();
-        for(int index = 0; index < chunksToLoad.Count; index++){
-            Vector3i chunkToLoad = chunksToLoad[index];
-            pool.SubmitTask(
-                ()=>{
-                    Profiler.Push("UpdateChunkExistence");
-                    Vector3 chunkWorldPos = MathBits.GetChunkWorldPos(chunkToLoad);
-                    if(Vector3.DistanceSquared(chunkWorldPos, playerPosition) < distanceSquared)
-                    {
-                        if(newChunks.Count >= 100)
-                        {
-                            Profiler.Pop("UpdateChunkExistence");
-                            return;
-                        }
-                        var chunk = LoadChunk(chunkToLoad);
-                        chunk.Optimize();
-                        newChunks.Add(chunk);
-                    }
-                    Profiler.Pop("UpdateChunkExistence");
-                },"LoadChunk"+chunkToLoad);
-        }
-        //Wait for the pool to be done.
-        pool.SubmitTask(null, "wait").WaitUntilDone();
-        foreach(Chunk chunk in newChunks)
-        {
-            chunks.AddOrUpdate(chunk.pos, (a) => {
-                return chunk;
-            }, (pos, existing) => {
-                System.Console.Error.WriteLine("Warning: chunk " + chunk.pos + " already existed in database!");
-                return chunk;
-            });
-        }
-        renderer.NotifyChunksAdded(newChunks);
-        Profiler.Pop("LoadChunks");
-        Profiler.Pop("ChunkUpdate");
-        return modified;
-    }
-
-    private bool UnloadDistantChunks(Vector3 playerPosition, float distanceSquared)
-    {
-        bool mod = false;
-        Profiler.Push("UnloadChunks");
-        List<Vector3i> chunksToRemove = new List<Vector3i>();
-        lock(chunks){
-            foreach(var chunk in chunks)
-            {
-                var pos = chunk.Key;
-                var data = chunk.Value;
-                Vector3 chunkWorldPos = MathBits.GetChunkWorldPos(pos);
-                if(Vector3.DistanceSquared(chunkWorldPos, playerPosition) > distanceSquared)
-                {
-                    chunksToRemove.Add(pos);
-                }
-            }
-            foreach(Vector3i c in chunksToRemove)
-            {
-                UnloadChunk(c);
-                mod = true;
-            }
-        }
-        Profiler.Pop("UnloadChunks");
-        return mod;
-    }
     public void Draw(Camera cam, Vector3i playerChunk)
     {
         renderer.DrawChunks(cam, playerChunk);

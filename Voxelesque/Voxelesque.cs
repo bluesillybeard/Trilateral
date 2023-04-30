@@ -132,7 +132,7 @@ public sealed class Voxelesque
         Profiler.Pop("DebugText");
 
         UpdateCamera(delta);
-        chunks.Update(camera.Position + MathBits.GetChunkWorldPosUncentered(playerChunk), 200);
+        chunks.Update(playerChunk, 100);
         Profiler.Push("GUIIterate");
         gui.Iterate();
         Vector2i size = VRender.Render.WindowSize();
