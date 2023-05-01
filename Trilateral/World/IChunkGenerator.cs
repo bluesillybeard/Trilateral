@@ -1,6 +1,6 @@
-namespace Voxelesque.World;
+namespace Trilateral.World;
 
-using Voxelesque.Utility;
+using Trilateral.Utility;
 
 public interface IChunkGenerator
 {

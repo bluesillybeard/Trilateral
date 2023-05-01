@@ -1,4 +1,4 @@
-namespace Voxelesque.World;
+namespace Trilateral.World;
 
 using System;
 using System.Collections.Generic;

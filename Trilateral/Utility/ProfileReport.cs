@@ -1,4 +1,4 @@
-namespace Voxelesque.Utility;
+namespace Trilateral.Utility;
 using System.Collections.Generic;
 using System;
 using System.Text;

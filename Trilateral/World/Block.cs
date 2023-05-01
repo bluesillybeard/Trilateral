@@ -1,4 +1,4 @@
-namespace Voxelesque.World;
+namespace Trilateral.World;
 
 using vmodel;
 using VRenderLib.Interface;

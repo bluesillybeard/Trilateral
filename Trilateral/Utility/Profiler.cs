@@ -1,6 +1,6 @@
 #define USE_PROFILE
 
-namespace Voxelesque.Utility;
+namespace Trilateral.Utility;
 
 using System.IO;
 using System;

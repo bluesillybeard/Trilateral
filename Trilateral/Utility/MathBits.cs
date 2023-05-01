@@ -1,4 +1,4 @@
-namespace Voxelesque.Utility;
+namespace Trilateral.Utility;
 
 using OpenTK.Mathematics;
 using System;

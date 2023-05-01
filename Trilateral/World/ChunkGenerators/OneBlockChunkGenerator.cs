@@ -1,7 +1,7 @@
-namespace Voxelesque.World.ChunkGenerators;
+namespace Trilateral.World.ChunkGenerators;
 
 using World;
-using Voxelesque.Utility;
+using Trilateral.Utility;
 
 //Generates a singular block at 0,0,0
 

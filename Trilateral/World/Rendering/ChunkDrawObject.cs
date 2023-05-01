@@ -1,4 +1,4 @@
-namespace Voxelesque.World;
+namespace Trilateral.World;
 
 using OpenTK.Mathematics;
 using VRenderLib.Interface;
@@ -8,7 +8,7 @@ using VRenderLib.Threading;
 using System.IO;
 using vmodel;
 using VRenderLib;
-using Voxelesque.Utility;
+using Trilateral.Utility;
 
 class ChunkDrawObjectBuilding
 {

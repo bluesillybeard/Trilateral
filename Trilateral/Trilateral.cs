@@ -1,4 +1,4 @@
-namespace Voxelesque.Game;
+namespace Trilateral.Game;
 
 using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
@@ -20,7 +20,7 @@ using World;
 using World.ChunkGenerators;
 using Utility;
 
-public sealed class Voxelesque
+public sealed class Trilateral
 {
     DateTime start;
     DateTime time;
@@ -37,7 +37,7 @@ public sealed class Voxelesque
     ChunkManager chunks;
     IRenderShader chunkShader;
     uint totalFrames;
-    public Voxelesque()
+    public Trilateral()
     {
         start = DateTime.Now;
         time = DateTime.Now;

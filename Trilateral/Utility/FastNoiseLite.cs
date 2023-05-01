@@ -47,7 +47,7 @@
 // VERSION: 1.0.1
 // https://github.com/Auburn/FastNoise
 
-namespace Voxelesque.Utility;
+namespace Trilateral.Utility;
 
 using System;
 using System.Runtime.CompilerServices;

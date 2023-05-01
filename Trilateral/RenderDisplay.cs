@@ -7,9 +7,9 @@ using System.Linq;
 using System.Collections.Generic;
 using BasicGUI;
 using vmodel;
-using Voxelesque.Utility;
+using Trilateral.Utility;
 using VRenderLib.Threading;
-namespace Voxelesque;
+namespace Trilateral;
 
 public sealed class RenderDisplay : IDisplay
 {

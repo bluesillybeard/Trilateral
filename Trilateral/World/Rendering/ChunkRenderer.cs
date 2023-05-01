@@ -1,4 +1,4 @@
-namespace Voxelesque.World;
+namespace Trilateral.World;
 
 using OpenTK.Mathematics;
 using System.Collections.Generic;

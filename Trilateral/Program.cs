@@ -8,11 +8,11 @@ using System.Threading;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 
-namespace Voxelesque.Game
+namespace Trilateral.Game
 {
     public static class Program
     {
-
+        public static Settings settings;
         private static void Main()
         {
             //Some things for logging purposes
@@ -35,7 +35,7 @@ namespace Voxelesque.Game
 
         private static void Start()
         {
-            Voxelesque game = new Voxelesque();
+            Trilateral game = new Trilateral();
         }
     }
 
