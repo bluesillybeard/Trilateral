@@ -156,4 +156,31 @@ public static class MathBits
             bz * 0.25f
         );
     }
+    /**
+    <summary>
+    Gets the chunk that a block pos is within
+    </summary>
+    */
+    public static Vector3i GetBlockChunkPos(Vector3i blockPos)
+    {
+        //One would think we could just divide by Chunk.Size and call it a day.
+        // But, integer division has an anomaly at 0, since the output is truncated instead of floored.
+        // So, we have to convert it into a float, divide by Chunk.Size, floor it, then cast it into an int.
+        Vector3 pf = (((Vector3)blockPos)/Chunk.Size);
+        return new Vector3i((int)MathF.Floor(pf.X), (int)MathF.Floor(pf.Y), (int)MathF.Floor(pf.Z));
+    }
+
+    /**
+    <summary>
+    Gets the chunk that a block pos is within
+    </summary>
+    */
+    public static Vector3i GetChunkBlockPos(Vector3i chunkPos)
+    {
+        //One would think we could just divide by Chunk.Size and call it a day.
+        // But, integer division has an anomaly at 0, since the output is truncated instead of floored.
+        // So, we have to convert it into a float, divide by Chunk.Size, floor it, then cast it into an int.
+        Vector3 pf = (((Vector3)chunkPos)*Chunk.Size);
+        return new Vector3i((int)MathF.Floor(pf.X), (int)MathF.Floor(pf.Y), (int)MathF.Floor(pf.Z));
+    }
 }

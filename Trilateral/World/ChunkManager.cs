@@ -213,7 +213,7 @@ public sealed class ChunkManager
     public bool TrySetBlock(Block block, Vector3i blockPos)
     {
         //First, figure out which chunk the block is in
-        Chunk? chunk = GetChunk(blockPos/Chunk.Size);
+        Chunk? chunk = GetChunk(MathBits.GetBlockChunkPos(blockPos));
         if(chunk is null)
         {
             return false;

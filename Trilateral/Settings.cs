@@ -28,7 +28,7 @@ public struct Settings
 
     //The target frames per second.
     // Takes effect immediately
-    public uint targetFPS = 60;
+    public uint targetFPS = 100;
 
     //Weather to try to sync the framerate with the display.
     // The frame timing code is somewhat messed up right now, so this might cause strange performance issues.

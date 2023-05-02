@@ -96,8 +96,8 @@ public sealed class Trilateral
         //TODO: load these from a file
         blockRegistry.Add("trilateral:grassBlock", new Block(grass, grassTexture, chunkShader, "Grass", "trilateral:grassBlock"));
         blockRegistry.Add("trilateral:glassBlock", new Block(glass, glassTexture, chunkShader, "Glass", "trilateral:glassBlock"));
-        FastNoiseLite noise = new FastNoiseLite(1823);
-        noise.SetNoiseType(FastNoiseLite.NoiseType.Perlin);
+        FastNoiseLite noise = new FastNoiseLite(1757);
+        noise.SetNoiseType(FastNoiseLite.NoiseType.Cellular);
         noise.SetFractalType(FastNoiseLite.FractalType.FBm);
         noise.SetFrequency(0.004f);
         noise.SetFractalOctaves(5);
@@ -115,7 +115,7 @@ public sealed class Trilateral
         Profiler.Push("Update");
         Profiler.Push("DebugText");
         time += delta;
-        Block? b = chunks.GetBlock(MathBits.GetBlockPos(camera.Position) + playerChunk*Chunk.Size);
+        Block? b = chunks.GetBlock(MathBits.GetBlockPos(camera.Position) + MathBits.GetChunkBlockPos(playerChunk));
         string block = "none";
         if(b is not null)
         {
@@ -187,7 +187,7 @@ public sealed class Trilateral
         //Place a block if the player preses a button
         if (keyboard.IsKeyDown(Keys.E))
         {
-            chunks.TrySetBlock(blockRegistry["trilateral:glassBlock"], MathBits.GetBlockPos(camera.Position) + playerChunk*Chunk.Size);
+            chunks.TrySetBlock(blockRegistry["trilateral:glassBlock"], MathBits.GetBlockPos(camera.Position) + MathBits.GetChunkBlockPos(playerChunk));
         }
         if (keyboard.IsKeyReleased(Keys.C))
         {

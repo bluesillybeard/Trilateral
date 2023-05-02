@@ -129,7 +129,7 @@ class ChunkDrawObject
     {
         var offset = pos - playerChunk;
         //We need to make a translation for the position, since the mesh is only relative to the chunk's origin, not the actual origin.
-        Matrix4 transform = Matrix4.CreateTranslation(offset.X * Chunk.Size * MathBits.XScale, offset.Y * Chunk.Size * 0.5f, offset.Z * Chunk.Size * 0.25f);
+        Matrix4 transform = Matrix4.CreateTranslation(MathBits.GetChunkWorldPosUncentered(offset));
         //Now we draw it
         var uniforms = new KeyValuePair<string, object>[]{
             new KeyValuePair<string, object>("model", transform),
