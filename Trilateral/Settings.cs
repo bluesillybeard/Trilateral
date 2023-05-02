@@ -24,7 +24,7 @@ public struct Settings
     public float renderThreadsMultiplier = 0.75f;
     //How far away to load chunks, in meters
     // Takes effect immediately.
-    public float loadDistance = 100f;
+    public float loadDistance = 60f;
 
     //The target frames per second.
     // Takes effect immediately

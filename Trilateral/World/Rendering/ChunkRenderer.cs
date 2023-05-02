@@ -24,7 +24,7 @@ public sealed class ChunkRenderer
     public int BuildingChunks {get => chunksBeingBuilt.Count;}
     private List<Vector3i> chunksInWait; //Chunks that are waiting to be built
     public int WaitingChunks {get => chunksInWait.Count;}
-    private ConcurrentBag<Vector3i> newChunks;
+    private ConcurrentBag<Vector3i> newOrModifiedChunks;
     private ConcurrentBag<Vector3i> chunksToRemove; //chunks that are waiting to be removed
 
     public ChunkRenderer()
@@ -33,7 +33,7 @@ public sealed class ChunkRenderer
         chunksBeingUploaded = new Dictionary<Vector3i, ChunkDrawObjectUploading>();
         chunksBeingBuilt = new Dictionary<Vector3i, ChunkDrawObjectBuilding>();
         chunksInWait = new List<Vector3i>();
-        newChunks = new ConcurrentBag<Vector3i>();
+        newOrModifiedChunks = new ConcurrentBag<Vector3i>();
         chunksToRemove = new ConcurrentBag<Vector3i>();
         chunkDrawPool = new LocalThreadPool(int.Max(1, Environment.ProcessorCount/2));
     }
@@ -51,14 +51,23 @@ public sealed class ChunkRenderer
         chunksToRemove.Add(pos);
     }
 
+    public void NotifyChunkModified(Vector3i pos)
+    {
+        newOrModifiedChunks.Add(pos);
+    }
+
     public void NotifyChunksAdded(IEnumerable<Chunk> chunks)
     {
         Profiler.Push("NotifyChunksAdded");
         foreach(Chunk c in chunks)
         {
-            //If the chunk is empty, just skip it.
-            if(c.IsEmpty())continue;
-            newChunks.Add(c.pos);
+            if(c.IsEmpty())continue;//If the chunk is empty, just skip it.
+            if(
+                chunkDrawObjects.ContainsKey(c.pos))
+            {
+                continue; //skip existing chunks
+            }
+            newOrModifiedChunks.Add(c.pos);
         }
         Profiler.Pop("NotifyChunksAdded");
     }
@@ -72,7 +81,6 @@ public sealed class ChunkRenderer
             obj.Build(chunks);
         }, "BuildChunk"+pos);
     }
-    uint updatesSinceLastChunksInWaitIteration = 0;
     public void Update(ChunkManager chunkManager)
     {
         Profiler.Push("ChunkRendererUpdate");
@@ -100,39 +108,24 @@ public sealed class ChunkRenderer
         }
         chunksToRemove.Clear();
         Profiler.Pop("ChunksToRemove");
-        
-        //go through the chunks waiting to be built
-        //If this line isn't here, it takes AGES to wait for this thread's turn to use ChunksInWait.
-       
-        //ChunksInWait tends to have an insane number of chunks to update,
-        // And it doesn't even need to be updated that frequently.
-        // Often, a lot of time is wasted on looking at chunks that don't have all their neighbors.
-        // So, we limit it to only run once per second.
-        updatesSinceLastChunksInWaitIteration++;
-        if(updatesSinceLastChunksInWaitIteration > 30)
+        Profiler.Push("ChunksInWait");
+        Profiler.Push("AddNew");
+        chunksInWait.AddRange(newOrModifiedChunks);
+        newOrModifiedChunks.Clear();
+        Profiler.Pop("AddNew");
+        //foreach(var pos in chunksInWait)
+        for(int i=chunksInWait.Count-1; i>=0; --i)
         {
-            updatesSinceLastChunksInWaitIteration = 0;
-            Profiler.Push("ChunksInWait");
-            Profiler.Push("AddNew");
-            chunksInWait.AddRange(newChunks);
-            newChunks.Clear();
-            Profiler.Pop("AddNew");
-            //foreach(var pos in chunksInWait)
-            for(int i=chunksInWait.Count-1; i>=0; --i)
+            var pos = chunksInWait[i];
+            var adj = GetAdjacentChunks(chunkManager, pos);
+            if(adj is null)
             {
-                var pos = chunksInWait[i];
-                //TODO: GetAdjacentChunks may be fast, but it's an EXTREMELY hot path.
-                // In testing, it was called 10962726 times, literally 4 orders of magnitude more than the actual building of chunks
-                var adj = GetAdjacentChunks(chunkManager, pos);
-                if(adj is null)
-                {
-                    continue;
-                }
-                BuildChunk(pos, adj);
-                chunksInWait.RemoveAt(i--);
+                continue;
             }
-            Profiler.Pop("ChunksInWait");
+            BuildChunk(pos, adj);
+            chunksInWait.RemoveAt(i--);
         }
+        Profiler.Pop("ChunksInWait");
         Profiler.Push("ChunksBeingBuilt");
         //Chunks that are being built or just finished building
         List<ChunkDrawObjectBuilding> chunksFinishedBuilding = new List<ChunkDrawObjectBuilding>();
@@ -176,8 +169,9 @@ public sealed class ChunkRenderer
             var draw = new ChunkDrawObject(chunk);
             if(!chunkDrawObjects.TryAdd(chunk.pos, draw))
             {
-                System.Console.Error.WriteLine("Error: Failed to add ChunkDrawObject:" + chunk.pos);
-                draw.Dispose();
+                chunkDrawObjects[chunk.pos].Dispose();
+                chunkDrawObjects[chunk.pos] = draw;
+                System.Console.WriteLine("Replaced ChunkDrawObject:" + chunk.pos);
             }
         }
         Profiler.Pop("ChunksBeingUploaded");

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using System.Threading;
+using System.IO;
 using System;
 
 using OpenTK.Mathematics;
@@ -20,7 +21,8 @@ public sealed class ChunkManager
     //TODO: Figure out the best data structure for this.
     private readonly HashSet<Vector3i> chunksBeingLoaded; 
     private readonly ConcurrentBag<Chunk> chunksFinishedLoading;
-    public ChunkManager(IChunkGenerator generator)
+    public readonly string pathToSaveFolder;
+    public ChunkManager(IChunkGenerator generator, string pathToSaveFolder)
     {
         this.generator = generator;
         chunks = new ConcurrentDictionary<Vector3i, Chunk>();//new Dictionary<Vector3i, Chunk>();
@@ -28,11 +30,34 @@ public sealed class ChunkManager
         pool = new LocalThreadPool(int.Max(1, (int)(Environment.ProcessorCount*0.75f)));
         chunksBeingLoaded = new HashSet<Vector3i>();
         chunksFinishedLoading = new ConcurrentBag<Chunk>();
+        this.pathToSaveFolder = pathToSaveFolder;
     }
     private Chunk LoadChunk(Vector3i pos)
     {
-        var chunk = generator.GenerateChunk(pos.X, pos.Y, pos.Z);
-        return chunk;
+        string path = pathToSaveFolder + pos.X + "_" + pos.Y + "_" + pos.Z + ".vchunk";
+        if(File.Exists(path))
+        {
+            try{
+                return new Chunk(pos, File.ReadAllBytes(path));
+            } catch (Exception e)
+            {
+                System.Console.Error.WriteLine("ERROR: " + e.Message + "\nstacktrace:" + e.StackTrace);
+            }
+            
+        }
+        return generator.GenerateChunk(pos.X, pos.Y, pos.Z);
+    }
+
+    private void SaveChunk(Chunk chunk)
+    {
+        if(!Directory.Exists(pathToSaveFolder))
+        {
+            Directory.CreateDirectory(pathToSaveFolder);
+        }
+        string path = pathToSaveFolder + chunk.pos.X + "_" + chunk.pos.Y + "_" + chunk.pos.Z + ".vchunk";
+        FileStream file = new FileStream(path, FileMode.Create);
+        chunk.SerializeToStream(file);
+        file.Dispose();
     }
     private void UnloadChunk(Vector3i pos)
     {
@@ -85,13 +110,13 @@ public sealed class ChunkManager
                 for(int cz=-chunkRange.Z; cz<chunkRange.Z; ++cz)
                 {
                     var chunkPos = new Vector3i(cx, cy, cz) + playerChunk;
-                    var chunkDistance = Vector3.DistanceSquared(playerPos, MathBits.GetChunkWorldPos(chunkPos));
+                    var chunkDistanceSquared = Vector3.DistanceSquared(playerPos, MathBits.GetChunkWorldPos(chunkPos));
                     if(
-                    chunkDistance < loadDistanceSquared &&
+                    chunkDistanceSquared < loadDistanceSquared &&
                     !chunksBeingLoaded.Contains(chunkPos) &&
                     !chunks.ContainsKey(chunkPos)
                     ){
-                        chunkLoadList.Enqueue(chunkPos, chunkDistance);
+                        chunkLoadList.Enqueue(chunkPos, chunkDistanceSquared);
                     }
                 }
             }
@@ -185,16 +210,19 @@ public sealed class ChunkManager
         return chunk.GetBlock(MathBits.Mod(x, Chunk.Size), MathBits.Mod(y, Chunk.Size), MathBits.Mod(z, Chunk.Size));
     }
 
-    public bool TrySetBlock(Block block, Vector3i pos)
+    public bool TrySetBlock(Block block, Vector3i blockPos)
     {
         //First, figure out which chunk the block is in
-        Chunk? chunk = GetChunk(pos/(int)Chunk.Size);
+        Chunk? chunk = GetChunk(blockPos/Chunk.Size);
         if(chunk is null)
         {
             return false;
         }
         //Then set the actual block itself
-        chunk.SetBlock(block, MathBits.Mod(pos.X, Chunk.Size), MathBits.Mod(pos.Y, Chunk.Size), MathBits.Mod(pos.Z, Chunk.Size));
+        chunk.SetBlock(block, MathBits.Mod(blockPos.X, Chunk.Size), MathBits.Mod(blockPos.Y, Chunk.Size), MathBits.Mod(blockPos.Z, Chunk.Size));
+        chunk.UpdateLastChange();
+        SaveChunk(chunk);
+        renderer.NotifyChunkModified(chunk.pos);
         return true;
     }
 

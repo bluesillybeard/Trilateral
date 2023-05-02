@@ -26,9 +26,8 @@ public class BasicChunkGenerator : IChunkGenerator
                 height = height*height*400;
                 //squaring it makes it better by making lower terrain flatter, and higher terrain more varied and mountain-like
                 for(uint yp = 0; yp < Chunk.Size; yp++){
-                    uint index = xp + Chunk.Size*yp + Chunk.Size*Chunk.Size*zp;
                     if(csy+yp < height) {
-                        c.SetBlock(fill, index);
+                        c.SetBlock(fill, xp, yp, zp);
                     }
                 }
             }

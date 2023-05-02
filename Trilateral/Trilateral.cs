@@ -10,7 +10,7 @@ using VRenderLib.Interface;
 using VRenderLib.Utility;
 
 using System;
-using System.Threading;
+using System.Collections.Generic;
 
 using vmodel;
 
@@ -22,6 +22,7 @@ using Utility;
 
 public sealed class Trilateral
 {
+    public Dictionary<string, Block> blockRegistry;
     DateTime start;
     DateTime time;
     IRenderTexture ascii;
@@ -61,8 +62,8 @@ public sealed class Trilateral
         render.OnUpdate += Update;
         render.OnDraw += Render;
         render.OnCleanup += Dispose;
-        VModel dirt;
-        IRenderTexture dirtTexture;
+        VModel grass;
+        IRenderTexture grassTexture;
         {
             var dirtOrNothing = VModelUtils.LoadModel("Resources/models/dirt/model.vmf", out var errors);
             if(dirtOrNothing is null)
@@ -73,8 +74,8 @@ public sealed class Trilateral
                 }
                 throw new Exception("Couldn't find dirt model");
             }
-            dirt = dirtOrNothing.Value;
-            dirtTexture = render.LoadTexture(dirt.texture);
+            grass = dirtOrNothing.Value;
+            grassTexture = render.LoadTexture(grass.texture);
         }
         VModel glass;
         IRenderTexture glassTexture;
@@ -91,6 +92,10 @@ public sealed class Trilateral
             glass = glassOrNothing.Value;
             glassTexture = render.LoadTexture(glass.texture);
         }
+        blockRegistry = new Dictionary<string, Block>();
+        //TODO: load these from a file
+        blockRegistry.Add("trilateral:grassBlock", new Block(grass, grassTexture, chunkShader, "Grass", "trilateral:grassBlock"));
+        blockRegistry.Add("trilateral:glassBlock", new Block(glass, glassTexture, chunkShader, "Glass", "trilateral:glassBlock"));
         FastNoiseLite noise = new FastNoiseLite(1823);
         noise.SetNoiseType(FastNoiseLite.NoiseType.Perlin);
         noise.SetFractalType(FastNoiseLite.FractalType.FBm);
@@ -99,9 +104,9 @@ public sealed class Trilateral
         noise.SetFractalLacunarity(2.0f);
         noise.SetFractalGain(0.5f);
         chunks = new ChunkManager(new BasicChunkGenerator(
-            new Block(dirt, dirtTexture, chunkShader, "dirt"),
+            blockRegistry["trilateral:grassBlock"],
             noise
-        ));
+        ), "temp/saves/World1/");
     }
     void Update(TimeSpan delta){
 
@@ -131,8 +136,8 @@ public sealed class Trilateral
         );
         Profiler.Pop("DebugText");
 
-        UpdateCamera(delta);
-        chunks.Update(playerChunk, 200);
+        UpdatePlayer(delta);
+        chunks.Update(playerChunk, Program.settings.loadDistance);
         Profiler.Push("GUIIterate");
         gui.Iterate();
         Vector2i size = VRender.Render.WindowSize();
@@ -174,11 +179,16 @@ public sealed class Trilateral
         postFrameActive = true;
     }
 
-    void UpdateCamera(TimeSpan delta)
+    void UpdatePlayer(TimeSpan delta)
     {
         previousCameraTransform = camera.GetTransform();
         KeyboardState keyboard = VRender.Render.Keyboard();
         MouseState mouse = VRender.Render.Mouse();
+        //Place a block if the player preses a button
+        if (keyboard.IsKeyDown(Keys.E))
+        {
+            chunks.TrySetBlock(blockRegistry["trilateral:glassBlock"], MathBits.GetBlockPos(camera.Position) + playerChunk*Chunk.Size);
+        }
         if (keyboard.IsKeyReleased(Keys.C))
         {
             VRender.Render.CursorLocked  = !VRender.Render.CursorLocked;

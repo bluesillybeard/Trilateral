@@ -9,7 +9,8 @@ tests/
 *.java
 #.yeetis files, since it provides a way to ignore files on a case-by-case basis
 *.yeetis
-# Any temporary file
+# Any temporary file or filder
 *.temp
+**/temp
 # profile results
 *.vprofile

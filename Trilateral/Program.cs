@@ -15,27 +15,34 @@ namespace Trilateral.Game
         public static Settings settings;
         private static void Main()
         {
+            settings = new Settings();
             //Some things for logging purposes
             System.Threading.Thread.CurrentThread.Name = "Main";
             System.Console.SetOut(new CustomOutTextWriter(System.Console.Out, ConsoleColor.White));
             System.Console.SetError(new CustomOutTextWriter(System.Console.Error, ConsoleColor.Red));
             var random = new Random((int)DateTime.Now.Ticks);
-            var settings = new RenderSettings(){
+            var renderSettings = new RenderSettings(){
                 TargetFrameTime = 1f/70f,
                 BackgroundColor = 0x000000ff,
                 WindowTitle = "Voxelesque",
                 size = new OpenTK.Mathematics.Vector2i(800, 600),
                 VSync = false,
             };
-            VRenderLib.VRender.InitRender(settings);
+            VRenderLib.VRender.InitRender(renderSettings);
             VRenderLib.VRender.Render.OnStart += Start;
             VRenderLib.VRender.Render.Run();
             Utility.Profiler.Dispose();
         }
-
+        public static Trilateral Game {
+            get {
+                if (game is null)throw new Exception("Game was not initialized!");
+                return game;
+            }
+        }
+        private static Trilateral? game;
         private static void Start()
         {
-            Trilateral game = new Trilateral();
+            game = new Trilateral();
         }
     }
 

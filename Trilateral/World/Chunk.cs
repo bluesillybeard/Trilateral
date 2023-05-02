@@ -2,6 +2,8 @@ namespace Trilateral.World;
 
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Text;
 using OpenTK.Mathematics;
 
 //This class uses a few optimizations to make things nice and memory efficient without sacrificing too much speed.
@@ -14,7 +16,11 @@ public class Chunk
 {
     // Chunks are quite unusually shaped (geometrically speaking), but the data is stored as a cube.
     // I chose 40x40x40 because it is the largest size that allows my memory optimization to work.
+    // Any bigger, and it's possible to overload the 16 bit integer limit for the block IDs.
     // Larger chunks tend to be better, since modern CPU's benefit from working with larger blocks of data at a time.
+
+    //Changing the value is not recomended. I tried to make the code adjust to different chunk sizes appropriately,
+    // but it isn't a priority and may or may not be fully supported.
     public const ushort Size = 40;
     // TODO: In the future I want chunks to be larger in the vertical direction, like 16x16x256, since the world generation works one column at a time,
     // And larger columns means the CPU works in larger blocks. However, that would require a lot of redesigning, which I really don't want to do right now.
@@ -28,12 +34,12 @@ public class Chunk
     public Vector3i pos;
 
     private ushort[]? blocks;
-    List<Block?>? idToBlock;
-    private Dictionary<string, ushort>? blockToId;
+    List<Block?>? uidToBlock;
+    private Dictionary<string, ushort>? blockToUid;
 
     public bool IsEmpty()
     {
-        if(blockToId is null)return true;
+        if(blockToUid is null)return true;
         if(blocks is null)return true;
         foreach(uint block in blocks)
         {
@@ -47,49 +53,49 @@ public class Chunk
         if(this.IsEmpty())
         {
             blocks = null;
-            idToBlock = null;
-            blockToId = null;
+            uidToBlock = null;
+            blockToUid = null;
         }
     }
     private ushort GetOrAdd(Block block)
     {
-        if(idToBlock is null || blockToId is null)
+        if(uidToBlock is null || blockToUid is null)
         {
-            idToBlock = new List<Block?>();
-            idToBlock.Add(null);// ID zero is always null.
-            blockToId = new Dictionary<string, ushort>();
+            uidToBlock = new List<Block?>();
+            uidToBlock.Add(null);// ID zero is always null.
+            blockToUid = new Dictionary<string, ushort>();
             Add(block, 1);
             return 1;
         }
-        if(blockToId.TryGetValue(block.name, out var id))
+        if(blockToUid.TryGetValue(block.uid, out var id))
         {
             return id;
         }
-        id = (ushort)idToBlock.Count;
+        id = (ushort)uidToBlock.Count;
         Add(block, id);
         return id;
     }
 
     private void Add(Block block, ushort id)
     {
-        if(idToBlock is null || blockToId is null)
+        if(uidToBlock is null || blockToUid is null)
         {
             throw new Exception("Yo this ain't supposed to happen");
         }
-        idToBlock.Add(block);
-        blockToId.Add(block.name, id);
+        uidToBlock.Add(block);
+        blockToUid.Add(block.uid, id);
     }
     //creates a new empty chunk
     public Chunk(Vector3i pos)
     {
         this.blocks = null;
-        idToBlock = null;
-        blockToId = null;
+        uidToBlock = null;
+        blockToUid = null;
         lastChange = DateTime.Now;
         this.pos = pos;
     }
 
-    public Chunk(Block?[] initBlocks, Vector3i pos)
+    private Chunk(Block?[] initBlocks, Vector3i pos)
     {
         this.pos = pos;
         if(initBlocks.Length != Length)
@@ -112,20 +118,69 @@ public class Chunk
         }
         lastChange = DateTime.Now;
     }
+
+    public Chunk(Vector3i pos, byte[] serializedChunk) : this(pos)
+    {
+        int pointer = 0;
+        ChunkSerializationFlag flag = (ChunkSerializationFlag)BitConverter.ToUInt32(serializedChunk, 0);
+        if(flag == ChunkSerializationFlag.empty)
+        {
+            blocks = null;
+            uidToBlock = null;
+            blockToUid = null;
+            return;
+        }
+        //it's not empty
+        if(flag == ChunkSerializationFlag.version_1)
+        {
+            pointer += 4;
+            blocks = new ushort[Length];
+            //Read in block data
+            for(int i=0; i<Length; ++i)
+            {
+                var block = BitConverter.ToUInt16(serializedChunk, pointer);
+                blocks[i] = block;
+                pointer += 2;
+            }
+            //read in block mappings
+            uidToBlock = new List<Block?>();
+            uidToBlock.Add(null); //0 is always null
+            blockToUid = new Dictionary<string, ushort>();
+            StringBuilder b = new StringBuilder();
+            while(pointer < serializedChunk.Length)
+            {
+                if(serializedChunk[pointer] == 0)
+                {
+                    //TODO: handle case where the block id doesn't exist
+                    if(!Game.Program.Game.blockRegistry.TryGetValue(b.ToString(), out var block))
+                    {
+                        //the block ID doesn't exist, so we just use null.
+                        block = null;
+                    }
+                    if(block is not null)Add(block, (ushort)uidToBlock.Count);
+                    b = new StringBuilder();
+                    pointer += 1;
+                    continue;
+                }
+                b.Append((char)serializedChunk[pointer]);
+                pointer += 1;
+            }
+        }
+    }
     public Block? GetBlock(uint x, uint y, uint z)
     {
-        uint index = x + Size*y + Size*Size*z;
+        uint index = y + Size*x + Size*Size*z;
         return GetBlock(index);
     }
-    public Block? GetBlock(uint index)
+    private Block? GetBlock(uint index)
     {
-        if(this.blocks == null || idToBlock == null)
+        if(this.blocks == null || uidToBlock == null)
         {
             return null;
         }
-        return idToBlock[this.blocks[index]];
+        return uidToBlock[this.blocks[index]];
     }
-    public void SetBlock(Block block, uint index)
+    private void SetBlock(Block block, uint index)
     {
         if(this.blocks is null)
         {
@@ -135,7 +190,7 @@ public class Chunk
     }
     public void SetBlock(Block block, uint x, uint y, uint z)
     {
-        uint index = x + Size*y + Size*Size*z;
+        uint index = y + Size*x + Size*Size*z;
         SetBlock(block, index);
     }
     /**
@@ -151,5 +206,47 @@ public class Chunk
     public void UpdateLastChange()
     {
         lastChange = DateTime.Now;
+    }
+
+    enum ChunkSerializationFlag: uint
+    {
+        empty = 0, //If the chunk is entirely empty
+        version_1 = 1,
+    }
+    //Serialzes the chunk appending it to a stream
+    public void SerializeToStream(Stream stream)
+    {
+        //If the chunk is empty, then we simply put the empty flag and be done with it.
+        // Since chunks are saved in their own files, we don't need to worry about finding the start and end.
+        if(IsEmpty() || blocks is null || uidToBlock is null)
+        {
+            stream.Write(BitConverter.GetBytes((uint)ChunkSerializationFlag.empty));
+            return;
+        }
+        //It's not empty, so we need to actually serialize it (sad)
+        stream.Write(BitConverter.GetBytes((uint)ChunkSerializationFlag.version_1));
+        //First, serialize the entire chunk.
+        // It will always be the same length (assuming the chunk size doesn't change) so that is no worry.
+        foreach(uint value in blocks)
+        {
+            stream.Write(BitConverter.GetBytes((short)value));
+        }
+        //Next, the number to block mapping.
+        // We map a blocks numerical ID within this chunk to its text ID.
+        for(ushort i=0; i<uidToBlock.Count; ++i)
+        {
+            var block = uidToBlock[i];
+            string id;
+            if(block is null){
+                id = "trilateral:none";
+            }
+            else 
+            {
+                id = block.uid;
+            }
+            // write a null-terminated string id.
+            stream.Write(Encoding.ASCII.GetBytes(id));
+            stream.WriteByte((byte)0);
+        }
     }
 }
