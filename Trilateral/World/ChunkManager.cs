@@ -64,12 +64,13 @@ public sealed class ChunkManager
         this.chunks.Remove(pos, out var _);
         renderer.NotifyChunkDeleted(pos);
     }
+    Task? updateAsyncTask;
     public void Update(Vector3i playerChunk, float loadDistance)
     {
         float loadDistanceSquared = loadDistance*loadDistance;
         //NOTE: this is the position of the chunk the player is in.
         // NOT the actual exact position of the player
-        Vector3 playerPos = MathBits.GetChunkWorldPos(playerChunk);
+        Vector3 playerPos = MathBits.GetChunkWorldPosUncentered(playerChunk);
         Profiler.Push("ChunkUnload");
         List<Vector3i> chunksToUnload = new List<Vector3i>();
         foreach(var c in chunks)
@@ -87,6 +88,7 @@ public sealed class ChunkManager
         Profiler.Pop("ChunkUnload");
         Profiler.Push("ChunksFinishedLoading");
         pool.Pause();
+        //We do this part in a separate thread because otherwise it causes huge fps problems
         foreach(var chunk in chunksFinishedLoading)
         {
             chunksBeingLoaded.Remove(chunk.pos);
@@ -99,6 +101,20 @@ public sealed class ChunkManager
         chunksFinishedLoading.Clear();
         pool.Unpause();
         Profiler.Pop("ChunksFinishedLoading");
+        if(updateAsyncTask is null || updateAsyncTask.IsCompleted)
+        {
+            updateAsyncTask = Task.Run(() =>
+            {
+                UpdateAsync(playerChunk, loadDistance);
+            });
+        }
+        renderer.Update(this);
+    }
+
+    private void UpdateAsync(Vector3i playerChunk, float loadDistance)
+    {
+        float loadDistanceSquared = loadDistance*loadDistance;
+        Vector3 playerPos = MathBits.GetChunkWorldPosUncentered(playerChunk);
         Profiler.Push("ChunkLoadList");
         //It may be called a queue, but it's actually behaves more like a sorted bag.
         PriorityQueue<Vector3i, float> chunkLoadList = new PriorityQueue<Vector3i, float>();
@@ -135,12 +151,12 @@ public sealed class ChunkManager
                 Profiler.Pop("Generate");
                 Profiler.Push("Add");
                 chunksFinishedLoading.Add(chunk);
+                SaveChunk(chunk);
                 Profiler.Pop("Add");
                 Profiler.Pop("LoadChunk");
             }, "LoadChunk");
         }
         Profiler.Pop("ChunkStartLoad");
-        renderer.Update(this);
     }
 
     public void Draw(Camera cam, Vector3i playerChunk)
