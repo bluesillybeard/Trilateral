@@ -32,6 +32,15 @@ public static class MathBits
         return (int)MathF.Floor((float)num/div);
     }
 
+
+    public static Vector3i DivideFloor(Vector3i numerator, int denominator)
+    {
+        return new Vector3i(
+            (int)MathF.Floor(((float)numerator.X)/denominator), 
+            (int)MathF.Floor(((float)numerator.Y)/denominator), 
+            (int)MathF.Floor(((float)numerator.Z)/denominator));
+    }
+
     //the height of an isometric triangle whose side lengths are each 0.5
     // Solved using pythagoras' theorum.
     // (0.5^2 = 0.25^2 + XScale^2) -> XScale = 0.5/sqrt(0.75)
