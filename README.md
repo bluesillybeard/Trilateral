@@ -1,8 +1,8 @@
-# Voxelesque
+# Trilateral
 Minecraft, except triangular
 
-Voxelesque is a game I'm currently working on. The idea is to make a Minecraft clo-- parody, <br>
-where the boring cubes are replaced with triangular prisms - instead of having squares as the top faces, they are triangles.
+Trilateral is basically a Minecraft clo-- parody, where the boring cubes are replaced with triangular prisms.<br>
+instead of the squares for top faces, they are triangles.
 
 I watched a video (forgot exactly what, probably a cursed PhoenixSC video about hexagonal minecraft), <br>
 and one of the comments talked about someone maybe actually making of that. <br>
@@ -11,6 +11,7 @@ After much thought, I decided that hexagons are not the bestagons in this case, 
 
 This is the C# rewrite I've mentioned several times. <br>
 Not only is the Java codebase an absolute mess, but C# is a better language to use for this project.
+Also it has since been renamed to Trilateral, it used to be called Voxelesque.
 
 Check out the [planning document](https://docs.google.com/document/d/1Fdh-ZeGf8YEUFWpwgS4D_PbiXnAFNS3MLjdPwnYaDAo) <br>
 And the [Devlogs](https://youtu.be/M8LMCoB7KTM) <br>
