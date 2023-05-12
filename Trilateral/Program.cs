@@ -1,21 +1,20 @@
 ﻿using System;
 
 using VRenderLib.Interface;
-using VRenderLib;
 using System.IO;
 using System.Text;
 using System.Threading;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 
+using Trilateral.OperatingSystemSpecific;
+
 namespace Trilateral.Game
 {
     public static class Program
     {
-        public static Settings settings;
         private static void Main()
         {
-            settings = new Settings();
             //Some things for logging purposes
             System.Threading.Thread.CurrentThread.Name = "Main";
             System.Console.SetOut(new CustomOutTextWriter(System.Console.Out, ConsoleColor.White));
@@ -24,7 +23,7 @@ namespace Trilateral.Game
             var renderSettings = new RenderSettings(){
                 TargetFrameTime = 1f/70f,
                 BackgroundColor = 0x000000ff,
-                WindowTitle = "Voxelesque",
+                WindowTitle = "Trilateral",
                 size = new OpenTK.Mathematics.Vector2i(800, 600),
                 VSync = false,
             };

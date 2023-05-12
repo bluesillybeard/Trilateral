@@ -34,7 +34,7 @@ public sealed class ChunkManager
     }
     private Chunk LoadChunk(Vector3i pos)
     {
-        string path = pathToSaveFolder + pos.X + "_" + pos.Y + "_" + pos.Z + ".vchunk";
+        string path = pathToSaveFolder + "/chunks/" + pos.X + "_" + pos.Y + "_" + pos.Z + ".vchunk";
         if(File.Exists(path))
         {
             try{
@@ -53,8 +53,9 @@ public sealed class ChunkManager
         if(!Directory.Exists(pathToSaveFolder))
         {
             Directory.CreateDirectory(pathToSaveFolder);
+            Directory.CreateDirectory(pathToSaveFolder + "/chunks");
         }
-        string path = pathToSaveFolder + chunk.pos.X + "_" + chunk.pos.Y + "_" + chunk.pos.Z + ".vchunk";
+        string path = pathToSaveFolder + "/chunks/" + chunk.pos.X + "_" + chunk.pos.Y + "_" + chunk.pos.Z + ".vchunk";
         FileStream file = new FileStream(path, FileMode.Create);
         chunk.SerializeToStream(file);
         file.Dispose();

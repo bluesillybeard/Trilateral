@@ -20,9 +20,13 @@ using World;
 using World.ChunkGenerators;
 using Utility;
 
+using OperatingSystemSpecific;
+
 public sealed class Trilateral
 {
     public Dictionary<string, Block> blockRegistry;
+    public readonly Settings settings;
+    public readonly StaticProperties properties;
     DateTime start;
     DateTime time;
     IRenderTexture ascii;
@@ -42,6 +46,8 @@ public sealed class Trilateral
     {
         start = DateTime.Now;
         time = DateTime.Now;
+        properties = new StaticProperties();
+        settings = new Settings(properties);
         var render = VRender.Render;
         var size = render.WindowSize();
         {
@@ -106,7 +112,7 @@ public sealed class Trilateral
         chunks = new ChunkManager(new BasicChunkGenerator(
             blockRegistry["trilateral:grassBlock"],
             noise
-        ), "temp/saves/World1/");
+        ), properties.pathToConfig + "/saves/World1/");
     }
     void Update(TimeSpan delta){
 
@@ -137,7 +143,7 @@ public sealed class Trilateral
         Profiler.Pop("DebugText");
 
         UpdatePlayer(delta);
-        chunks.Update(playerChunk, Program.settings.loadDistance);
+        chunks.Update(playerChunk, settings.loadDistance);
         Profiler.Push("GUIIterate");
         gui.Iterate();
         Vector2i size = VRender.Render.WindowSize();
