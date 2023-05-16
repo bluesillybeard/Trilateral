@@ -119,10 +119,10 @@ public class Chunk
         lastChange = DateTime.Now;
     }
 
-    public Chunk(Vector3i pos, byte[] serializedChunk) : this(pos)
+    public Chunk(Vector3i pos, Stream stream) : this(pos)
     {
-        int pointer = 0;
-        ChunkSerializationFlag flag = (ChunkSerializationFlag)BitConverter.ToUInt32(serializedChunk, 0);
+        BinaryReader reader = new BinaryReader(stream);
+        ChunkSerializationFlag flag = (ChunkSerializationFlag)reader.ReadUInt32();//BitConverter.ToUInt32(serializedChunk, 0);
         if(flag == ChunkSerializationFlag.empty)
         {
             blocks = null;
@@ -133,23 +133,23 @@ public class Chunk
         //it's not empty
         if(flag == ChunkSerializationFlag.version_1)
         {
-            pointer += 4;
             blocks = new ushort[Length];
             //Read in block data
             for(int i=0; i<Length; ++i)
             {
-                var block = BitConverter.ToUInt16(serializedChunk, pointer);
+                var block = reader.ReadUInt16();
                 blocks[i] = block;
-                pointer += 2;
             }
             //read in block mappings
             uidToBlock = new List<Block?>();
             uidToBlock.Add(null); //0 is always null
             blockToUid = new Dictionary<string, ushort>();
             StringBuilder b = new StringBuilder();
-            while(pointer < serializedChunk.Length)
+            //While we aren't at the end of the stream
+            while(reader.PeekChar() != -1)
             {
-                if(serializedChunk[pointer] == 0)
+                byte value = reader.ReadByte();
+                if(value == 0)
                 {
                     //TODO: handle case where the block id doesn't exist
                     if(!Game.Program.Game.blockRegistry.TryGetValue(b.ToString(), out var block))
@@ -159,11 +159,9 @@ public class Chunk
                     }
                     if(block is not null)Add(block, (ushort)uidToBlock.Count);
                     b = new StringBuilder();
-                    pointer += 1;
                     continue;
                 }
-                b.Append((char)serializedChunk[pointer]);
-                pointer += 1;
+                b.Append((char)value);
             }
         }
     }

@@ -5,6 +5,7 @@ using System.IO;
 using System.Collections.Generic;
 using vmodel;
 using System.Reflection;
+using System;
 
 public struct Settings
 {
@@ -20,19 +21,7 @@ public struct Settings
             {
                 System.Console.Error.WriteLine("Errors encountered loading settings:" + string.Join(", ", errors));
             }
-            //For the sake of making adding new settings as easy as possible,
-            // use Reflection to set the values
-            var settingsType = typeof(Settings);
-            foreach(var item in items)
-            {
-                var field = settingsType.GetRuntimeField(item.Key);
-                if(field is null)
-                {
-                    System.Console.Error.WriteLine("ERROR: Skipping setting field " + item.Key);
-                    continue;
-                }
-                
-            }
+            //TODO: add all of the settings here
         }
     }
     //Multiplied by the number of threads on the system to get the actual number of threads to use
@@ -53,4 +42,6 @@ public struct Settings
     // The frame timing code is somewhat messed up right now, so this might cause strange performance issues.
     // requries restart to take effect.
     public bool VSync = false;
+
+    public TimeSpan chunkFlushPeriod = TimeSpan.FromMinutes(1);
 }
