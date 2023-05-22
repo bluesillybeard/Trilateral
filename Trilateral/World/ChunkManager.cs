@@ -38,7 +38,8 @@ public sealed class ChunkManager
         if(File.Exists(path))
         {
             try{
-                return new Chunk(pos, File.ReadAllBytes(path));
+                using FileStream stream = new FileStream(path, FileMode.Open);
+                return new Chunk(pos, stream);
             } catch (Exception e)
             {
                 System.Console.Error.WriteLine("ERROR: " + e.Message + "\nstacktrace:" + e.StackTrace);

@@ -3,6 +3,7 @@ namespace Trilateral.World;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Text;
 using OpenTK.Mathematics;
 
@@ -119,10 +120,16 @@ public class Chunk
         lastChange = DateTime.Now;
     }
 
-    public Chunk(Vector3i pos, byte[] serializedChunk) : this(pos)
+    public Chunk(Vector3i pos, Stream streamIn) : this(pos)
     {
-        int pointer = 0;
-        ChunkSerializationFlag flag = (ChunkSerializationFlag)BitConverter.ToUInt32(serializedChunk, 0);
+        using GZipStream zipStream = new GZipStream(streamIn, CompressionMode.Decompress, true);
+        // BinaryReader doesn't really work with GZipStream, because the BinaryReader finds the end of the stream doesn't work.
+        // So, we copy the entire thing into a MemoryStream first, since it can easily check if it's at the end or not.
+        using MemoryStream stream = new MemoryStream();
+        zipStream.CopyTo(stream);
+        stream.Seek(0, SeekOrigin.Begin);
+        BinaryReader reader = new BinaryReader(stream);
+        ChunkSerializationFlag flag = (ChunkSerializationFlag)reader.ReadUInt32();
         if(flag == ChunkSerializationFlag.empty)
         {
             blocks = null;
@@ -133,25 +140,23 @@ public class Chunk
         //it's not empty
         if(flag == ChunkSerializationFlag.version_1)
         {
-            pointer += 4;
             blocks = new ushort[Length];
             //Read in block data
             for(int i=0; i<Length; ++i)
             {
-                var block = BitConverter.ToUInt16(serializedChunk, pointer);
+                var block = reader.ReadUInt16();
                 blocks[i] = block;
-                pointer += 2;
             }
             //read in block mappings
             uidToBlock = new List<Block?>();
             uidToBlock.Add(null); //0 is always null
             blockToUid = new Dictionary<string, ushort>();
             StringBuilder b = new StringBuilder();
-            while(pointer < serializedChunk.Length)
+            while(reader.PeekChar() != -1)
             {
-                if(serializedChunk[pointer] == 0)
+                var character = reader.ReadChar();
+                if(character == 0)
                 {
-                    //TODO: handle case where the block id doesn't exist
                     if(!Game.Program.Game.blockRegistry.TryGetValue(b.ToString(), out var block))
                     {
                         //the block ID doesn't exist, so we just use null.
@@ -159,11 +164,9 @@ public class Chunk
                     }
                     if(block is not null)Add(block, (ushort)uidToBlock.Count);
                     b = new StringBuilder();
-                    pointer += 1;
                     continue;
                 }
-                b.Append((char)serializedChunk[pointer]);
-                pointer += 1;
+                b.Append(character);
             }
         }
     }
@@ -178,7 +181,8 @@ public class Chunk
         {
             return null;
         }
-        return uidToBlock[this.blocks[index]];
+        var uid = this.blocks[index];
+        return uidToBlock[uid];
     }
     private void SetBlock(Block block, uint index)
     {
@@ -214,8 +218,9 @@ public class Chunk
         version_1 = 1,
     }
     //Serialzes the chunk appending it to a stream
-    public void SerializeToStream(Stream stream)
+    public void SerializeToStream(Stream streamOut)
     {
+        using GZipStream stream = new GZipStream(streamOut, CompressionMode.Compress, true);
         //If the chunk is empty, then we simply put the empty flag and be done with it.
         // Since chunks are saved in their own files, we don't need to worry about finding the start and end.
         if(IsEmpty() || blocks is null || uidToBlock is null)
