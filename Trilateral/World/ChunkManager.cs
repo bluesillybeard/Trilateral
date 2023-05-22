@@ -21,7 +21,9 @@ public sealed class ChunkManager
     //TODO: Figure out the best data structure for this.
     private readonly HashSet<Vector3i> chunksBeingLoaded; 
     private readonly ConcurrentBag<Chunk> chunksFinishedLoading;
-    public readonly string pathToSaveFolder;
+    private readonly HashSet<Chunk> modifiedChunks;
+    
+    private readonly ChunkStorage storage;
     public ChunkManager(IChunkGenerator generator, string pathToSaveFolder)
     {
         this.generator = generator;
@@ -30,36 +32,18 @@ public sealed class ChunkManager
         pool = new LocalThreadPool(int.Max(1, (int)(Environment.ProcessorCount*0.75f)));
         chunksBeingLoaded = new HashSet<Vector3i>();
         chunksFinishedLoading = new ConcurrentBag<Chunk>();
-        this.pathToSaveFolder = pathToSaveFolder;
+        storage = new ChunkStorage(pathToSaveFolder);
+        modifiedChunks = new HashSet<Chunk>();
     }
     private Chunk LoadChunk(Vector3i pos)
     {
-        string path = pathToSaveFolder + "/chunks/" + pos.X + "_" + pos.Y + "_" + pos.Z + ".vchunk";
-        if(File.Exists(path))
-        {
-            try{
-                using FileStream stream = new FileStream(path, FileMode.Open);
-                return new Chunk(pos, stream);
-            } catch (Exception e)
-            {
-                System.Console.Error.WriteLine("ERROR: " + e.Message + "\nstacktrace:" + e.StackTrace);
-            }
-            
-        }
-        return generator.GenerateChunk(pos.X, pos.Y, pos.Z);
+        var chunk = storage.LoadChunk(pos);
+        return chunk ?? generator.GenerateChunk(pos.X, pos.Y, pos.Z);
     }
 
     private void SaveChunk(Chunk chunk)
     {
-        if(!Directory.Exists(pathToSaveFolder))
-        {
-            Directory.CreateDirectory(pathToSaveFolder);
-            Directory.CreateDirectory(pathToSaveFolder + "/chunks");
-        }
-        string path = pathToSaveFolder + "/chunks/" + chunk.pos.X + "_" + chunk.pos.Y + "_" + chunk.pos.Z + ".vchunk";
-        FileStream file = new FileStream(path, FileMode.Create);
-        chunk.SerializeToStream(file);
-        file.Dispose();
+        storage.SaveChunk(chunk);
     }
     private void UnloadChunk(Vector3i pos)
     {
@@ -113,6 +97,7 @@ public sealed class ChunkManager
         renderer.Update(this);
     }
 
+    private DateTime LastStorageFlush;
     private void UpdateAsync(Vector3i playerChunk, float loadDistance)
     {
         float loadDistanceSquared = loadDistance*loadDistance;
@@ -159,6 +144,15 @@ public sealed class ChunkManager
             }, "LoadChunk");
         }
         Profiler.Pop("ChunkStartLoad");
+        foreach(var chunk in modifiedChunks)
+        {
+            SaveChunk(chunk);
+        }
+        if(DateTime.Now - LastStorageFlush > Game.Program.Game.settings.chunkFlushPeriod)
+        {
+            LastStorageFlush = DateTime.Now;
+            storage.Flush();
+        }
     }
 
     public void Draw(Camera cam, Vector3i playerChunk)
@@ -239,7 +233,7 @@ public sealed class ChunkManager
         //Then set the actual block itself
         chunk.SetBlock(block, MathBits.Mod(blockPos.X, Chunk.Size), MathBits.Mod(blockPos.Y, Chunk.Size), MathBits.Mod(blockPos.Z, Chunk.Size));
         chunk.UpdateLastChange();
-        SaveChunk(chunk);
+        modifiedChunks.Add(chunk);
         renderer.NotifyChunkModified(chunk.pos);
         return true;
     }
@@ -248,5 +242,6 @@ public sealed class ChunkManager
     {
         renderer.Dispose();
         pool.Stop();
+        storage.Flush();
     }
 }
