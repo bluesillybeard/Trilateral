@@ -59,11 +59,12 @@ public sealed class ChunkSection : IDisposable
                 w.Write((uint)0);
             }
         }
-        
     }
 
     public void SaveChunk(Chunk c)
     {
+        using var _ = Profiler.Push("SaveChunkInSection");
+        Profiler.PushRaw("Serialize");
         Vector3i pos = MathBits.Mod(c.pos, Size);
         int index = GetIndex(pos);
         //Serialize the chunk into RAM
@@ -71,24 +72,32 @@ public sealed class ChunkSection : IDisposable
         c.SerializeToStream(stream);
         //See if it will fit where the chunk already is
         stream.Seek(0, SeekOrigin.Begin);
+        Profiler.PopRaw("Serialize");
         if(entries[index].length >= stream.Length)
         {
+            Profiler.PushRaw("WriteToFile");
             //if it fits, write it.
             lock(file)
             {
+                
                 file.Seek(entries[index].offset, SeekOrigin.Begin);
                 stream.CopyTo(file);
                 entries[index].length = (uint)stream.Length;
+                Profiler.PopRaw("WriteToFile");
                 return;
             }
         }
         //If it doesn't fit, find a place where it does
+        Profiler.PushRaw("FindFreeZone");
         var freeChunkOffset = FindFreeZone((uint)stream.Length);
+        Profiler.PopRaw("FindFreeZone");
         lock(file)
         {
             file.Seek(freeChunkOffset, SeekOrigin.Begin);
             //Thankfully, FileStream is more than happy to expand the file for us.
+            Profiler.PushRaw("WriteToFile");
             stream.CopyTo(file);
+            Profiler.PopRaw("WriteToFile");
             entries[index].offset = freeChunkOffset;
             entries[index].length = (uint)stream.Length;
             return;
@@ -97,6 +106,7 @@ public sealed class ChunkSection : IDisposable
 
     public Chunk? LoadChunk(Vector3i absolutePos)
     {
+        using var _ = Profiler.Push("LoadChunkInSection");
         Vector3i pos = MathBits.Mod(absolutePos, Size);
         int index = GetIndex(pos);
         //If the entry is null, there is no chunk to load
@@ -145,20 +155,25 @@ public sealed class ChunkSection : IDisposable
                 return offset - gapLength;
             }
             gapLength++;
-            if(IsOccupied(offset))
+            int occupierIndex = GetOccupierIndex(offset);
+            if(occupierIndex != -1)
             {
                 gapLength = 0;
+                //Skip to the end of the section
+                var entry = entries[occupierIndex];
+                offset += entry.length;
             }
         }
         throw new Exception("could not find a free zone. Should never happen under any circumstance!");
     }
 
-    private bool IsOccupied(uint offset)
+    private int GetOccupierIndex(uint offset)
     {
-        foreach(ChunkEntry e in entries)
+        for(int index = 0; index < Length; index++)
         {
-            if(e.offset <= offset && (e.offset + e.length) >= offset) return true;
+            var e = entries[index];
+            if(e.offset <= offset && (e.offset + e.length) >= offset) return index;
         }
-        return false;
+        return -1;
     }
 }
