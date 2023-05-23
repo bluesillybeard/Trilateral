@@ -19,11 +19,15 @@ public static class MathBits
         return (uint)(num < 0 ? ((num+1)%div + div-1) : (num%div));
     }
 
+    public static Vector3i Mod(Vector3i num, int div)
+    {
+        return new Vector3i(Mod(num.X, div), Mod(num.Y, div), Mod(num.Z, div));
+    }
+
     public static uint Mod(int num, ushort div)
     {
         return (uint)(num < 0 ? ((num+1)%div + div-1) : (num%div));
     }
-
     //There is nothing wrong with C#'s division operator, in fact it does exactly what it needs to.
     // However, it is sometimes useful to floor instead of  truncate the answer, and that is what this does.
 
