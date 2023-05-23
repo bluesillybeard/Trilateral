@@ -116,10 +116,10 @@ public sealed class Trilateral
     }
     void Update(TimeSpan delta){
 
-        if(postUpdateActive)Profiler.Pop("PostUpdate");
-        if(postFrameActive)Profiler.Pop("PostFrame");
-        Profiler.Push("Update");
-        Profiler.Push("DebugText");
+        if(postUpdateActive)Profiler.PopRaw("PostUpdate");
+        if(postFrameActive)Profiler.PopRaw("PostFrame");
+        Profiler.PushRaw("Update");
+        Profiler.PushRaw("DebugText");
         time += delta;
         Block? b = chunks.GetBlock(MathBits.GetBlockPos(camera.Position) + MathBits.GetChunkBlockPos(playerChunk));
         string block = "none";
@@ -140,11 +140,11 @@ public sealed class Trilateral
             + "uploading chunks:" + chunks.renderer.UploadingChunks + '\n'
             + "drawable chunks:" + chunks.renderer.DrawableChunks + '\n'
         );
-        Profiler.Pop("DebugText");
+        Profiler.PopRaw("DebugText");
 
         UpdatePlayer(delta);
         chunks.Update(playerChunk, settings.loadDistance);
-        Profiler.Push("GUIIterate");
+        Profiler.PushRaw("GUIIterate");
         gui.Iterate();
         Vector2i size = VRender.Render.WindowSize();
         gui.SetSize(size.X, size.Y);
@@ -152,9 +152,9 @@ public sealed class Trilateral
         // RenderDisplay only collects the mesh when "drawing",
         // Nothing actually gets rendered until DrawToScreen is called.
         gui.Draw();
-        Profiler.Pop("GUIIterate");
-        Profiler.Pop("Update");
-        Profiler.Push("PostUpdate");
+        Profiler.PopRaw("GUIIterate");
+        Profiler.PopRaw("Update");
+        Profiler.PushRaw("PostUpdate");
         postUpdateActive = true;
     }
 
@@ -162,26 +162,26 @@ public sealed class Trilateral
     bool postUpdateActive = false;
     void Render(TimeSpan delta){
         double deltaSeconds = delta.Ticks/(double)TimeSpan.TicksPerSecond;
-        if(postFrameActive)Profiler.Pop("PostFrame");
-        if(postUpdateActive)Profiler.Pop("PostUpdate");
-        Profiler.Push("Render");
+        if(postFrameActive)Profiler.PopRaw("PostFrame");
+        if(postUpdateActive)Profiler.PopRaw("PostUpdate");
+        Profiler.PushRaw("Render");
         totalFrames++;
         try{
-            Profiler.Push("RenderChunks");
+            Profiler.PushRaw("RenderChunks");
             chunks.Draw(camera, playerChunk);
-            Profiler.Pop("RenderChunks");
-            Profiler.Push("RenderGUI");
+            Profiler.PopRaw("RenderChunks");
+            Profiler.PushRaw("RenderGUI");
             //This renders the mesh that was collected during the update method.
             renderDisplay.DrawToScreen();
-            Profiler.Pop("RenderGUI");
+            Profiler.PopRaw("RenderGUI");
             VRender.Render.EndRenderQueue();
             frameDelta = delta;
         } catch (Exception e)
         {
             Console.Error.WriteLine("Error rendering chunk: " + e.Message + "\ntacktrace: " + e.StackTrace);
         }
-        Profiler.Pop("Render");
-        Profiler.Push("PostFrame");
+        Profiler.PopRaw("Render");
+        Profiler.PushRaw("PostFrame");
         postFrameActive = true;
     }
 

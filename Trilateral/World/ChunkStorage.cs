@@ -25,36 +25,49 @@ sealed class ChunkStorage
     }
     public void SaveChunk(Chunk chunk)
     {
+        Profiler.PushRaw("SaveChunk");
         try{
             Vector3i section = MathBits.DivideFloor(chunk.pos, ChunkSection.Size);
             //See if we already have a section
-            if(!sections.TryGetValue(section, out var chunkSection))
+            ChunkSection? chunkSection;
+            lock(sections)
             {
-                //If the section isn't already initialized, then initialize it.
-                chunkSection = new ChunkSection(pathToSaveFolder + "/chunks/" + section.ToString() + ".tws");
-                sections.Add(section, chunkSection);
+                if(!sections.TryGetValue(section, out chunkSection))
+                {
+                    //If the section isn't already initialized, then initialize it.
+                    chunkSection = new ChunkSection(pathToSaveFolder + "/chunks/" + section.ToString() + ".tws");
+                    sections.Add(section, chunkSection);
+                }
+                chunkSection.SaveChunk(chunk);
             }
-            chunkSection.SaveChunk(chunk);
         } catch(Exception e)
         {
             System.Console.Error.WriteLine("Error saving chunk " + chunk.pos + ": " + e.Message + "\nStacktrace:" + e.StackTrace);
         }
+        Profiler.PopRaw("SaveChunk");
         
     }
     public Chunk? LoadChunk(Vector3i pos)
     {
+        Profiler.PushRaw("LoadChunk");
         try{
             Vector3i section = MathBits.DivideFloor(pos, ChunkSection.Size);
-            if(!sections.TryGetValue(section, out var chunkSection))
+            ChunkSection? chunkSection;
+            lock(sections)
             {
-                //If the section isn't already initialized, then initialize it.
-                chunkSection = new ChunkSection(pathToSaveFolder + "/chunks/" + section.ToString() + ".tws");
-                sections.Add(section, chunkSection);
+                if(!sections.TryGetValue(section, out chunkSection))
+                {
+                    //If the section isn't already initialized, then initialize it.
+                    chunkSection = new ChunkSection(pathToSaveFolder + "/chunks/" + section.ToString() + ".tws");
+                    sections.Add(section, chunkSection);
+                }
             }
+            Profiler.PopRaw("LoadChunk");
             return chunkSection.LoadChunk(pos);
         } catch(Exception e)
         {
             System.Console.Error.WriteLine("Error loading chunk " + pos + ": " + e.Message + "\nStacktrace:" + e.StackTrace);
+            Profiler.PopRaw("LoadChunk");
             return null;
         }
         
@@ -67,6 +80,13 @@ sealed class ChunkStorage
 
     public void Flush()
     {
-
+        lock(sections)
+        {
+            foreach(var section in sections)
+            {
+                section.Value.Dispose();
+            }
+            sections.Clear();
+        }
     }
 }

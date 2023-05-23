@@ -58,7 +58,7 @@ public sealed class ChunkRenderer
 
     public void NotifyChunksAdded(IEnumerable<Chunk> chunks)
     {
-        Profiler.Push("NotifyChunksAdded");
+        Profiler.PushRaw("NotifyChunksAdded");
         foreach(Chunk c in chunks)
         {
             if(c.IsEmpty())continue;//If the chunk is empty, just skip it.
@@ -69,7 +69,7 @@ public sealed class ChunkRenderer
             }
             newOrModifiedChunks.Add(c.pos);
         }
-        Profiler.Pop("NotifyChunksAdded");
+        Profiler.PopRaw("NotifyChunksAdded");
     }
 
     private void BuildChunk(Vector3i pos, Chunk[] chunks)
@@ -83,8 +83,8 @@ public sealed class ChunkRenderer
     }
     public void Update(ChunkManager chunkManager)
     {
-        Profiler.Push("ChunkRendererUpdate");
-        Profiler.Push("ChunksToRemove");
+        Profiler.PushRaw("ChunkRendererUpdate");
+        Profiler.PushRaw("ChunksToRemove");
         //Go through the chunks waiting to be removed
         foreach(var pos in chunksToRemove)
         {
@@ -107,12 +107,12 @@ public sealed class ChunkRenderer
             }
         }
         chunksToRemove.Clear();
-        Profiler.Pop("ChunksToRemove");
-        Profiler.Push("ChunksInWait");
-        Profiler.Push("AddNew");
+        Profiler.PopRaw("ChunksToRemove");
+        Profiler.PushRaw("ChunksInWait");
+        Profiler.PushRaw("AddNew");
         chunksInWait.AddRange(newOrModifiedChunks);
         newOrModifiedChunks.Clear();
-        Profiler.Pop("AddNew");
+        Profiler.PopRaw("AddNew");
         //foreach(var pos in chunksInWait)
         for(int i=chunksInWait.Count-1; i>=0; --i)
         {
@@ -125,8 +125,8 @@ public sealed class ChunkRenderer
             BuildChunk(pos, adj);
             chunksInWait.RemoveAt(i--);
         }
-        Profiler.Pop("ChunksInWait");
-        Profiler.Push("ChunksBeingBuilt");
+        Profiler.PopRaw("ChunksInWait");
+        Profiler.PushRaw("ChunksBeingBuilt");
         //Chunks that are being built or just finished building
         List<ChunkDrawObjectBuilding> chunksFinishedBuilding = new List<ChunkDrawObjectBuilding>();
         foreach(var chunk in chunksBeingBuilt)
@@ -152,8 +152,8 @@ public sealed class ChunkRenderer
             uploading.SendToGPU(chunk);
         }
         chunksFinishedBuilding.Clear();
-        Profiler.Pop("ChunksBeingBuilt");
-        Profiler.Push("ChunksBeingUploaded");
+        Profiler.PopRaw("ChunksBeingBuilt");
+        Profiler.PushRaw("ChunksBeingUploaded");
         List<ChunkDrawObjectUploading> chunksFinishedUploading = new List<ChunkDrawObjectUploading>();
         //Go through the chunks that are being uploaded or are done uploading
         foreach(var chunk in chunksBeingUploaded)
@@ -174,8 +174,8 @@ public sealed class ChunkRenderer
                 System.Console.WriteLine("Replaced ChunkDrawObject:" + chunk.pos);
             }
         }
-        Profiler.Pop("ChunksBeingUploaded");
-        Profiler.Pop("ChunkRendererUpdate");
+        Profiler.PopRaw("ChunksBeingUploaded");
+        Profiler.PopRaw("ChunkRendererUpdate");
     }
 
     private Chunk[]? GetAdjacentChunks(ChunkManager m, Vector3i pos)

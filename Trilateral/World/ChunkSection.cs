@@ -10,122 +10,155 @@ using OpenTK.Mathematics;
 using Utility;
 struct ChunkEntry
 {
+    public ChunkEntry()
+    {
+        offset = 0;
+        length = 0;
+    }
     public uint offset;
     public uint length;
 }
-
+/*
+Originally, I tried to use memory mapped files, but that became too complicated to implement for my little brain to handle.
+TODO: if saving/loading chunks is too slow, look at MMFs again and see if there is a significant performance improvement
+*/
 public sealed class ChunkSection : IDisposable
 {
     public const int Size = 16;
     public const int Length = Size*Size*Size;
-    //We use a memory mapped file, to avoid doing things with the entire file at once.
-    // However, that presents a problem of allocating areas for different chunks.
-    // The format allows for chunks to be placed in any order in any location,
-    // So a fairly simple allocation system works just fine.
-    private ChunkEntry[] chunkPointerTable;
-    private MemoryMappedFile file;
-    private Dictionary<Vector3i, MemoryMappedViewStream> chunkViews;
+
+    private string filePath;
+    private ChunkEntry[] entries;
+    private FileStream file;
 
     public ChunkSection(string filePath)
     {
-        chunkPointerTable = new ChunkEntry[Length];
-        //TODO: don't make a bajillion syscalls just to make a new file
-        if(!File.Exists(filePath))
+        this.filePath = filePath;
+        file = new FileStream(filePath, FileMode.OpenOrCreate);
+        entries = new ChunkEntry[Length];
+        if(file.Length >= Length * 8)
         {
-            File.Create(filePath);
-        }
-        file = MemoryMappedFile.CreateFromFile(filePath, FileMode.Open, null, Length * 8);
-        chunkViews = new Dictionary<Vector3i, MemoryMappedViewStream>();
-    }
-
-    private static int GetIndex(int x, int y, int z)
-    {
-        return x + Size * y + Size*Size * z;
-    }
-
-    private bool IsOccupied(int offset)
-    {
-        foreach(ChunkEntry chunk in chunkPointerTable)
-        {
-            //If the offset is within an existing chunk, then it's occupied.
-            if(chunk.offset <= offset && (chunk.length + chunk.offset) >= offset)
+            BinaryReader r = new BinaryReader(file);
+            for(int index=0; index<Length; index++)
             {
-                return true;
+                ChunkEntry entry = new ChunkEntry();
+                entry.offset = r.ReadUInt32();
+                entry.length = r.ReadUInt32();
+                entries[index] = entry;
             }
         }
-        return false;
+        else 
+        {
+            BinaryWriter w = new BinaryWriter(file);
+            for(int index=0; index<Length; index++)
+            {
+                ChunkEntry entry = new ChunkEntry();
+                entry.offset = 0;
+                entry.length = 0;
+                w.Write((uint)0);
+                w.Write((uint)0);
+            }
+        }
+        
     }
 
-    private MemoryMappedViewStream GetOrCreateView(Vector3i id)
+    public void SaveChunk(Chunk c)
     {
-        var index = GetIndex(id.X, id.Y, id.Z);
-        //First, see if our view is already open
-        if(!chunkViews.TryGetValue(id, out var view))
+        Vector3i pos = MathBits.Mod(c.pos, Size);
+        int index = GetIndex(pos);
+        //Serialize the chunk into RAM
+        MemoryStream stream = new MemoryStream();
+        c.SerializeToStream(stream);
+        //See if it will fit where the chunk already is
+        stream.Seek(0, SeekOrigin.Begin);
+        if(entries[index].length >= stream.Length)
         {
-            //If there isn't an open view for the chunk, make a new one.
-            var entry = chunkPointerTable[index];
-            view = file.CreateViewStream(entry.offset, entry.length);
-            chunkViews.Add(id, view);
+            //if it fits, write it.
+            lock(file)
+            {
+                file.Seek(entries[index].offset, SeekOrigin.Begin);
+                stream.CopyTo(file);
+                entries[index].length = (uint)stream.Length;
+                return;
+            }
         }
-        return view;
-    }
-    public Chunk LoadChunk(Vector3i pos)
-    {
-        Vector3i id = MathBits.Mod(pos, Size);
-        var index = GetIndex(id.X, id.Y, id.Z);
-        //First, see if our view is already open
-        var view = GetOrCreateView(id);
-        //Now that the view is open, load the chunk out of it.
-        var chunk = new Chunk(pos, view);
-        //Seek it back to the start since most methods expect the stream to be at the beginning
-        view.Seek(0, SeekOrigin.Begin);
-        return chunk;
+        //If it doesn't fit, find a place where it does
+        var freeChunkOffset = FindFreeZone((uint)stream.Length);
+        lock(file)
+        {
+            file.Seek(freeChunkOffset, SeekOrigin.Begin);
+            //Thankfully, FileStream is more than happy to expand the file for us.
+            stream.CopyTo(file);
+            entries[index].offset = freeChunkOffset;
+            entries[index].length = (uint)stream.Length;
+            return;
+        }
     }
 
-    private Stream FindViewForChunkSave(Vector3i id, long length)
+    public Chunk? LoadChunk(Vector3i absolutePos)
     {
-        var index = GetIndex(id.X, id.Y, id.Z);
-        //Find a place where it will fit
-        // First, see if it will fit where the chunk used to be.
-        if(chunkPointerTable[index].length >= length)
+        Vector3i pos = MathBits.Mod(absolutePos, Size);
+        int index = GetIndex(pos);
+        //If the entry is null, there is no chunk to load
+        ChunkEntry entry = entries[index];
+        if(entry.offset == 0) return null;
+        lock(file)
         {
-            return GetOrCreateView(id);
+            file.Seek(entry.offset, SeekOrigin.Begin);
+            return new Chunk(absolutePos, file);
         }
-        //If it doesn't fit where the chunk used to be, then find an empty space large enough
+    }
+
+    public void Dispose()
+    {
+        lock(file)
+        {
+            file.Seek(0, SeekOrigin.Begin);
+            BinaryWriter w = new BinaryWriter(file);
+            for(int index=0; index<Length; index++)
+            {
+                ChunkEntry entry = entries[index];
+                w.Write(entry.offset);
+                w.Write(entry.length);
+            }
+        }
+        file.Dispose();
+
+    }
+
+    private int GetIndex(int x, int y, int z)
+    {
+        return x + y*Size + z*Size*Size;
+    }
+    private int GetIndex(Vector3i pos)
+    {
+        return pos.X + pos.Y*Size + pos.Z*Size*Size;
+    }
+
+    private uint FindFreeZone(uint length)
+    {
         uint gapLength = 0;
-        int offset;
-        for(offset = 0; gapLength >= length; offset++)
+        for(uint offset = Length * 8; ; offset++)
         {
+            if(gapLength >= length)
+            {
+                return offset - gapLength;
+            }
+            gapLength++;
             if(IsOccupied(offset))
             {
                 gapLength = 0;
             }
-            gapLength++;
         }
-        chunkViews[id].Dispose();
-        chunkViews.Remove(id);
-        var view = file.CreateViewStream(offset, length);
-        chunkViews.Add(id, view);
-        return view;
+        throw new Exception("could not find a free zone. Should never happen under any circumstance!");
     }
-    public void SaveChunk(Chunk c)
-    {
-        Vector3i id = MathBits.Mod(c.pos, Size);
-        var index = GetIndex(id.X, id.Y, id.Z);
-        //Serialize the chunk into a MemoryStream.
-        using MemoryStream stream = new MemoryStream();
-        c.SerializeToStream(stream);
-        stream.Seek(0, SeekOrigin.Begin);
-        var output = FindViewForChunkSave(id, stream.Length);
-        stream.CopyTo(output);
 
-    }
-    public void Dispose()
+    private bool IsOccupied(uint offset)
     {
-        foreach(var view in chunkViews)
+        foreach(ChunkEntry e in entries)
         {
-            view.Value.Dispose();
+            if(e.offset <= offset && (e.offset + e.length) >= offset) return true;
         }
-        file.Dispose();
+        return false;
     }
 }

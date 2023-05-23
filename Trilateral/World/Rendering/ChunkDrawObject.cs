@@ -28,7 +28,7 @@ class ChunkDrawObjectBuilding
     {
         InProgress = true;
         if(Cancelled)return;
-        Profiler.Push("ChunkBuild");
+        Profiler.PushRaw("ChunkBuild");
         Chunk chunk = chunks[0];
         for(uint x=0; x<Chunk.Size; x++){
             for(uint y=0; y<Chunk.Size; y++){
@@ -52,7 +52,7 @@ class ChunkDrawObjectBuilding
                 }
             }
         }
-        Profiler.Pop("ChunkBuild");
+        Profiler.PopRaw("ChunkBuild");
         //There is a possibility it was cancelled during the process of building
         InProgress = false;
         if(Cancelled)return;
@@ -83,7 +83,7 @@ class ChunkDrawObjectUploading
                     InProgress = false;
                     return;
                 }
-                Profiler.Push("UploadChunk");
+                Profiler.PushRaw("UploadChunk");
                 foreach(ChunkBuildObject build in builds)
                 {
                     var cpuMesh = build.mesh.ToMesh();
@@ -98,7 +98,7 @@ class ChunkDrawObjectUploading
                         d.model.mesh.Dispose();
                     }
                 }
-                Profiler.Pop("UploadChunk");
+                Profiler.PopRaw("UploadChunk");
             }, "UploadMesh" + pos
         );
 

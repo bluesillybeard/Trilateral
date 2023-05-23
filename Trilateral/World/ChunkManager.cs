@@ -57,7 +57,7 @@ public sealed class ChunkManager
         //NOTE: this is the position of the chunk the player is in.
         // NOT the actual exact position of the player
         Vector3 playerPos = MathBits.GetChunkWorldPosUncentered(playerChunk);
-        Profiler.Push("ChunkUnload");
+        Profiler.PushRaw("ChunkUnload");
         List<Vector3i> chunksToUnload = new List<Vector3i>();
         foreach(var c in chunks)
         {
@@ -71,8 +71,8 @@ public sealed class ChunkManager
         {
             UnloadChunk(c);
         }
-        Profiler.Pop("ChunkUnload");
-        Profiler.Push("ChunksFinishedLoading");
+        Profiler.PopRaw("ChunkUnload");
+        Profiler.PushRaw("ChunksFinishedLoading");
         pool.Pause();
         //We do this part in a separate thread because otherwise it causes huge fps problems
         foreach(var chunk in chunksFinishedLoading)
@@ -86,7 +86,7 @@ public sealed class ChunkManager
         renderer.NotifyChunksAdded(chunksFinishedLoading);
         chunksFinishedLoading.Clear();
         pool.Unpause();
-        Profiler.Pop("ChunksFinishedLoading");
+        Profiler.PopRaw("ChunksFinishedLoading");
         if(updateAsyncTask is null || updateAsyncTask.IsCompleted)
         {
             updateAsyncTask = Task.Run(() =>
@@ -102,7 +102,7 @@ public sealed class ChunkManager
     {
         float loadDistanceSquared = loadDistance*loadDistance;
         Vector3 playerPos = MathBits.GetChunkWorldPosUncentered(playerChunk);
-        Profiler.Push("ChunkLoadList");
+        Profiler.PushRaw("ChunkLoadList");
         //It may be called a queue, but it's actually behaves more like a sorted bag.
         PriorityQueue<Vector3i, float> chunkLoadList = new PriorityQueue<Vector3i, float>();
         Vector3i chunkRange = MathBits.GetChunkPos(new Vector3(loadDistance, loadDistance, loadDistance));
@@ -124,26 +124,20 @@ public sealed class ChunkManager
                 }
             }
         }
-        Profiler.Pop("ChunkLoadList");
-        Profiler.Push("ChunkStartLoad");
+        Profiler.PopRaw("ChunkLoadList");
+        Profiler.PushRaw("ChunkStartLoad");
         while(chunkLoadList.Count > 0)
         {
             var chunkPos = chunkLoadList.Dequeue();
             chunksBeingLoaded.Add(chunkPos);
             pool.SubmitTask(() => {
-                Profiler.Push("LoadChunk");
-                Profiler.Push("Generate");
                 var chunk = LoadChunk(chunkPos);
                 chunk.Optimize();
-                Profiler.Pop("Generate");
-                Profiler.Push("Add");
                 chunksFinishedLoading.Add(chunk);
                 SaveChunk(chunk);
-                Profiler.Pop("Add");
-                Profiler.Pop("LoadChunk");
             }, "LoadChunk");
         }
-        Profiler.Pop("ChunkStartLoad");
+        Profiler.PopRaw("ChunkStartLoad");
         foreach(var chunk in modifiedChunks)
         {
             SaveChunk(chunk);

@@ -71,9 +71,9 @@ public sealed class RenderDisplay : IDisplay
         // Start uploading the mesh when a frame starts, so it has the entire frame to finish
         var vmesh = mesh.ToMesh();
         meshTask = VRender.Render.SubmitToQueueHighPriority<IRenderMesh>( ()=>{
-            Profiler.Push("UploadGUIMesh");
+            Profiler.PushRaw("UploadGUIMesh");
             var mesh = VRenderLib.VRender.Render.LoadMesh(vmesh);
-            Profiler.Pop("UploadGUIMesh");
+            Profiler.PopRaw("UploadGUIMesh");
             return mesh;
         }, "UploadGUIMesh");
         mesh.Clear();
@@ -82,9 +82,9 @@ public sealed class RenderDisplay : IDisplay
     {
         if(meshTask is not null)
         {
-            Profiler.Push("GUIWaitMesh");
+            Profiler.PushRaw("GUIWaitMesh");
             meshTask.WaitUntilDone();
-            Profiler.Pop("GUIWaitMesh");
+            Profiler.PopRaw("GUIWaitMesh");
             gpuMesh = meshTask.GetResult();
         }
     }
