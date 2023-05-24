@@ -64,11 +64,11 @@ public sealed class ChunkSection : IDisposable
     public void SaveChunk(Chunk c)
     {
         using var _ = Profiler.Push("SaveChunkInSection");
-        Profiler.PushRaw("Serialize");
         Vector3i pos = MathBits.Mod(c.pos, Size);
         int index = GetIndex(pos);
         //Serialize the chunk into RAM
         MemoryStream stream = new MemoryStream();
+        Profiler.PushRaw("Serialize");
         c.SerializeToStream(stream);
         //See if it will fit where the chunk already is
         stream.Seek(0, SeekOrigin.Begin);
@@ -89,10 +89,19 @@ public sealed class ChunkSection : IDisposable
         }
         //If it doesn't fit, find a place where it does
         Profiler.PushRaw("FindFreeZone");
+        //Set the current entry as empty, so it's allowed to override the data of the entry its replacing
+        ChunkEntry oldEntry = entries[index];
+        entries[index] = new ChunkEntry();
         var freeChunkOffset = FindFreeZone((uint)stream.Length);
         Profiler.PopRaw("FindFreeZone");
         lock(file)
         {
+            //Write 0xFF into the previous location, so it's more clear where the unused area is.
+            file.Seek(oldEntry.offset, SeekOrigin.Begin);
+            for(int i=0; i<oldEntry.length; i++)
+            {
+                file.WriteByte(0xFF);
+            }
             file.Seek(freeChunkOffset, SeekOrigin.Begin);
             //Thankfully, FileStream is more than happy to expand the file for us.
             Profiler.PushRaw("WriteToFile");

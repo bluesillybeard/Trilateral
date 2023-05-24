@@ -35,10 +35,13 @@ public sealed class ChunkManager
         storage = new ChunkStorage(pathToSaveFolder);
         modifiedChunks = new HashSet<Chunk>();
     }
-    private Chunk LoadChunk(Vector3i pos)
+    private Chunk LoadChunk(Vector3i pos, out bool generatedNew)
     {
         var chunk = storage.LoadChunk(pos);
-        return chunk ?? generator.GenerateChunk(pos.X, pos.Y, pos.Z);
+        generatedNew = false;
+        if(chunk is not null)return chunk;
+        generatedNew = true;
+        return generator.GenerateChunk(pos.X, pos.Y, pos.Z);
     }
 
     private void SaveChunk(Chunk chunk)
@@ -73,8 +76,9 @@ public sealed class ChunkManager
         }
         Profiler.PopRaw("ChunkUnload");
         Profiler.PushRaw("ChunksFinishedLoading");
+        Profiler.PushRaw("PausePool");
         pool.Pause();
-        //We do this part in a separate thread because otherwise it causes huge fps problems
+        Profiler.PopRaw("PausePool");
         foreach(var chunk in chunksFinishedLoading)
         {
             chunksBeingLoaded.Remove(chunk.pos);
@@ -131,10 +135,13 @@ public sealed class ChunkManager
             var chunkPos = chunkLoadList.Dequeue();
             chunksBeingLoaded.Add(chunkPos);
             pool.SubmitTask(() => {
-                var chunk = LoadChunk(chunkPos);
+                var chunk = LoadChunk(chunkPos, out var isNew);
+                if(isNew)
+                {
+                    SaveChunk(chunk);
+                }
                 chunk.Optimize();
                 chunksFinishedLoading.Add(chunk);
-                SaveChunk(chunk);
             }, "LoadChunk");
         }
         Profiler.PopRaw("ChunkStartLoad");

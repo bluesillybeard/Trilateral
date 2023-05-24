@@ -127,12 +127,14 @@ public sealed class Trilateral
         {
             block = b.name;
         }
+        //TODO: multiple debug menus
+        // ALSO TODO: realtime performance profile chart, like Minecraft's pie chart.
         debug.SetText(
-            "Player Position: " + camera.Position + '\n'
-             + "Player chunk: " + playerChunk + "\n"
-            + "Camera Rotation: " + camera.Rotation + '\n'
-            + "FPS: " + (int)(1/(frameDelta.Ticks/(double)TimeSpan.TicksPerSecond)) + '\n'
+              "FPS: " + (int)(1/(frameDelta.Ticks/(double)TimeSpan.TicksPerSecond)) + '\n'
             + "UPS: " + (int)(1/(delta.Ticks/(double)TimeSpan.TicksPerSecond)) + '\n'
+            + "Player Position: " + camera.Position + '\n'
+            + "Player chunk: " + playerChunk + "\n"
+            + "Camera Rotation: " + camera.Rotation + '\n'
             + "block:" + block + '\n'
             + "existing chunks:" + chunks.NumChunks + '\n'
             + "waiting chunks:" + chunks.renderer.WaitingChunks + '\n'
@@ -143,7 +145,9 @@ public sealed class Trilateral
         Profiler.PopRaw("DebugText");
 
         UpdatePlayer(delta);
+        Profiler.PushRaw("UpdateChunks");
         chunks.Update(playerChunk, settings.loadDistance);
+        Profiler.PopRaw("UpdateChunks");
         Profiler.PushRaw("GUIIterate");
         gui.Iterate();
         Vector2i size = VRender.Render.WindowSize();

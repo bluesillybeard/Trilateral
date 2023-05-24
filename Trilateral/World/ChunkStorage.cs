@@ -38,8 +38,8 @@ sealed class ChunkStorage
                     chunkSection = new ChunkSection(pathToSaveFolder + "/chunks/" + section.ToString() + ".tws");
                     sections.Add(section, chunkSection);
                 }
-                chunkSection.SaveChunk(chunk);
             }
+            chunkSection.SaveChunk(chunk);
         } catch(Exception e)
         {
             System.Console.Error.WriteLine("Error saving chunk " + chunk.pos + ": " + e.Message + "\nStacktrace:" + e.StackTrace);
