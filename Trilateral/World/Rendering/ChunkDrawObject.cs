@@ -127,6 +127,8 @@ class ChunkDrawObject
     }
     public void Draw(Matrix4 cameraTransform, Vector3i playerChunk)
     {
+        //Skip if there are no meshes to draw
+        if(drawables.Count == 0)return;
         var offset = pos - playerChunk;
         //We need to make a translation for the position, since the mesh is only relative to the chunk's origin, not the actual origin.
         Matrix4 transform = Matrix4.CreateTranslation(MathBits.GetChunkWorldPosUncentered(offset));
@@ -138,7 +140,6 @@ class ChunkDrawObject
         if(drawables is null)return;
         foreach(var drawable in drawables)
         {
-            
             VRender.Render.Draw(
                 drawable.model.texture, drawable.model.mesh,
                 drawable.shader, uniforms, true
