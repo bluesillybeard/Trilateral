@@ -141,6 +141,7 @@ public sealed class Trilateral
             + "building chunks:" + chunks.renderer.BuildingChunks + '\n'
             + "uploading chunks:" + chunks.renderer.UploadingChunks + '\n'
             + "drawable chunks:" + chunks.renderer.DrawableChunks + '\n'
+            + "chunk section cache:" + chunks.NumChunkSections + '\n'
         );
         Profiler.PopRaw("DebugText");
 

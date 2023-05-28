@@ -162,6 +162,7 @@ public sealed class ChunkManager
     }
     public IReadOnlyDictionary<Vector3i, Chunk> Chunks{get => chunks;}
     public int NumChunks {get => chunks.Count;}
+    public int NumChunkSections {get => storage.NumberOfCachedSections;}
     public Chunk? GetChunk(Vector3i position)
     {
         if(chunks.TryGetValue(position, out var c)){
