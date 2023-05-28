@@ -107,6 +107,7 @@ public sealed class ChunkManager
     private DateTime LastStorageFlush;
     private void UpdateAsync(Vector3i playerChunk, float loadDistance)
     {
+        using var _ = Profiler.Push("UpdateAsync");
         float loadDistanceSquared = loadDistance*loadDistance;
         Vector3 playerPos = MathBits.GetChunkWorldPosUncentered(playerChunk);
         Profiler.PushRaw("ChunkLoadList");
@@ -139,23 +140,33 @@ public sealed class ChunkManager
             chunksBeingLoaded.Add(chunkPos);
             pool.SubmitTask(() => {
                 var chunk = LoadChunk(chunkPos, out var isNew);
+                chunk.Optimize();
                 if(isNew)
                 {
-                    SaveChunk(chunk);
+                    lock(modifiedChunks)modifiedChunks.Add(chunk);
                 }
-                chunk.Optimize();
                 lock(chunksFinishedLoading)chunksFinishedLoading.Add(chunk);
             }, "LoadChunk");
         }
         Profiler.PopRaw("ChunkStartLoad");
-        foreach(var chunk in modifiedChunks)
+        Profiler.PushRaw("SaveModifiedChunks");
+        lock(modifiedChunks)
         {
-            SaveChunk(chunk);
+            foreach(var chunk in modifiedChunks)
+            {
+                pool.SubmitTask(() => {
+                    SaveChunk(chunk);
+                }, "SaveChunk");
+            }
+            modifiedChunks.Clear();
         }
+        Profiler.PopRaw("SaveModifiedChunks");
         if(DateTime.Now - LastStorageFlush > Game.Program.Game.settings.chunkFlushPeriod)
         {
+            Profiler.PushRaw("FlushStorage");
             LastStorageFlush = DateTime.Now;
             storage.Flush();
+            Profiler.PopRaw("FlushStorage");
         }
     }
 
@@ -238,7 +249,7 @@ public sealed class ChunkManager
         //Then set the actual block itself
         chunk.SetBlock(block, MathBits.Mod(blockPos.X, Chunk.Size), MathBits.Mod(blockPos.Y, Chunk.Size), MathBits.Mod(blockPos.Z, Chunk.Size));
         chunk.UpdateLastChange();
-        modifiedChunks.Add(chunk);
+        lock(modifiedChunks)modifiedChunks.Add(chunk);
         renderer.NotifyChunkModified(chunk.pos);
         return true;
     }

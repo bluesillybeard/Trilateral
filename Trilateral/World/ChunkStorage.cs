@@ -80,6 +80,7 @@ sealed class ChunkStorage
 
     public void Flush()
     {
+        System.Console.WriteLine("Flushing chunk storage");
         lock(sections)
         {
             foreach(var section in sections)

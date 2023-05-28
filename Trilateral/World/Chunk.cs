@@ -87,6 +87,10 @@ public class Chunk
         {
             uidToBlock.Add(block);
         }
+        else 
+        {
+            System.Console.WriteLine("WARNING: Tried to add duplicate blockToUid mapping for block \"" + block.name + "\" in chunk " + pos);
+        }
     }
     //creates a new empty chunk
     public Chunk(Vector3i pos)
