@@ -79,10 +79,9 @@ public sealed class ChunkSection : IDisposable
 
     public void SaveChunk(Chunk c)
     {
+        using var _ = Profiler.Push("SaveChunkInSection");
         lock(file)
         {
-            System.Console.WriteLine("Saving chunk " + c.pos);
-            using var _ = Profiler.Push("SaveChunkInSection");
             Vector3i pos = MathBits.Mod(c.pos, Size);
             int index = GetIndex(pos);
             //Serialize the chunk into RAM
@@ -128,9 +127,9 @@ public sealed class ChunkSection : IDisposable
 
     public Chunk? LoadChunk(Vector3i absolutePos)
     {
+        using var _ = Profiler.Push("LoadChunkInSection");
         lock(file)
         {
-            using var _ = Profiler.Push("LoadChunkInSection");
             Vector3i pos = MathBits.Mod(absolutePos, Size);
             int index = GetIndex(pos);
             //If the entry is null, there is no chunk to load

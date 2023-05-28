@@ -83,8 +83,10 @@ public class Chunk
         {
             throw new Exception("Yo this ain't supposed to happen");
         }
-        uidToBlock.Add(block);
-        blockToUid.Add(block.uid, id);
+        if(blockToUid.TryAdd(block.uid, id))
+        {
+            uidToBlock.Add(block);
+        }
     }
     //creates a new empty chunk
     public Chunk(Vector3i pos)

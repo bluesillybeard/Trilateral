@@ -20,7 +20,7 @@ public sealed class ChunkManager
     private readonly LocalThreadPool pool;
     //TODO: Figure out the best data structure for this.
     private readonly HashSet<Vector3i> chunksBeingLoaded; 
-    private readonly ConcurrentBag<Chunk> chunksFinishedLoading;
+    private readonly List<Chunk> chunksFinishedLoading;
     private readonly HashSet<Chunk> modifiedChunks;
     
     private readonly ChunkStorage storage;
@@ -31,7 +31,7 @@ public sealed class ChunkManager
         renderer = new ChunkRenderer();
         pool = new LocalThreadPool(int.Max(1, (int)(Environment.ProcessorCount*0.75f)));
         chunksBeingLoaded = new HashSet<Vector3i>();
-        chunksFinishedLoading = new ConcurrentBag<Chunk>();
+        chunksFinishedLoading = new List<Chunk>();
         storage = new ChunkStorage(pathToSaveFolder);
         modifiedChunks = new HashSet<Chunk>();
     }
@@ -76,20 +76,23 @@ public sealed class ChunkManager
         }
         Profiler.PopRaw("ChunkUnload");
         Profiler.PushRaw("ChunksFinishedLoading");
-        Profiler.PushRaw("PausePool");
-        pool.Pause();
-        Profiler.PopRaw("PausePool");
-        foreach(var chunk in chunksFinishedLoading)
+        //Profiler.PushRaw("PausePool");
+        //pool.Pause();
+        //Profiler.PopRaw("PausePool");
+        lock(chunksFinishedLoading)
         {
-            chunksBeingLoaded.Remove(chunk.pos);
-            if(!chunks.TryAdd(chunk.pos, chunk)){
-                System.Console.Error.WriteLine("Failed to add chunk " + chunk.pos);
-                continue;
+            foreach(var chunk in chunksFinishedLoading)
+            {
+                chunksBeingLoaded.Remove(chunk.pos);
+                if(!chunks.TryAdd(chunk.pos, chunk)){
+                    System.Console.Error.WriteLine("Failed to add chunk " + chunk.pos);
+                    continue;
+                }
             }
+            renderer.NotifyChunksAdded(chunksFinishedLoading);
+            chunksFinishedLoading.Clear();
         }
-        renderer.NotifyChunksAdded(chunksFinishedLoading);
-        chunksFinishedLoading.Clear();
-        pool.Unpause();
+        //pool.Unpause();
         Profiler.PopRaw("ChunksFinishedLoading");
         if(updateAsyncTask is null || updateAsyncTask.IsCompleted)
         {
@@ -141,7 +144,7 @@ public sealed class ChunkManager
                     SaveChunk(chunk);
                 }
                 chunk.Optimize();
-                chunksFinishedLoading.Add(chunk);
+                lock(chunksFinishedLoading)chunksFinishedLoading.Add(chunk);
             }, "LoadChunk");
         }
         Profiler.PopRaw("ChunkStartLoad");
