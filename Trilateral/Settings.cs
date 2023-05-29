@@ -36,12 +36,12 @@ public struct Settings
 
     //The target frames per second.
     // Takes effect after restart, not because I can't make it dynamic but because i'm too lazy
-    public uint targetFPS = 100;
+    public uint targetFPS = 60;
 
     //Weather to try to sync the framerate with the display.
     // The frame timing code is somewhat messed up right now, so this might cause strange performance issues.
     // requries restart to take effect.
-    public bool VSync = true;
+    public bool VSync = false;
 
     public TimeSpan chunkFlushPeriod = TimeSpan.FromMinutes(1);
 }

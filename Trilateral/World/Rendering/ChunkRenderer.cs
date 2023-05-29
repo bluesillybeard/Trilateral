@@ -28,7 +28,10 @@ public sealed class ChunkRenderer
     private List<Vector3i> newOrModifiedChunks;
     private List<Vector3i> chunksToRemove; //chunks that are waiting to be removed
     private List<Vector3i> otherChunksToRemove; //this swaps with chunksToRemove so that other threads can add chunks to remove without waiting for the other to be iterated.
-
+    private HashSet<Vector3i> chunksInRenderer; //Set of chunks that have been added but not removed.
+    //this is required for two reasons:
+    // 1: makes looking up of a chunk is somewhere faster
+    // 2: Sometimes chunks are culled (chunks that have no renderable mesh), so they aren't in the renderer but they are still accounted for.
     public ChunkRenderer(float renderThreadsMultiplier)
     {
         chunkDrawObjects = new Dictionary<Vector3i, ChunkDrawObject>();
@@ -39,6 +42,7 @@ public sealed class ChunkRenderer
         chunksToRemove = new List<Vector3i>();
         otherChunksToRemove = new List<Vector3i>();
         chunkDrawPool = new LocalThreadPool(int.Max(1, (int)(Environment.ProcessorCount * renderThreadsMultiplier)));
+        chunksInRenderer = new HashSet<Vector3i>();
     }
 
     public void DrawChunks(Camera camera, Vector3i playerChunk)
@@ -60,6 +64,7 @@ public sealed class ChunkRenderer
     public void NotifyChunkModified(Vector3i pos)
     {
         lock(newOrModifiedChunks)newOrModifiedChunks.Add(pos);
+        lock(chunksInRenderer)chunksInRenderer.Add(pos);
     }
 
     public void NotifyChunksAdded(IEnumerable<Chunk> chunks)
@@ -68,7 +73,7 @@ public sealed class ChunkRenderer
         foreach(Chunk c in chunks)
         {
             if(c.IsEmpty())continue;//If the chunk is empty, just skip it.
-            if(chunkDrawObjects.ContainsKey(c.pos))
+            if(chunksInRenderer.Contains(c.pos))
             {
                 continue; //skip existing chunks
             }
@@ -126,23 +131,17 @@ public sealed class ChunkRenderer
                     }
                 }
             }
-            bool removedFromDrawObjects = false;
+            //We only remove it in the lock statement, since we want it to be as short as possible.
+            ChunkDrawObject? draw = null;
             if(!removedFromUploading)
             {
                 lock(chunkDrawObjects)
                 {
-                    if(chunkDrawObjects.Remove(pos, out var draw))
-                    {
-                        draw.Dispose();
-                        removedFromDrawObjects = true;
-                    }
+                    chunkDrawObjects.Remove(pos, out draw);
                 }
             }
-            //If it wasn't removed from any of them, then that's not right.
-            if(!removedFromBuilding && !removedFromUploading && !removedFromDrawObjects)
-            {
-                System.Console.WriteLine("WARNING: Tried to remove nonexistent chunk " + pos);
-            }
+            if(draw is not null)draw.Dispose();
+            lock(chunksInRenderer)chunksInRenderer.Remove(pos);
         }
         otherChunksToRemove.Clear();
         Profiler.PopRaw("ChunksToRemove");

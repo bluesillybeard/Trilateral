@@ -121,7 +121,6 @@ public class Chunk
             }
             id = GetOrAdd(block);
             this.blocks[index] = id;
-
         }
         lastChange = DateTime.Now;
     }
@@ -134,6 +133,14 @@ public class Chunk
         using MemoryStream stream = new MemoryStream();
         zipStream.CopyTo(stream);
         stream.Seek(0, SeekOrigin.Begin);
+        //DEBUG: Write the decompressed version to a file for inspection
+        // try{
+        //     FileStream yehrs = new FileStream("yahshd" + pos.ToString(), FileMode.Create);
+        //     stream.CopyTo(yehrs);
+        //     yehrs.Dispose();
+        //     stream.Seek(0, SeekOrigin.Begin);
+        // } catch(Exception){}
+        
         BinaryReader reader = new BinaryReader(stream);
         ChunkSerializationFlag flag = (ChunkSerializationFlag)reader.ReadUInt32();
         if(flag == ChunkSerializationFlag.empty)
@@ -228,7 +235,6 @@ public class Chunk
     {
         using GZipStream stream = new GZipStream(streamOut, CompressionMode.Compress, true);
         //If the chunk is empty, then we simply put the empty flag and be done with it.
-        // Since chunks are saved in their own files, we don't need to worry about finding the start and end.
         if(IsEmpty() || blocks is null || uidToBlock is null)
         {
             stream.Write(BitConverter.GetBytes((uint)ChunkSerializationFlag.empty));
