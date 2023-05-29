@@ -8,27 +8,32 @@ using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 
 using Trilateral.OperatingSystemSpecific;
+using System.Globalization;
 
 namespace Trilateral.Game
 {
     public static class Program
     {
+        private static StaticProperties? properties;
+        private static Settings settings;
         private static void Main()
         {
             //Some things for logging purposes
             System.Threading.Thread.CurrentThread.Name = "Main";
             System.Console.SetOut(new CustomOutTextWriter(System.Console.Out, ConsoleColor.White));
             System.Console.SetError(new CustomOutTextWriter(System.Console.Error, ConsoleColor.Red));
-            var random = new Random((int)DateTime.Now.Ticks);
+            properties = new StaticProperties();
+            settings = new Settings(properties);
             var renderSettings = new RenderSettings(){
-                TargetFrameTime = 1f/70f,
+                TargetFrameTime = 1f/settings.targetFPS,
                 BackgroundColor = 0x000000ff,
                 WindowTitle = "Trilateral",
                 size = new OpenTK.Mathematics.Vector2i(800, 600),
-                VSync = false,
+                VSync = settings.VSync,
             };
             VRenderLib.VRender.InitRender(renderSettings);
             VRenderLib.VRender.Render.OnStart += Start;
+           
             VRenderLib.VRender.Render.Run();
             Utility.Profiler.Dispose();
         }
@@ -41,7 +46,11 @@ namespace Trilateral.Game
         private static Trilateral? game;
         private static void Start()
         {
-            game = new Trilateral();
+            if(properties is null)
+            {
+                throw new Exception("bro what");
+            }
+            game = new Trilateral(properties, settings);
         }
     }
 

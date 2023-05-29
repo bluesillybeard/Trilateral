@@ -42,12 +42,12 @@ public sealed class Trilateral
     ChunkManager chunks;
     IRenderShader chunkShader;
     uint totalFrames;
-    public Trilateral()
+    public Trilateral(StaticProperties properties, Settings settings)
     {
         start = DateTime.Now;
         time = DateTime.Now;
-        properties = new StaticProperties();
-        settings = new Settings(properties);
+        this.properties = properties;
+        this.settings = settings;
         var render = VRender.Render;
         var size = render.WindowSize();
         {
