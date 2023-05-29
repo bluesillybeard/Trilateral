@@ -29,13 +29,13 @@ public struct Settings
     public float worldThreadsMultiplier = 0.75f;
     //Multiplied by the number of threads on the system to get the actual number of threads to use
     // Requires restart to take effect
-    public float renderThreadsMultiplier = 0.75f;
+    public float renderThreadsMultiplier = 0.5f;
     //How far away to load chunks, in meters
     // Takes effect immediately.
     public float loadDistance = 150f;
 
     //The target frames per second.
-    // Takes effect after restart
+    // Takes effect after restart, not because I can't make it dynamic but because i'm too lazy
     public uint targetFPS = 100;
 
     //Weather to try to sync the framerate with the display.

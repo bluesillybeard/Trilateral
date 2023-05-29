@@ -112,7 +112,7 @@ public sealed class Trilateral
         chunks = new ChunkManager(new BasicChunkGenerator(
             blockRegistry["trilateral:grassBlock"],
             noise
-        ), properties.pathToConfig + "/saves/World1/");
+        ), properties.pathToConfig + "/saves/World1/", settings.renderThreadsMultiplier, settings.worldThreadsMultiplier);
     }
     void Update(TimeSpan delta){
 

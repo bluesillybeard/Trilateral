@@ -12,6 +12,8 @@ using OpenTK.Mathematics;
 using Utility;
 using VRenderLib.Utility;
 using VRenderLib.Threading;
+using Trilateral.Game;
+
 public sealed class ChunkManager
 {
     private readonly ConcurrentDictionary<Vector3i, Chunk> chunks;
@@ -24,12 +26,12 @@ public sealed class ChunkManager
     private readonly HashSet<Chunk> modifiedChunks;
     
     private readonly ChunkStorage storage;
-    public ChunkManager(IChunkGenerator generator, string pathToSaveFolder)
+    public ChunkManager(IChunkGenerator generator, string pathToSaveFolder, float renderThreadsMultiplier, float worldThreadsMultiplier)
     {
         this.generator = generator;
         chunks = new ConcurrentDictionary<Vector3i, Chunk>();//new Dictionary<Vector3i, Chunk>();
-        renderer = new ChunkRenderer();
-        pool = new LocalThreadPool(int.Max(1, (int)(Environment.ProcessorCount*0.75f)));
+        renderer = new ChunkRenderer(renderThreadsMultiplier);
+        pool = new LocalThreadPool(int.Max(1, (int)(Environment.ProcessorCount*worldThreadsMultiplier)));
         chunksBeingLoaded = new HashSet<Vector3i>();
         chunksFinishedLoading = new List<Chunk>();
         storage = new ChunkStorage(pathToSaveFolder);
@@ -56,6 +58,21 @@ public sealed class ChunkManager
     Task? updateAsyncTask;
     public void Update(Vector3i playerChunk, float loadDistance)
     {
+        //All of the updating happens asynchronously.
+        if(updateAsyncTask is null || updateAsyncTask.IsCompleted)
+        {
+            updateAsyncTask = Task.Run(() =>
+            {
+                UpdateAsync(playerChunk, loadDistance);
+            });
+        }
+        renderer.Update(this);
+    }
+
+    private DateTime LastStorageFlush;
+    private void UpdateAsync(Vector3i playerChunk, float loadDistance)
+    {
+        using var _ = Profiler.Push("UpdateAsync");
         float loadDistanceSquared = loadDistance*loadDistance;
         //NOTE: this is the position of the chunk the player is in.
         // NOT the actual exact position of the player
@@ -94,22 +111,6 @@ public sealed class ChunkManager
         }
         //pool.Unpause();
         Profiler.PopRaw("ChunksFinishedLoading");
-        if(updateAsyncTask is null || updateAsyncTask.IsCompleted)
-        {
-            updateAsyncTask = Task.Run(() =>
-            {
-                UpdateAsync(playerChunk, loadDistance);
-            });
-        }
-        renderer.Update(this);
-    }
-
-    private DateTime LastStorageFlush;
-    private void UpdateAsync(Vector3i playerChunk, float loadDistance)
-    {
-        using var _ = Profiler.Push("UpdateAsync");
-        float loadDistanceSquared = loadDistance*loadDistance;
-        Vector3 playerPos = MathBits.GetChunkWorldPosUncentered(playerChunk);
         Profiler.PushRaw("ChunkLoadList");
         //It may be called a queue, but it's actually behaves more like a sorted bag.
         PriorityQueue<Vector3i, float> chunkLoadList = new PriorityQueue<Vector3i, float>();
