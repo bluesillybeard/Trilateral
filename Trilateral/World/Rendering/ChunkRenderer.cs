@@ -72,7 +72,7 @@ public sealed class ChunkRenderer
         Profiler.PushRaw("NotifyChunksAdded");
         foreach(Chunk c in chunks)
         {
-            if(c.IsEmpty())continue;//If the chunk is empty, just skip it.
+            //TODO: cull chunks that will just end up being nothing
             if(chunksInRenderer.Contains(c.pos))
             {
                 continue; //skip existing chunks

@@ -1,7 +1,6 @@
 namespace Trilateral.World.ChunkGenerators;
 
 using World;
-using Trilateral.Utility;
 
 //Generates a singular block at 0,0,0
 
@@ -15,7 +14,7 @@ public class OneBlockChunkGenerator : IChunkGenerator
     }
     public Chunk GenerateChunk(int x, int y, int z)
     {
-        Chunk c = new Chunk(new OpenTK.Mathematics.Vector3i(x, y, z));
+        Chunk c = new Chunk(new OpenTK.Mathematics.Vector3i(x, y, z), Game.Program.Game.voidBlock);
         if(x ==0 && y == 0 && z == 0)
         {
             uint bx = 0;

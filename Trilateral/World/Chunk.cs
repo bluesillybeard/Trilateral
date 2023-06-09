@@ -29,29 +29,31 @@ public class Chunk
     //The chunk length is the total number of blocks in a chunk
     const uint Length = Size*Size*Size;
 
-    //when the chunk was last modified
-    DateTime lastChange;
-    public DateTime LastChange{get=>lastChange;}
     public Vector3i pos;
 
     private ushort[]? blocks;
-    List<Block?>? uidToBlock;
+    List<Block>? uidToBlock;
+    private Block fill;
     private Dictionary<string, ushort>? blockToUid;
 
-    public bool IsEmpty()
+    public bool IsFill()
     {
         if(blockToUid is null)return true;
+        if(uidToBlock is null)return true;
         if(blocks is null)return true;
-        foreach(uint block in blocks)
+        foreach(ushort block in blocks)
         {
-            if(block != 0)return false;
+            if(uidToBlock[block] != fill)
+            {
+                return false;
+            }
         }
         return true;
     }
 
     public void Optimize()
     {
-        if(this.IsEmpty())
+        if(this.IsFill())
         {
             blocks = null;
             uidToBlock = null;
@@ -62,47 +64,47 @@ public class Chunk
     {
         if(uidToBlock is null || blockToUid is null)
         {
-            uidToBlock = new List<Block?>();
-            uidToBlock.Add(null);// ID zero is always null.
+            uidToBlock = new List<Block>();
             blockToUid = new Dictionary<string, ushort>();
-            Add(block, 1);
-            return 1;
         }
         if(blockToUid.TryGetValue(block.uid, out var id))
         {
             return id;
         }
-        id = (ushort)uidToBlock.Count;
-        Add(block, id);
+        id = Add(block);
         return id;
     }
 
-    private void Add(Block block, ushort id)
+    private ushort Add(Block block)
     {
         if(uidToBlock is null || blockToUid is null)
         {
-            throw new Exception("Yo this ain't supposed to happen");
+            uidToBlock = new List<Block>();
+            blockToUid = new Dictionary<string, ushort>();
         }
+        var id = (ushort)uidToBlock.Count;
         if(blockToUid.TryAdd(block.uid, id))
         {
             uidToBlock.Add(block);
+            return id;
         }
         else 
         {
             System.Console.WriteLine("WARNING: Tried to add duplicate blockToUid mapping for block \"" + block.name + "\" in chunk " + pos);
+            return 0;
         }
     }
     //creates a new empty chunk
-    public Chunk(Vector3i pos)
+    public Chunk(Vector3i pos, Block fill)
     {
         this.blocks = null;
         uidToBlock = null;
         blockToUid = null;
-        lastChange = DateTime.Now;
         this.pos = pos;
+        this.fill = fill;
     }
 
-    private Chunk(Block?[] initBlocks, Vector3i pos)
+    private Chunk(Block[] initBlocks, Vector3i pos, Block fill)
     {
         this.pos = pos;
         if(initBlocks.Length != Length)
@@ -114,40 +116,39 @@ public class Chunk
         {
             Block? block = initBlocks[index];
             ushort id;
-            if(block is null)
-            {
-                id = 0;
-                continue;
-            }
             id = GetOrAdd(block);
             this.blocks[index] = id;
         }
-        lastChange = DateTime.Now;
+        this.fill = fill;
     }
 
-    public Chunk(Vector3i pos, Stream streamIn) : this(pos)
+    public Chunk(Vector3i pos, Stream streamIn)
     {
+        this.pos = pos;
         using GZipStream zipStream = new GZipStream(streamIn, CompressionMode.Decompress, true);
         // BinaryReader doesn't really work with GZipStream, because the BinaryReader finds the end of the stream doesn't work.
         // So, we copy the entire thing into a MemoryStream first, since it can easily check if it's at the end or not.
         using MemoryStream stream = new MemoryStream();
         zipStream.CopyTo(stream);
         stream.Seek(0, SeekOrigin.Begin);
-        //DEBUG: Write the decompressed version to a file for inspection
-        // try{
-        //     FileStream yehrs = new FileStream("yahshd" + pos.ToString(), FileMode.Create);
-        //     stream.CopyTo(yehrs);
-        //     yehrs.Dispose();
-        //     stream.Seek(0, SeekOrigin.Begin);
-        // } catch(Exception){}
-        
         BinaryReader reader = new BinaryReader(stream);
         ChunkSerializationFlag flag = (ChunkSerializationFlag)reader.ReadUInt32();
-        if(flag == ChunkSerializationFlag.empty)
+        if(flag == ChunkSerializationFlag.filled)
         {
-            blocks = null;
-            uidToBlock = null;
-            blockToUid = null;
+            //The chunk is just a singular block "mapping"
+            StringBuilder b = new StringBuilder();
+            while(reader.PeekChar() != -1)
+            {
+                var character = reader.ReadChar();
+                b.Append(character);
+            }
+            if(!Game.Program.Game.blockRegistry.TryGetValue(b.ToString(), out var block))
+            {
+                //the block ID doesn't exist, so we just use void
+                block = Game.Program.Game.voidBlock;
+                System.Console.WriteLine("WARNING: block id \'" + b.ToString() + "\' does not exist in the block registry");
+            }
+            fill = block;
             return;
         }
         //it's not empty
@@ -157,12 +158,11 @@ public class Chunk
             //Read in block data
             for(int i=0; i<Length; ++i)
             {
-                var block = reader.ReadUInt16();
+                var block = reader.ReadUInt16(); 
                 blocks[i] = block;
             }
             //read in block mappings
-            uidToBlock = new List<Block?>();
-            uidToBlock.Add(null); //0 is always null
+            uidToBlock = new List<Block>();
             blockToUid = new Dictionary<string, ushort>();
             StringBuilder b = new StringBuilder();
             while(reader.PeekChar() != -1)
@@ -172,27 +172,33 @@ public class Chunk
                 {
                     if(!Game.Program.Game.blockRegistry.TryGetValue(b.ToString(), out var block))
                     {
-                        //the block ID doesn't exist, so we just use null.
-                        block = null;
+                        //the block ID doesn't exist, so we just use void
+                        block = Game.Program.Game.voidBlock;
+                        System.Console.WriteLine("WARNING: block id \'" + b.ToString() + "\' does not exist in the block registry. Chunk " + pos);
                     }
-                    if(block is not null)Add(block, (ushort)uidToBlock.Count);
+                    Add(block);
+                    //This is mostly useless, but fill is non-nullable and i need to keep the compiler happy.
+                    fill = block;
                     b = new StringBuilder();
                     continue;
                 }
                 b.Append(character);
             }
+            if(fill is null)throw new Exception("Invalid chunk " + pos + "has no block mappings");
+            return;
         }
+        throw new Exception("Invalid chunk type " + flag + "in chunk " + pos);
     }
-    public Block? GetBlock(uint x, uint y, uint z)
+    public Block GetBlock(uint x, uint y, uint z)
     {
         uint index = y + Size*x + Size*Size*z;
         return GetBlock(index);
     }
-    private Block? GetBlock(uint index)
+    private Block GetBlock(uint index)
     {
         if(this.blocks == null || uidToBlock == null)
         {
-            return null;
+            return fill;
         }
         var uid = this.blocks[index];
         return uidToBlock[uid];
@@ -202,6 +208,7 @@ public class Chunk
         if(this.blocks is null)
         {
             this.blocks = new ushort[Length];
+            Array.Fill<ushort>(this.blocks, GetOrAdd(fill));
         }
         this.blocks[index] = GetOrAdd(block);
     }
@@ -210,34 +217,22 @@ public class Chunk
         uint index = y + Size*x + Size*Size*z;
         SetBlock(block, index);
     }
-    /**
-    <summary>
-    Notifies that this chunk has been changed.
-    It would automatically do this, but DateTime.Now
-    has a very large performance peanalty when called 
-    for every single modification, so this method
-    allows for a large set of blocks to be modified
-    without repeadetly getting the current time.
-    </summary>
-    */
-    public void UpdateLastChange()
-    {
-        lastChange = DateTime.Now;
-    }
 
     enum ChunkSerializationFlag: uint
     {
-        empty = 0, //If the chunk is entirely empty
+        filled = 0, //If the chunk is entirely one block
         version_1 = 1,
     }
     //Serialzes the chunk appending it to a stream
     public void SerializeToStream(Stream streamOut)
     {
         using GZipStream stream = new GZipStream(streamOut, CompressionMode.Compress, true);
-        //If the chunk is empty, then we simply put the empty flag and be done with it.
-        if(IsEmpty() || blocks is null || uidToBlock is null)
+        //filled chunks are basically just a single block mapping
+        if(IsFill() || blocks is null || uidToBlock is null)
         {
-            stream.Write(BitConverter.GetBytes((uint)ChunkSerializationFlag.empty));
+            stream.Write(BitConverter.GetBytes((uint)ChunkSerializationFlag.filled));
+            stream.Write(Encoding.ASCII.GetBytes(fill.uid));
+            //We don't need a terminator since GZip keeps track of where the chunk data ends for us.
             return;
         }
         //It's not empty, so we need to actually serialize it (sad)
@@ -255,7 +250,7 @@ public class Chunk
             var block = uidToBlock[i];
             string id;
             if(block is null){
-                id = "trilateral:none";
+                id = "trilateral:void";
             }
             else 
             {

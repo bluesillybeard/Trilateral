@@ -27,6 +27,7 @@ public sealed class Trilateral
     public Dictionary<string, Block> blockRegistry;
     public readonly Settings settings;
     public readonly StaticProperties properties;
+    public readonly Block voidBlock;
     DateTime start;
     DateTime time;
     IRenderTexture ascii;
@@ -100,9 +101,12 @@ public sealed class Trilateral
         }
         blockRegistry = new Dictionary<string, Block>();
         //TODO: load these from a file
+        //Yes, a void block (empty space) is literally just a glass block that doesn't get drawn.
+        voidBlock = new Block(glass, glassTexture, chunkShader, false, "void", "trilateral:void");
+        blockRegistry.Add("trilateral:void", voidBlock);
         blockRegistry.Add("trilateral:grassBlock", new Block(grass, grassTexture, chunkShader, "Grass", "trilateral:grassBlock"));
         blockRegistry.Add("trilateral:glassBlock", new Block(glass, glassTexture, chunkShader, "Glass", "trilateral:glassBlock"));
-        FastNoiseLite noise = new FastNoiseLite(1757);
+        FastNoiseLite noise = new FastNoiseLite(Random.Shared.Next());
         noise.SetNoiseType(FastNoiseLite.NoiseType.Cellular);
         noise.SetFractalType(FastNoiseLite.FractalType.FBm);
         noise.SetFrequency(0.004f);

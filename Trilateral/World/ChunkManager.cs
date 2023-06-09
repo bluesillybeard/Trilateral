@@ -249,7 +249,6 @@ public sealed class ChunkManager
         }
         //Then set the actual block itself
         chunk.SetBlock(block, MathBits.Mod(blockPos.X, Chunk.Size), MathBits.Mod(blockPos.Y, Chunk.Size), MathBits.Mod(blockPos.Z, Chunk.Size));
-        chunk.UpdateLastChange();
         lock(modifiedChunks)modifiedChunks.Add(chunk);
         renderer.NotifyChunkModified(chunk.pos);
         return true;

@@ -33,8 +33,8 @@ class ChunkDrawObjectBuilding
         for(uint x=0; x<Chunk.Size; x++){
             for(uint y=0; y<Chunk.Size; y++){
                 for(uint z=0; z<Chunk.Size; z++){
-                    Block? block = chunk.GetBlock(x, y, z);
-                    if(block is null){
+                    Block block = chunk.GetBlock(x, y, z);
+                    if(!block.draw){
                         continue;
                     }
                     int buildObjectHash = ChunkBuildObject.HashCodeOf(block.texture, block.shader);
