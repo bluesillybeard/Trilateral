@@ -28,14 +28,11 @@ public class Chunk
 
     //The chunk length is the total number of blocks in a chunk
     const uint Length = Size*Size*Size;
-
     public Vector3i pos;
-
     private ushort[]? blocks;
     List<Block>? uidToBlock;
     private Block fill;
     private Dictionary<string, ushort>? blockToUid;
-
     public bool IsFill()
     {
         if(blockToUid is null)return true;
@@ -137,16 +134,17 @@ public class Chunk
         {
             //The chunk is just a singular block "mapping"
             StringBuilder b = new StringBuilder();
-            while(reader.PeekChar() != -1)
+            while(reader.PeekChar() != -1 && reader.PeekChar() != 0)
             {
                 var character = reader.ReadChar();
                 b.Append(character);
             }
-            if(!Game.Program.Game.blockRegistry.TryGetValue(b.ToString(), out var block))
+            string blockid = b.ToString();
+            if(!Game.Program.Game.blockRegistry.TryGetValue(blockid, out var block))
             {
                 //the block ID doesn't exist, so we just use void
                 block = Game.Program.Game.voidBlock;
-                System.Console.WriteLine("WARNING: block id \'" + b.ToString() + "\' does not exist in the block registry");
+                System.Console.WriteLine("WARNING: block id \'" + blockid + "\' does not exist in the block registry");
             }
             fill = block;
             return;
@@ -232,7 +230,7 @@ public class Chunk
         {
             stream.Write(BitConverter.GetBytes((uint)ChunkSerializationFlag.filled));
             stream.Write(Encoding.ASCII.GetBytes(fill.uid));
-            //We don't need a terminator since GZip keeps track of where the chunk data ends for us.
+            stream.WriteByte((byte)0);
             return;
         }
         //It's not empty, so we need to actually serialize it (sad)
@@ -250,6 +248,7 @@ public class Chunk
             var block = uidToBlock[i];
             string id;
             if(block is null){
+                System.Console.WriteLine("WARNING: Replaced block with local id " + i + " with 'void'");
                 id = "trilateral:void";
             }
             else 

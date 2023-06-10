@@ -53,8 +53,9 @@ public sealed class ChunkSection : IDisposable
                 {
                     ChunkEntry firstEntry = entries[first];
                     ChunkEntry secondEntry = entries[second];
-                    if(firstEntry.offset < secondEntry.offset && (firstEntry.offset + firstEntry.length) > secondEntry.offset
-                    || secondEntry.offset < firstEntry.offset && (secondEntry.offset + secondEntry.length) > firstEntry.offset)
+                    if(firstEntry.offset == 0 || secondEntry.offset == 0)continue;
+                    if(firstEntry.offset <= secondEntry.offset && (firstEntry.offset + firstEntry.length) >= secondEntry.offset
+                    || secondEntry.offset <= firstEntry.offset && (secondEntry.offset + secondEntry.length) >= firstEntry.offset)
                     {
                         System.Console.Error.WriteLine("Chunk Collision in section \"" + filePath + "\"");
                         System.Console.Error.WriteLine("\tentries #" + first + " (" + firstEntry.offset + " " + firstEntry.length + ") & #" + second + " (" + secondEntry.offset + " " + secondEntry.length + ")");
@@ -79,6 +80,8 @@ public sealed class ChunkSection : IDisposable
 
     public void SaveChunk(Chunk c)
     {
+        //TODO: I'm pretty sure there's something wrong with this method
+        // But i'm not really sure what exactly
         using var _ = Profiler.Push("SaveChunkInSection");
         lock(file)
         {
@@ -136,7 +139,12 @@ public sealed class ChunkSection : IDisposable
             ChunkEntry entry = entries[index];
             if(entry.offset == 0) return null;
             file.Seek(entry.offset, SeekOrigin.Begin);
-            return new Chunk(absolutePos, file);
+            //TODO: fix the length problem in a way that doesn't involve copying it to another stream
+            // Ideally, just find a different compression format that can actually figure out where the end is.
+            byte[] chunkData = new byte[entry.length];
+            file.ReadExactly(chunkData, 0, (int)entry.length);
+            using MemoryStream chunkDataStream = new MemoryStream(chunkData);
+            return new Chunk(absolutePos, chunkDataStream);
         }
         
     }
