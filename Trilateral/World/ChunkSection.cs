@@ -139,7 +139,7 @@ public sealed class ChunkSection : IDisposable
             ChunkEntry entry = entries[index];
             if(entry.offset == 0) return null;
             file.Seek(entry.offset, SeekOrigin.Begin);
-            //TODO: fix the length problem in a way that doesn't involve copying it to another stream
+            //TODO (not important in the slightest): fix the length problem in a way that doesn't involve copying it to another stream
             // Ideally, just find a different compression format that can actually figure out where the end is.
             byte[] chunkData = new byte[entry.length];
             file.ReadExactly(chunkData, 0, (int)entry.length);
