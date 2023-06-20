@@ -106,7 +106,7 @@ public sealed class TrilateralGame
         BlockRegistry.Add("trilateral:void", VoidBlock);
         BlockRegistry.Add("trilateral:grassBlock", new Block(grass, grassTexture, chunkShader, "Grass", "trilateral:grassBlock"));
         BlockRegistry.Add("trilateral:glassBlock", new Block(glass, glassTexture, chunkShader, "Glass", "trilateral:glassBlock"));
-        currentScreen = new WorldScreen(gui, ascii, properties, settings, BlockRegistry);
+        currentScreen = new MainMenuScreen(gui, ascii);
         Start = DateTime.Now;
         time = DateTime.Now;
     }
@@ -116,7 +116,13 @@ public sealed class TrilateralGame
         if(postFrameActive)Profiler.PopRaw("PostFrame");
         Profiler.PushRaw("Update");
         time += delta;
-        currentScreen.Update(delta, gui);
+        var nextScreen = currentScreen.Update(delta, gui);
+        if(nextScreen is null)
+        {
+            //TODO: close game
+            throw new NotImplementedException("LOL i haven't programmed a way programatically to close a VRender application");
+        }
+        currentScreen = nextScreen;
         Profiler.PushRaw("GUIIterate");
         Vector2i size = VRender.Render.WindowSize();
         gui.SetSize(size.X, size.Y);

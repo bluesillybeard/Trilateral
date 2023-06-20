@@ -1,12 +1,11 @@
 //This is the screen where most of the game is played.
-
+namespace Trilateral.Game.Screen;
 using System;
 using System.Collections.Generic;
 using BasicGUI;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using Trilateral;
-using Trilateral.Game.Screen;
 using Trilateral.Utility;
 using Trilateral.World;
 using Trilateral.World.ChunkGenerators;
