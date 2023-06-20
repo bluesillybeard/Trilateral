@@ -118,9 +118,9 @@ public sealed class TrilateralGame
         time += delta;
         currentScreen.Update(delta, gui);
         Profiler.PushRaw("GUIIterate");
-        gui.Iterate();
         Vector2i size = VRender.Render.WindowSize();
         gui.SetSize(size.X, size.Y);
+        gui.Iterate();
         //We "draw" the GUI here.
         // RenderDisplay only collects the mesh when "drawing",
         // Nothing actually gets rendered until DrawToScreen is called.
@@ -158,5 +158,6 @@ public sealed class TrilateralGame
     void Dispose()
     {
         System.Console.WriteLine("average fps:" + totalFrames/((time-Start).Ticks/(double)TimeSpan.TicksPerSecond));
+        currentScreen.OnExit();
     }
 }
