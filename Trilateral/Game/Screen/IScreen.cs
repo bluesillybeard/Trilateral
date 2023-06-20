@@ -1,0 +1,2 @@
+namespace Trilateral.Game.Screen;
+

@@ -3,8 +3,6 @@ namespace Trilateral.World;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Threading.Tasks;
-using System.Threading;
-using System.IO;
 using System;
 
 using OpenTK.Mathematics;
@@ -12,7 +10,7 @@ using OpenTK.Mathematics;
 using Utility;
 using VRenderLib.Utility;
 using VRenderLib.Threading;
-using Trilateral.Game;
+using Trilateral;
 
 public sealed class ChunkManager
 {
@@ -162,7 +160,7 @@ public sealed class ChunkManager
             modifiedChunks.Clear();
         }
         Profiler.PopRaw("SaveModifiedChunks");
-        if(DateTime.Now - LastStorageFlush > Game.Program.Game.settings.chunkFlushPeriod)
+        if(DateTime.Now - LastStorageFlush > Program.Game.settings.chunkFlushPeriod)
         {
             Profiler.PushRaw("FlushStorage");
             LastStorageFlush = DateTime.Now;

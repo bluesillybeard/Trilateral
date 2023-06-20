@@ -1,7 +1,5 @@
 namespace Trilateral.World;
 
-using Trilateral.Utility;
-
 public interface IChunkGenerator
 {
 

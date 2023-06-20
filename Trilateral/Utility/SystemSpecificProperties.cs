@@ -1,4 +1,4 @@
-namespace Trilateral.OperatingSystemSpecific;
+namespace Trilateral.Utility;
 
 using System;
 

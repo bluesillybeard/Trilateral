@@ -1,12 +1,11 @@
 namespace Trilateral;
 
-using OperatingSystemSpecific;
 using System.IO;
 using System.Collections.Generic;
 using vmodel;
-using System.Reflection;
 using System;
 
+using Trilateral.Utility;
 public struct Settings
 {
     public Settings(StaticProperties properties)

@@ -1,4 +1,4 @@
-namespace Trilateral.Game;
+namespace Trilateral;
 
 using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
@@ -20,9 +20,7 @@ using World;
 using World.ChunkGenerators;
 using Utility;
 
-using OperatingSystemSpecific;
-
-public sealed class Trilateral
+public sealed class TrilateralGame
 {
     public Dictionary<string, Block> blockRegistry;
     public readonly Settings settings;
@@ -40,10 +38,11 @@ public sealed class Trilateral
     RenderDisplay renderDisplay;
     TextElement debug;
     TimeSpan frameDelta;
-    ChunkManager chunks;
+    //ChunkManager chunks;
+    GameWorld world;
     IRenderShader chunkShader;
     uint totalFrames;
-    public Trilateral(StaticProperties properties, Settings settings)
+    public TrilateralGame(StaticProperties properties, Settings settings)
     {
         start = DateTime.Now;
         time = DateTime.Now;
@@ -108,15 +107,17 @@ public sealed class Trilateral
         blockRegistry.Add("trilateral:glassBlock", new Block(glass, glassTexture, chunkShader, "Glass", "trilateral:glassBlock"));
         FastNoiseLite noise = new FastNoiseLite(Random.Shared.Next());
         noise.SetNoiseType(FastNoiseLite.NoiseType.Cellular);
-        noise.SetFractalType(FastNoiseLite.FractalType.FBm);
+        noise.SetFractalType(FastNoiseLite.FractalType.Ridged);
         noise.SetFrequency(0.004f);
         noise.SetFractalOctaves(5);
         noise.SetFractalLacunarity(2.0f);
         noise.SetFractalGain(0.5f);
-        chunks = new ChunkManager(new BasicChunkGenerator(
-            blockRegistry["trilateral:grassBlock"],
-            noise
-        ), properties.pathToConfig + "/saves/World1/", settings.renderThreadsMultiplier, settings.worldThreadsMultiplier);
+        world = new GameWorld(
+            properties.pathToConfig + "/saves/World1/",
+            new BasicChunkGenerator(
+                blockRegistry["trilateral:grassBlock"],
+                noise
+        ), settings.renderThreadsMultiplier, settings.worldThreadsMultiplier);
     }
     void Update(TimeSpan delta){
 
@@ -125,7 +126,7 @@ public sealed class Trilateral
         Profiler.PushRaw("Update");
         Profiler.PushRaw("DebugText");
         time += delta;
-        Block? b = chunks.GetBlock(MathBits.GetBlockPos(camera.Position) + MathBits.GetChunkBlockPos(playerChunk));
+        Block? b = world.chunkManager.GetBlock(MathBits.GetBlockPos(camera.Position) + MathBits.GetChunkBlockPos(playerChunk));
         string block = "none";
         if(b is not null)
         {
@@ -140,18 +141,18 @@ public sealed class Trilateral
             + "Player chunk: " + playerChunk + "\n"
             + "Camera Rotation: " + camera.Rotation + '\n'
             + "block:" + block + '\n'
-            + "existing chunks:" + chunks.NumChunks + '\n'
-            + "waiting chunks:" + chunks.renderer.WaitingChunks + '\n'
-            + "building chunks:" + chunks.renderer.BuildingChunks + '\n'
-            + "uploading chunks:" + chunks.renderer.UploadingChunks + '\n'
-            + "drawable chunks:" + chunks.renderer.DrawableChunks + '\n'
-            + "chunk section cache:" + chunks.NumChunkSections + '\n'
+            + "existing chunks:" + world.chunkManager.NumChunks + '\n'
+            + "waiting chunks:" + world.chunkManager.renderer.WaitingChunks + '\n'
+            + "building chunks:" + world.chunkManager.renderer.BuildingChunks + '\n'
+            + "uploading chunks:" + world.chunkManager.renderer.UploadingChunks + '\n'
+            + "drawable chunks:" + world.chunkManager.renderer.DrawableChunks + '\n'
+            + "chunk section cache:" + world.chunkManager.NumChunkSections + '\n'
         );
         Profiler.PopRaw("DebugText");
 
         UpdatePlayer(delta);
         Profiler.PushRaw("UpdateChunks");
-        chunks.Update(playerChunk, settings.loadDistance);
+        world.chunkManager.Update(playerChunk, settings.loadDistance);
         Profiler.PopRaw("UpdateChunks");
         Profiler.PushRaw("GUIIterate");
         gui.Iterate();
@@ -177,7 +178,7 @@ public sealed class Trilateral
         totalFrames++;
         try{
             Profiler.PushRaw("RenderChunks");
-            chunks.Draw(camera, playerChunk);
+            world.chunkManager.Draw(camera, playerChunk);
             Profiler.PopRaw("RenderChunks");
             Profiler.PushRaw("RenderGUI");
             //This renders the mesh that was collected during the update method.
@@ -202,7 +203,7 @@ public sealed class Trilateral
         //Place a block if the player preses a button
         if (keyboard.IsKeyDown(Keys.E))
         {
-            chunks.TrySetBlock(blockRegistry["trilateral:glassBlock"], MathBits.GetBlockPos(camera.Position) + MathBits.GetChunkBlockPos(playerChunk));
+            world.chunkManager.TrySetBlock(blockRegistry["trilateral:glassBlock"], MathBits.GetBlockPos(camera.Position) + MathBits.GetChunkBlockPos(playerChunk));
         }
         if (keyboard.IsKeyReleased(Keys.C))
         {
@@ -245,7 +246,7 @@ public sealed class Trilateral
 
     void Dispose()
     {
-        chunks.Dispose();
+        world.chunkManager.Dispose();
         System.Console.WriteLine("average fps:" + totalFrames/((time-start).Ticks/(double)TimeSpan.TicksPerSecond));
     }
 }

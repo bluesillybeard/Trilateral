@@ -3,7 +3,6 @@ namespace Trilateral.World;
 using OpenTK.Mathematics;
 using System.IO;
 using System;
-using System.IO.Compression;
 using System.Collections.Generic;
 using Trilateral.Utility;
 sealed class ChunkStorage

@@ -7,10 +7,9 @@ using System.Threading;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 
-using Trilateral.OperatingSystemSpecific;
-using System.Globalization;
+using Trilateral.Utility;
 
-namespace Trilateral.Game
+namespace Trilateral
 {
     public static class Program
     {
@@ -37,20 +36,20 @@ namespace Trilateral.Game
             VRenderLib.VRender.Render.Run();
             Utility.Profiler.Dispose();
         }
-        public static Trilateral Game {
+        public static TrilateralGame Game {
             get {
                 if (game is null)throw new Exception("Game was not initialized!");
                 return game;
             }
         }
-        private static Trilateral? game;
+        private static TrilateralGame? game;
         private static void Start()
         {
             if(properties is null)
             {
                 throw new Exception("bro what");
             }
-            game = new Trilateral(properties, settings);
+            game = new TrilateralGame(properties, settings);
         }
     }
 
