@@ -21,8 +21,12 @@ public sealed class WorldScreen : IScreen
     //We keep the camera position small, and use a chunk's position.
     Vector3i playerChunk;
     Camera camera;
-    public WorldScreen(BasicGUIPlane gui, IRenderTexture font, StaticProperties staticProperties, Settings settings, Dictionary<string, Block> blockRegistry)
+    public WorldScreen(BasicGUIPlane gui, string worldName)
     {
+        var font = Program.Game.MainFont;
+        var staticProperties = Program.Game.StaticProperties;
+        var settings  = Program.Game.Settings;
+        var blockRegistry =  Program.Game.BlockRegistry;
         var render = IRender.CurrentRender;
         chunkShader = render.GetShader(new ShaderFeatures(ChunkRenderer.chunkAttributes, true, true));
         var size = render.WindowSize();
@@ -36,7 +40,7 @@ public sealed class WorldScreen : IScreen
         noise.SetFractalLacunarity(2.0f);
         noise.SetFractalGain(0.5f);
         world = new GameWorld(
-            staticProperties.pathToConfig + "/saves/World1/",
+            staticProperties.pathToConfig + "/saves/" + worldName,
             new BasicChunkGenerator(
                 blockRegistry["trilateral:grassBlock"],
                 noise
