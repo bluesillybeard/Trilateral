@@ -160,7 +160,7 @@ public sealed class ChunkManager
             modifiedChunks.Clear();
         }
         Profiler.PopRaw("SaveModifiedChunks");
-        if(DateTime.Now - LastStorageFlush > Program.Game.settings.chunkFlushPeriod)
+        if(DateTime.Now - LastStorageFlush > Program.Game.Settings.chunkFlushPeriod)
         {
             Profiler.PushRaw("FlushStorage");
             LastStorageFlush = DateTime.Now;

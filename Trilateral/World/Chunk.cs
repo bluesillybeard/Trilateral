@@ -140,10 +140,10 @@ public class Chunk
                 b.Append(character);
             }
             string blockid = b.ToString();
-            if(!Program.Game.blockRegistry.TryGetValue(blockid, out var block))
+            if(!Program.Game.BlockRegistry.TryGetValue(blockid, out var block))
             {
                 //the block ID doesn't exist, so we just use void
-                block = Program.Game.voidBlock;
+                block = Program.Game.VoidBlock;
                 System.Console.WriteLine("WARNING: block id \'" + blockid + "\' does not exist in the block registry");
             }
             fill = block;
@@ -168,10 +168,10 @@ public class Chunk
                 var character = reader.ReadChar();
                 if(character == 0)
                 {
-                    if(!Program.Game.blockRegistry.TryGetValue(b.ToString(), out var block))
+                    if(!Program.Game.BlockRegistry.TryGetValue(b.ToString(), out var block))
                     {
                         //the block ID doesn't exist, so we just use void
-                        block = Program.Game.voidBlock;
+                        block = Program.Game.VoidBlock;
                         System.Console.WriteLine("WARNING: block id \'" + b.ToString() + "\' does not exist in the block registry. Chunk " + pos);
                     }
                     Add(block);

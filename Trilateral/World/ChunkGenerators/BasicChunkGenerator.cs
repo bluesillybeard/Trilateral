@@ -19,7 +19,7 @@ public class BasicChunkGenerator : IChunkGenerator
         int csy = (int) (Chunk.Size * cy);
         int csx = (int) (Chunk.Size * cx);
         int csz = (int) (Chunk.Size * cz * 0.5773502692f);
-        Chunk c = new Chunk(new OpenTK.Mathematics.Vector3i(cx, cy, cz), Program.Game.voidBlock);
+        Chunk c = new Chunk(new OpenTK.Mathematics.Vector3i(cx, cy, cz), Program.Game.VoidBlock);
         for(uint xp = 0; xp < Chunk.Size; xp++){
             for(uint zp = 0; zp < Chunk.Size; zp++){
                 float height = noise.GetNoise(csx+xp, csz+(zp*0.5773502692f));

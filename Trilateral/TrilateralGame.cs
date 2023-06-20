@@ -22,12 +22,24 @@ using Utility;
 
 public sealed class TrilateralGame
 {
-    public Dictionary<string, Block> blockRegistry;
-    public readonly Settings settings;
-    public readonly StaticProperties properties;
-    public readonly Block voidBlock;
-    DateTime start;
+    //The dictionary of every block in the game
+    public Dictionary<string, Block> BlockRegistry;
+    //The settings
+    public readonly Settings Settings;
+    //Properties that stay the same for a given installation and version of the game
+    public readonly StaticProperties StaticProperties;
+    //VoidBlock, since it's the only block that will always exist no matter what.
+    public readonly Block VoidBlock;
+    //When the game finished loading
+    public readonly DateTime Start;
     DateTime time;
+    //the current game time, according to the sum of all previous update deltas
+    public DateTime Time {get => time;}
+    uint totalFrames;
+    public uint TotalFrames {get => totalFrames;}
+    TimeSpan frameDelta;
+    //the delta time of the last frame
+    public TimeSpan FrameDelta {get => frameDelta;}
     IRenderTexture ascii;
     Random random;
     //We keep the camera position small, and use a chunk's position.
@@ -37,17 +49,13 @@ public sealed class TrilateralGame
     BasicGUIPlane gui;
     RenderDisplay renderDisplay;
     TextElement debug;
-    TimeSpan frameDelta;
     //ChunkManager chunks;
     GameWorld world;
     IRenderShader chunkShader;
-    uint totalFrames;
     public TrilateralGame(StaticProperties properties, Settings settings)
     {
-        start = DateTime.Now;
-        time = DateTime.Now;
-        this.properties = properties;
-        this.settings = settings;
+        this.StaticProperties = properties;
+        this.Settings = settings;
         var render = VRender.Render;
         var size = render.WindowSize();
         {
@@ -98,13 +106,13 @@ public sealed class TrilateralGame
             glass = glassOrNothing.Value;
             glassTexture = render.LoadTexture(glass.texture);
         }
-        blockRegistry = new Dictionary<string, Block>();
+        BlockRegistry = new Dictionary<string, Block>();
         //TODO: load these from a file
         //Yes, a void block (empty space) is literally just a glass block that doesn't get drawn.
-        voidBlock = new Block(glass, glassTexture, chunkShader, false, "void", "trilateral:void");
-        blockRegistry.Add("trilateral:void", voidBlock);
-        blockRegistry.Add("trilateral:grassBlock", new Block(grass, grassTexture, chunkShader, "Grass", "trilateral:grassBlock"));
-        blockRegistry.Add("trilateral:glassBlock", new Block(glass, glassTexture, chunkShader, "Glass", "trilateral:glassBlock"));
+        VoidBlock = new Block(glass, glassTexture, chunkShader, false, "void", "trilateral:void");
+        BlockRegistry.Add("trilateral:void", VoidBlock);
+        BlockRegistry.Add("trilateral:grassBlock", new Block(grass, grassTexture, chunkShader, "Grass", "trilateral:grassBlock"));
+        BlockRegistry.Add("trilateral:glassBlock", new Block(glass, glassTexture, chunkShader, "Glass", "trilateral:glassBlock"));
         FastNoiseLite noise = new FastNoiseLite(Random.Shared.Next());
         noise.SetNoiseType(FastNoiseLite.NoiseType.Cellular);
         noise.SetFractalType(FastNoiseLite.FractalType.Ridged);
@@ -115,9 +123,12 @@ public sealed class TrilateralGame
         world = new GameWorld(
             properties.pathToConfig + "/saves/World1/",
             new BasicChunkGenerator(
-                blockRegistry["trilateral:grassBlock"],
+                BlockRegistry["trilateral:grassBlock"],
                 noise
         ), settings.renderThreadsMultiplier, settings.worldThreadsMultiplier);
+
+        Start = DateTime.Now;
+        time = DateTime.Now;
     }
     void Update(TimeSpan delta){
 
@@ -152,7 +163,7 @@ public sealed class TrilateralGame
 
         UpdatePlayer(delta);
         Profiler.PushRaw("UpdateChunks");
-        world.chunkManager.Update(playerChunk, settings.loadDistance);
+        world.chunkManager.Update(playerChunk, Settings.loadDistance);
         Profiler.PopRaw("UpdateChunks");
         Profiler.PushRaw("GUIIterate");
         gui.Iterate();
@@ -203,7 +214,7 @@ public sealed class TrilateralGame
         //Place a block if the player preses a button
         if (keyboard.IsKeyDown(Keys.E))
         {
-            world.chunkManager.TrySetBlock(blockRegistry["trilateral:glassBlock"], MathBits.GetBlockPos(camera.Position) + MathBits.GetChunkBlockPos(playerChunk));
+            world.chunkManager.TrySetBlock(BlockRegistry["trilateral:glassBlock"], MathBits.GetBlockPos(camera.Position) + MathBits.GetChunkBlockPos(playerChunk));
         }
         if (keyboard.IsKeyReleased(Keys.C))
         {
@@ -247,6 +258,6 @@ public sealed class TrilateralGame
     void Dispose()
     {
         world.chunkManager.Dispose();
-        System.Console.WriteLine("average fps:" + totalFrames/((time-start).Ticks/(double)TimeSpan.TicksPerSecond));
+        System.Console.WriteLine("average fps:" + totalFrames/((time-Start).Ticks/(double)TimeSpan.TicksPerSecond));
     }
 }

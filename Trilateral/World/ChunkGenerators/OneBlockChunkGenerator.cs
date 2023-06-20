@@ -14,7 +14,7 @@ public class OneBlockChunkGenerator : IChunkGenerator
     }
     public Chunk GenerateChunk(int x, int y, int z)
     {
-        Chunk c = new Chunk(new OpenTK.Mathematics.Vector3i(x, y, z), Program.Game.voidBlock);
+        Chunk c = new Chunk(new OpenTK.Mathematics.Vector3i(x, y, z), Program.Game.VoidBlock);
         if(x ==0 && y == 0 && z == 0)
         {
             uint bx = 0;
