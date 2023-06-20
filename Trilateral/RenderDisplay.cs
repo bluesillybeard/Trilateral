@@ -12,6 +12,8 @@ using VRenderLib.Threading;
 
 namespace Trilateral;
 
+//TODO: rewrite this entire class because it's honestly kinda messy and is missing a ton of features
+// Preferrably rewrite it after actual font support is added
 public sealed class RenderDisplay : IDisplay
 {
 
@@ -54,7 +56,7 @@ public sealed class RenderDisplay : IDisplay
                 vec4 texColor = texture(tex, texCoordsOut);
                 //blend between the two colors
                 pixelOut = mix(texColor, fragColor, fragBlend);
-                if(pixelOut.a < 0.9)discard; //discard pixels with any level of transparency at all.
+                if(pixelOut.a < 0.9)discard; //discard transparent pixels
             }
             ",
             mesh.attributes
@@ -62,7 +64,6 @@ public sealed class RenderDisplay : IDisplay
     }
     //default font for text rendering
     public IRenderTexture defaultFont;
-
     private MeshBuilder mesh;
     private IRenderShader shader;
     private ExecutorTask<IRenderMesh>? meshTask;
@@ -71,7 +72,7 @@ public sealed class RenderDisplay : IDisplay
     {
         // Start uploading the mesh when a frame starts, so it has the entire frame to finish
         var vmesh = mesh.ToMesh();
-        meshTask = VRender.Render.SubmitToQueueHighPriority<IRenderMesh>( ()=>{
+        meshTask = VRender.Render.SubmitToQueueHighPriority<IRenderMesh>(()=>{
             Profiler.PushRaw("UploadGUIMesh");
             var mesh = VRenderLib.VRender.Render.LoadMesh(vmesh);
             Profiler.PopRaw("UploadGUIMesh");

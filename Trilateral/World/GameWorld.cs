@@ -1,6 +1,7 @@
+using System;
 using Trilateral.World;
 
-public sealed class GameWorld
+public sealed class GameWorld : IDisposable
 {
     string pathToSaveFolder;
     public readonly ChunkManager chunkManager;
@@ -11,4 +12,8 @@ public sealed class GameWorld
         this.pathToSaveFolder = pathToSaveFolder;
     }
     
+    public void Dispose()
+    {
+        chunkManager.Dispose();
+    }
 }
