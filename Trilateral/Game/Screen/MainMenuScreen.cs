@@ -14,6 +14,7 @@ public sealed class MainMenuScreen : IScreen
     TableContainer table;
     ButtonElement startGameButton;
     TextBoxElement worldName;
+    
     public MainMenuScreen(BasicGUIPlane gui, IRenderTexture font)
     {
         root = new CenterContainer(gui.GetRoot());
@@ -27,6 +28,8 @@ public sealed class MainMenuScreen : IScreen
         var textBoxBackground = new ColorRectElement(worldName, 0x666666FF, 20, 20, 0);
         textBoxBackground.MinHeight = 20;
         textBoxBackground.MinWidth = 20;
+        stack.Width = 100;
+        stack.Height = 100;
         var centerStart = new CenterContainer(stack);
         startGameButton = new ButtonElement(centerStart);
         new TextElement(startGameButton, 0xFFFFFF, 20, "START GAME", font, gui.GetDisplay(), 0);
@@ -36,7 +39,7 @@ public sealed class MainMenuScreen : IScreen
         if(startGameButton.isDown)
         {
             OnExit();
-            return new WorldScreen(gui, worldName.GetText());
+            return new MainGameScreen(gui, worldName.GetText());
         }
         return this;
     }

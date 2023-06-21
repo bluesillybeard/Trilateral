@@ -1,7 +1,10 @@
-Voxelesque NBT format specification.
+TODO: rewrite the entire library. Same format, but my interface is clunky and pretty dumb.
+
+
+Trilateral's NBT format specification.
 Apparently Minecraft is the only game that uses an NBT system? I honestly don't think Notch was the first person to think of NBT, but if he was that's quite impressive.
 
-Voxelesque's NBT system is MUCH more simple than what Minecraft has.
+Trilateral's NBT system is MUCH more simple than what Minecraft has.
 First, let's talk about how it is stored when not serialized:
 There are 9 types of NBT data:
 -Int       (a signed 32 bit integer)

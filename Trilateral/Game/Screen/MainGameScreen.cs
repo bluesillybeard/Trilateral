@@ -1,7 +1,6 @@
 //This is the screen where most of the game is played.
 namespace Trilateral.Game.Screen;
 using System;
-using System.Collections.Generic;
 using BasicGUI;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
@@ -11,17 +10,13 @@ using Trilateral.World;
 using Trilateral.World.ChunkGenerators;
 using VRenderLib;
 using VRenderLib.Interface;
-using VRenderLib.Utility;
 
-public sealed class WorldScreen : IScreen
+public sealed class MainGameScreen : IScreen
 {
     TextElement debug;
     GameWorld world;
     IRenderShader chunkShader;
-    //We keep the camera position small, and use a chunk's position.
-    Vector3i playerChunk;
-    Camera camera;
-    public WorldScreen(BasicGUIPlane gui, string worldName)
+    public MainGameScreen(BasicGUIPlane gui, string worldName)
     {
         var font = Program.Game.MainFont;
         var staticProperties = Program.Game.StaticProperties;
@@ -29,8 +24,6 @@ public sealed class WorldScreen : IScreen
         var blockRegistry =  Program.Game.BlockRegistry;
         var render = IRender.CurrentRender;
         chunkShader = render.GetShader(new ShaderFeatures(ChunkRenderer.chunkAttributes, true, true));
-        var size = render.WindowSize();
-        camera = new Camera(new Vector3(0f, 10f, 0f), Vector3.Zero, 90, size);
         debug = new TextElement(new LayoutContainer(gui.GetRoot(), VAllign.top, HAllign.left), 0xFFFFFFFF, 10, "", font, gui.GetDisplay(), 0);
         FastNoiseLite noise = new FastNoiseLite(Random.Shared.Next());
         noise.SetNoiseType(FastNoiseLite.NoiseType.Cellular);
@@ -49,7 +42,7 @@ public sealed class WorldScreen : IScreen
     public IScreen? Update(TimeSpan delta, BasicGUIPlane gui)
     {
         Profiler.PushRaw("DebugText");
-        Block? b = world.chunkManager.GetBlock(MathBits.GetBlockPos(camera.Position) + MathBits.GetChunkBlockPos(playerChunk));
+        Block? b = world.chunkManager.GetBlock(MathBits.GetBlockPos(world.camera.Position) + MathBits.GetChunkBlockPos(world.playerChunk));
         string block = "none";
         if(b is not null)
         {
@@ -60,9 +53,9 @@ public sealed class WorldScreen : IScreen
         debug.SetText(
               "FPS: " + (int)(1/(Program.Game.FrameDelta.Ticks/(double)TimeSpan.TicksPerSecond)) + '\n'
             + "UPS: " + (int)(1/(delta.Ticks/(double)TimeSpan.TicksPerSecond)) + '\n'
-            + "Player Position: " + camera.Position + '\n'
-            + "Player chunk: " + playerChunk + "\n"
-            + "Camera Rotation: " + camera.Rotation + '\n'
+            + "Player Position: " + world.camera.Position + '\n'
+            + "Player chunk: " + world.playerChunk + "\n"
+            + "Camera Rotation: " + world.camera.Rotation + '\n'
             + "block:" + block + '\n'
             + "existing chunks:" + world.chunkManager.NumChunks + '\n'
             + "waiting chunks:" + world.chunkManager.renderer.WaitingChunks + '\n'
@@ -72,11 +65,8 @@ public sealed class WorldScreen : IScreen
             + "chunk section cache:" + world.chunkManager.NumChunkSections + '\n'
         );
         Profiler.PopRaw("DebugText");
-
         UpdatePlayer(delta);
-        Profiler.PushRaw("UpdateChunks");
-        world.chunkManager.Update(playerChunk, Program.Game.Settings.loadDistance);
-        Profiler.PopRaw("UpdateChunks");
+        world.Update();
         return this;
     }
 
@@ -87,7 +77,7 @@ public sealed class WorldScreen : IScreen
         //Place a block if the player preses a button
         if (keyboard.IsKeyDown(Keys.E))
         {
-            world.chunkManager.TrySetBlock(Program.Game.BlockRegistry["trilateral:glassBlock"], MathBits.GetBlockPos(camera.Position) + MathBits.GetChunkBlockPos(playerChunk));
+            world.chunkManager.TrySetBlock(Program.Game.BlockRegistry["trilateral:glassBlock"], MathBits.GetBlockPos(world.camera.Position) + MathBits.GetChunkBlockPos(world.playerChunk));
         }
         if (keyboard.IsKeyReleased(Keys.C))
         {
@@ -113,24 +103,22 @@ public sealed class WorldScreen : IScreen
         float cameraSpeed = 1f / 6f;
         if(keyboard.IsKeyDown(Keys.LeftShift)) cameraSpeed = 5f;
         if(keyboard.IsKeyDown(Keys.LeftAlt)) cameraSpeed = 1f/15f;
-        camera.Move(cameraInc * cameraSpeed);
+        world.camera.Move(cameraInc * cameraSpeed);
         // Update camera based on mouse
         float sensitivity = 0.5f;
         if (VRender.Render.CursorLocked || mouse.IsButtonDown(MouseButton.Right)) {
-            camera.Rotation += new Vector3((mouse.Y - mouse.PreviousY) * sensitivity, (mouse.X - mouse.PreviousX) * sensitivity, 0);
+            world.camera.Rotation += new Vector3((mouse.Y - mouse.PreviousY) * sensitivity, (mouse.X - mouse.PreviousX) * sensitivity, 0);
         }
-        camera.SetAspect(VRender.Render.WindowSize());
-        Vector3i cameraChunk = MathBits.GetChunkPos(camera.Position);
+        world.camera.SetAspect(VRender.Render.WindowSize());
+        Vector3i cameraChunk = MathBits.GetChunkPos(world.camera.Position);
         Vector3 cameraChunkWorldPos = MathBits.GetChunkWorldPosUncentered(cameraChunk);
-        Vector3 residual = camera.Position - cameraChunkWorldPos;
-        camera.Position = residual;
-        playerChunk += cameraChunk;
+        Vector3 residual = world.camera.Position - cameraChunkWorldPos;
+        world.camera.Position = residual;
+        world.playerChunk += cameraChunk;
     }
     public void Draw(TimeSpan delta)
     {
-        Profiler.PushRaw("RenderChunks");
-        world.chunkManager.Draw(camera, playerChunk);
-        Profiler.PopRaw("RenderChunks");
+        world.Draw();
     }
 
     public void OnExit()

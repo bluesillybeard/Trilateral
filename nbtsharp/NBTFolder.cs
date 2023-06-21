@@ -31,13 +31,13 @@ public class NBTFolder: INBTElement{
             INBTElement el;
             switch(elementType){
                 case ENBTType.Int: {el=new NBTInt(elementData); break;}
-                //case ENBTType.IntArr: {el=new NBTIntArr(elementData); break;}
+                case ENBTType.IntArr: {el=new NBTIntArr(elementData); break;}
                 case ENBTType.UInt: {el=new NBTUInt(elementData); break;}
-                //case ENBTType.UIntArr: {el=new NBTUIntArr(elementData); break;}
+                case ENBTType.UIntArr: {el=new NBTUIntArr(elementData); break;}
                 case ENBTType.Float: {el=new NBTFloat(elementData); break;}
-                //case ENBTType.FloatArr: {el=new NBTFloatArr(elementData); break;}
+                case ENBTType.FloatArr: {el=new NBTFloatArr(elementData); break;}
                 case ENBTType.String: {el=new NBTString(elementData); break;}
-                //case ENBTType.StringArr: {el=new NBTStringArr(elementData); break;}
+                case ENBTType.StringArr: {el=new NBTStringArr(elementData); break;}
                 case ENBTType.Folder: {el=new NBTFolder(elementData); break;}
                 default: throw new NotSupportedException("found invalid NBT type " + elementType + " at offset " + index);
             }

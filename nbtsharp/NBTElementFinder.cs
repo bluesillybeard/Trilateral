@@ -25,12 +25,16 @@ public class NBTElementFinder{
 
     public override string ToString()
     {
-        return element.ToString();
+        return element.Name;
     }
 
     public override bool Equals(object obj)
     {
-        return element.Equals(obj);
+        if(obj is NBTElementFinder other)
+        {
+            return other.element.Name.Equals(element.Name);
+        }
+        return false;
     }
 
     public class NullNBTElement: INBTElement{

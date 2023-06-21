@@ -43,5 +43,7 @@ public struct Settings
     // requries restart to take effect.
     public bool VSync = false;
 
+    public float fieldOfView = 90f;
+
     public TimeSpan chunkFlushPeriod = TimeSpan.FromMinutes(1);
 }
