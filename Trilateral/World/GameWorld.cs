@@ -16,9 +16,9 @@ public sealed class GameWorld : IDisposable
     //We keep the camera position small, and use a chunk's position.
     public Vector3i playerChunk;
     public Camera camera;
-    private NBTFolder saveData;
     public GameWorld(string pathToSaveFolder, IChunkGenerator generator, float renderThreadsMultiplier, float worldThreadsMultiplier)
     {
+        NBTFolder saveData;
         if(File.Exists(pathToSaveFolder + "/save.nbt"))
         {
             saveData = new NBTFolder(File.ReadAllBytes(pathToSaveFolder + "/save.nbt"));
@@ -31,11 +31,10 @@ public sealed class GameWorld : IDisposable
         }
         chunkManager = new ChunkManager(generator, pathToSaveFolder, renderThreadsMultiplier, worldThreadsMultiplier);
         var size = VRender.Render.WindowSize();
-        // Don't worry, once I rewrite NBTSharp it won't be so clunky to use.
-        var posArr = ((NBTFloatArr)saveData.Get("pos")).ContainedArray;
-        var rotArr = ((NBTFloatArr)saveData.Get("rotation")).ContainedArray;
+        var posArr = saveData.GetOrDefault<NBTFloatArr>("pos", new NBTFloatArr("pos", new float[]{0, 0, 0})).ContainedArray;
+        var rotArr = saveData.GetOrDefault<NBTFloatArr>("rotation", new NBTFloatArr("rotation", new float[]{0, 0, 0})).ContainedArray;
         camera = new Camera(new Vector3(posArr[0], posArr[1], posArr[2]), new Vector3(rotArr[0], rotArr[1], rotArr[2]), Program.Game.Settings.fieldOfView, size);
-        var chunkArr = ((NBTIntArr)saveData.Get("chunk")).ContainedArray;
+        var chunkArr = saveData.GetOrDefault<NBTIntArr>("chunk", new NBTIntArr("chunk", new int[]{0, 2, 0})).ContainedArray;
         playerChunk = new Vector3i(chunkArr[0], chunkArr[1], chunkArr[2]);
         this.pathToSaveFolder = pathToSaveFolder;
     }
@@ -43,18 +42,10 @@ public sealed class GameWorld : IDisposable
     public void Dispose()
     {
         chunkManager.Dispose();
-        var posArr = ((NBTFloatArr)saveData.Get("pos")).ContainedArray;
-        posArr[0] = camera.Position.X;
-        posArr[1] = camera.Position.Y;
-        posArr[2] = camera.Position.Z;
-        var rotArr = ((NBTFloatArr)saveData.Get("rotation")).ContainedArray;
-        rotArr[0] = camera.Rotation.X;
-        rotArr[1] = camera.Rotation.Y;
-        rotArr[2] = camera.Rotation.Z;
-        var chunkArr = ((NBTIntArr)saveData.Get("chunk")).ContainedArray;
-        chunkArr[0] = playerChunk.X;
-        chunkArr[1] = playerChunk.Y;
-        chunkArr[2] = playerChunk.Z;
+        var pos = new NBTFloatArr("pos", new float[]{camera.Position.X, camera.Position.Y, camera.Position.Z});
+        var rotation = new NBTFloatArr("rotation", new float[]{camera.Rotation.X, camera.Rotation.Y, camera.Rotation.Z});
+        var chunk = new NBTIntArr("chunk", new int[]{playerChunk.X, playerChunk.Y, playerChunk.Z});
+        var saveData = new NBTFolder("save", new INBTElement[]{pos, chunk, rotation});
         File.WriteAllBytes(pathToSaveFolder + "/save.nbt", saveData.Serialize());
     }
 
