@@ -9,28 +9,10 @@ public interface INBTElement
 {
     ENBTType Type{get;}
 
-    string Name{get;set;}
+    string Name{get;}
     object Contained{get;}
 
     byte[] Serialize();
-
-    static string NBTNameType(ENBTType type){
-        string o;
-        switch (type)
-        {
-            case ENBTType.Int: {o="Integer";break;}
-            case ENBTType.UInt: {o="UnsignedInteger";break;}
-            case ENBTType.Float: {o="Float";break;}
-            case ENBTType.String: {o="String";break;}
-            case ENBTType.IntArr: {o="IntegerArray";break;}
-            case ENBTType.UIntArr: {o="UnsignedIntegerArray";break;}
-            case ENBTType.FloatArr: {o="FloatArray";break;}
-            case ENBTType.StringArr: {o="StringArray";break;}
-            case ENBTType.Folder: {o="Folder";break;}
-            default: { o="Unknown";break;}
-        }
-        return o;
-    }
 
     public static byte[] AddHeader(INBTElement element, byte[] valueBytes){
         int size = 4 + 1 + element.Name.Length+1 + valueBytes.Length; //4 (length) + 1(type) + name+1 (name + null) + NBT data

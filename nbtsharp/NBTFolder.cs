@@ -3,25 +3,25 @@ using System;
 using System.Text;
 using System.Collections.Generic;
 public class NBTFolder: INBTElement{
-    public NBTFolder(string name, Dictionary<NBTElementFinder, INBTElement> value){
+    public NBTFolder(string name, Dictionary<string, INBTElement> value){
         _name = name;
         _value = value;
     }
     public NBTFolder(string name, INBTElement[] value){
         _name = name;
-        _value = new Dictionary<NBTElementFinder, INBTElement>(value.Length);
+        _value = new Dictionary<string, INBTElement>(value.Length);
         foreach(INBTElement element in value){
-            _value.Add(new NBTElementFinder(element), element);
+            _value.Add(element.Name, element);
         }
     }
     public NBTFolder(byte[] serializedData) {
         if(serializedData[4] != ((byte)ENBTType.Folder))
-            throw new NotSupportedException("Cannot use data for type " + INBTElement.NBTNameType((ENBTType)serializedData[4]) + " to create type " + INBTElement.NBTNameType(ENBTType.Folder) + ".");
+            throw new NotSupportedException("Cannot use data for type " + (ENBTType)serializedData[4] + " to create type " + ENBTType.Folder + ".");
         int size = BitConverter.ToInt32(serializedData, 0);
         //check indices
         int index = Array.IndexOf<byte>(serializedData[5..size], 0);
         _name = ASCIIEncoding.ASCII.GetString(serializedData[5..(index+5)]);
-        _value = new Dictionary<NBTElementFinder, INBTElement>();
+        _value = new Dictionary<string, INBTElement>();
         index = 6+_name.Length; //index represents what byte we are on.
         while(index < size) {
             //
@@ -41,53 +41,75 @@ public class NBTFolder: INBTElement{
                 case ENBTType.Folder: {el=new NBTFolder(elementData); break;}
                 default: throw new NotSupportedException("found invalid NBT type " + elementType + " at offset " + index);
             }
-            _value.Add(new NBTElementFinder(el), el);
+            _value.Add(el.Name, el);
             index+=elementSize;
         }
     }
     public ENBTType Type => ENBTType.Folder;
 
-    public string Name{get => _name;set => _name=value;}
+    public string Name{get => _name;}
     public object Contained{get => _value;}
 
     public NBTFolder Add(INBTElement element){
-        _value.Add(new NBTElementFinder(element), element);
+        _value.Add(element.Name, element);
         return this;
     }
 
-    public INBTElement Get(string name){
-        GlobalFinder.element.Name = name;
-        INBTElement gotten = null;
-        _value.TryGetValue(GlobalFinder, out gotten);
-        return gotten;
+    public INBTElement Get(string name)
+    {
+        return _value[name];
     }
 
-    public bool Remove(string name, out INBTElement value){
-        GlobalFinder.element.Name = name;
-        return _value.Remove(GlobalFinder, out value);
+    public T Get<T>(string name)
+    where T : INBTElement
+    {
+        return (T)_value[name];
     }
 
-    public bool Remove(string name){
-        GlobalFinder.element.Name = name;
-        return _value.Remove(GlobalFinder);
+    public bool TryGet(string name, out INBTElement element)
+    {
+        return _value.TryGetValue(name, out element);
     }
-    public byte[] Serialize(){
+
+    public bool TryGet<T>(string name, out T element)
+    where T : INBTElement
+    {
+        bool got = TryGet(name, out var uncastElement);
+        if(got && uncastElement is T castElement)
+        {
+            element = castElement;
+            return true;
+        }
+        element = default(T);
+        return false;
+    }
+    public bool Remove(string name, out INBTElement value)
+    {
+        return _value.Remove(name, out value);
+    }
+
+    public bool Remove(string name)
+    {
+        return _value.Remove(name);
+    }
+    public byte[] Serialize()
+    {
         List<byte> data = new List<byte>(_value.Count * (9+5));
-        foreach(KeyValuePair<NBTElementFinder, INBTElement> element in _value){
+        foreach(KeyValuePair<string, INBTElement> element in _value){
             data.AddRange(element.Value.Serialize());
         }
         return INBTElement.AddHeader(this, data.ToArray());
     }
-    public override string ToString(){
+    public override string ToString()
+    {
         StringBuilder b = new StringBuilder();
         b.Append(_name.ToString()).Append(": {");
-        foreach (KeyValuePair<NBTElementFinder, INBTElement> element in _value){
+        foreach (KeyValuePair<string, INBTElement> element in _value){
             b.Append(element.Value.ToString()).Append(", ");
         }
         b.Append("}");
         return b.ToString();
     }
-    private Dictionary<NBTElementFinder, INBTElement> _value;
+    private Dictionary<string, INBTElement> _value;
     private string _name;
-    private static NBTElementFinder GlobalFinder = new NBTElementFinder("");
 }

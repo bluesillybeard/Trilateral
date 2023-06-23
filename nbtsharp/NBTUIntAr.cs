@@ -10,7 +10,7 @@ public class NBTUIntArr: INBTElement{
 
     public NBTUIntArr(byte[] serializedData){
         if(serializedData[4] != ((byte)ENBTType.UIntArr))
-            throw new NotSupportedException("Cannot use data for type " + INBTElement.NBTNameType((ENBTType)serializedData[4]) + " to create type " + INBTElement.NBTNameType(ENBTType.UIntArr) + ".");
+            throw new NotSupportedException("Cannot use data for type " + (ENBTType)serializedData[4] + " to create type " + ENBTType.UIntArr + ".");
         int size = BitConverter.ToInt32(serializedData, 0);
         //check indices
         int index = Array.IndexOf<byte>(serializedData[5..size], 0)+5;
@@ -21,7 +21,7 @@ public class NBTUIntArr: INBTElement{
         }
     }
 
-    public string Name{get => _name;set => _name=value;}
+    public string Name{get => _name;}
     public object Contained{get => _value;}
 
     public uint[] ContainedArray => _value;

@@ -9,7 +9,7 @@ public class NBTFloat : INBTElement{
     }
     public NBTFloat(byte[] serializedData) {
         if(serializedData[4] != ((byte)ENBTType.Float))
-            throw new NotSupportedException("Cannot use data for type " + INBTElement.NBTNameType((ENBTType)serializedData[4]) + " to create type " + INBTElement.NBTNameType(ENBTType.Float) + ".");
+            throw new NotSupportedException("Cannot use data for type " + (ENBTType)serializedData[4] + " to create type " + ENBTType.Float + ".");
         int size = BitConverter.ToInt32(serializedData, 0);//TODO: check endianess.
 
         _name = ASCIIEncoding.ASCII.GetString(serializedData[5..(size-5)]);//new string(serializedData, 5, size-10);
@@ -17,7 +17,7 @@ public class NBTFloat : INBTElement{
     }
     public ENBTType Type => ENBTType.Float;
 
-    public string Name{get => _name;set => _name=value;}
+    public string Name{get => _name;}
     public object Contained{get => _value;}
 
     public byte[] Serialize(){

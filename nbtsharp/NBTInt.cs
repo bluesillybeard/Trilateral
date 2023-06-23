@@ -9,7 +9,7 @@ public class NBTInt: INBTElement{
     }
     public NBTInt(byte[] serializedData) {
         if(serializedData[4] != ((byte)ENBTType.Int))
-            throw new NotSupportedException("Cannot use data for type " + INBTElement.NBTNameType((ENBTType)serializedData[4]) + " to create type " + INBTElement.NBTNameType(ENBTType.Int) + ".");
+            throw new NotSupportedException("Cannot use data for type " + (ENBTType)serializedData[4] + " to create type " + ENBTType.Int + ".");
         int size = BitConverter.ToInt32(serializedData, 0);
 
         _name = ASCIIEncoding.ASCII.GetString(serializedData[5..(size-5)]);
@@ -17,7 +17,7 @@ public class NBTInt: INBTElement{
     }
     public ENBTType Type => ENBTType.Int;
 
-    public string Name{get => _name;set => _name=value;}
+    public string Name{get => _name;}
     public object Contained{get => _value;}
 
     public byte[] Serialize(){
