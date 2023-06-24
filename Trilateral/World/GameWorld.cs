@@ -18,11 +18,19 @@ public sealed class GameWorld : IDisposable
     public Camera camera;
     public GameWorld(string pathToSaveFolder, IChunkGenerator generator, float renderThreadsMultiplier, float worldThreadsMultiplier)
     {
-        NBTFolder saveData;
+        NBTFolder? saveData = null;
         if(File.Exists(pathToSaveFolder + "/save.nbt"))
         {
-            saveData = new NBTFolder(File.ReadAllBytes(pathToSaveFolder + "/save.nbt"));
-        } else 
+            try{
+                saveData = new NBTFolder(File.ReadAllBytes(pathToSaveFolder + "/save.nbt"));
+            }
+            catch (Exception e)
+            {
+                System.Console.Error.WriteLine("Error loading world save: " + e.Message + "\nStakctrace" + e.StackTrace);
+            }
+            
+        }
+        if(saveData is null)
         {
             NBTFloatArr pos = new NBTFloatArr("pos", new float[]{0, 0, 0});
             NBTFloatArr rotation = new NBTFloatArr("rotation", new float[]{0, 0, 0});

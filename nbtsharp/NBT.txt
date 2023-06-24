@@ -1,8 +1,6 @@
-TODO: rewrite the entire library. Same format, but my interface is clunky and pretty dumb.
-
-
 Trilateral's NBT format specification.
-Apparently Minecraft is the only game that uses an NBT system? I honestly don't think Notch was the first person to think of NBT, but if he was that's quite impressive.
+Apparently Minecraft is the only game that uses an NBT system? I honestly don't think Notch was the first person to think of NBT, 
+but if he was that's quite impressive.
 
 Trilateral's NBT system is MUCH more simple than what Minecraft has.
 First, let's talk about how it is stored when not serialized:
@@ -16,9 +14,6 @@ There are 9 types of NBT data:
 -String    (an ASCII string)
 -StringArr (an array of ASCII strings)
 -Folder    (A list of NBT elements. Each element can be any type, including another folder. One could create a circular reference, but that wouldn't end well.)
-
-All of these inherit from the generic INBTElement interface, which contains 3 members and 2 methods.
-For full documentation and implimentation details on those members and methods, look at the INBTElement.cs file.
 
 Serialization is complicated enough that it also is inculded here:
 The serialized form of a single NBT element is like so:
@@ -36,3 +31,5 @@ For example, an NBT int with the name "anint" and value 7 would be serialized li
 Note that the length always has to be little endian, but the data contained in the elements 'payload' can be any format.
 
 This system of serialization allows an NBTFolder to haphazardly stack elements in front of each other, since it can read the length to know when a given element ends.
+
+The specifics of how each type of element is serialized would take too long to write in english, so just read the code.

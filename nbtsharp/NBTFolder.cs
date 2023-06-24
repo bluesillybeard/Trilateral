@@ -24,7 +24,6 @@ public class NBTFolder: INBTElement{
         _value = new Dictionary<string, INBTElement>();
         index = 6+_name.Length; //index represents what byte we are on.
         while(index < size) {
-            //
             int elementSize = BitConverter.ToInt32(serializedData, index);
             ENBTType elementType = (ENBTType)serializedData[index+4];
             byte[] elementData = serializedData[index..(index+elementSize)];
