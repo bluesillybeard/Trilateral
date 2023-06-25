@@ -43,13 +43,15 @@ public sealed class ChunkRenderer
 
     public void DrawChunks(Camera camera, Vector3i playerChunk)
     {
-        lock(chunkDrawObjects)
-        {
+        //seems this lock statement is unnessesary.
+        // How odd.
+        //lock(chunkDrawObjects)
+        //{
             foreach(KeyValuePair<Vector3i, ChunkDrawObject> obj in chunkDrawObjects)
             {
                 obj.Value.Draw(camera.GetTransform(), playerChunk);
             }
-        }
+        //}
     }
 
     public void NotifyChunkDeleted(Vector3i pos)
@@ -101,11 +103,7 @@ public sealed class ChunkRenderer
         }
         foreach(var pos in otherChunksToRemove)
         {
-            //Not sure why it's complaining about nullability here.
-            // just ignore it for now.
-            #nullable disable
             lock(chunksInWait)chunksInWait.Remove(pos);
-            #nullable restore
             bool removedFromBuilding = false;
             lock(chunksBeingBuilt)
             {
@@ -127,14 +125,15 @@ public sealed class ChunkRenderer
                     }
                 }
             }
-            //We only remove it in the lock statement, since we want it to be as short as possible.
             ChunkDrawObject? draw = null;
             if(!removedFromUploading)
             {
-                lock(chunkDrawObjects)
-                {
+                //Seems this lock statement is unnessesary,
+                // which is odd.
+                //lock(chunkDrawObjects)
+                //{
                     chunkDrawObjects.Remove(pos, out draw);
-                }
+                //}
             }
             if(draw is not null)draw.Dispose();
             lock(chunksInRenderer)chunksInRenderer.Remove(pos);
@@ -212,11 +211,12 @@ public sealed class ChunkRenderer
         {
             lock(chunksBeingUploaded)chunksBeingUploaded.Remove(chunk.pos);
             var draw = new ChunkDrawObject(chunk);
+            //TODO: not sure why I don't seem to need a lock statement here, figure it out.
             if(!chunkDrawObjects.TryAdd(chunk.pos, draw))
             {
                 chunkDrawObjects[chunk.pos].Dispose();
                 chunkDrawObjects[chunk.pos] = draw;
-                System.Console.WriteLine("Replaced ChunkDrawObject:" + chunk.pos);
+                //System.Console.WriteLine("Replaced ChunkDrawObject:" + chunk.pos);
             }
         }
         Profiler.PopRaw("ChunksBeingUploaded");

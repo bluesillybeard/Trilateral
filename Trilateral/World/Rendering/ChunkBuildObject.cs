@@ -6,10 +6,12 @@ using System;
 using vmodel;
 using Utility;
 using StbImageSharp;
+using System.Net.Sockets;
 
+//I honestly can't think of any other ways to optimize this code.
+// I suppose it IS a pretty complex process. I just can't think of a good way to make it simpler.
+// At the very least, it's bearably slow.
 struct ChunkBuildObject{
-
-    
     public static int HashCodeOf(IRenderTexture texture, IRenderShader shader)
     {
         int a = texture.GetHashCode();
@@ -39,6 +41,7 @@ struct ChunkBuildObject{
         var blockMesh = block.model.mesh;
         var totalAttribs = blockMesh.attributes.TotalAttributes();
         //TODO: try to convert the attributes if they don't match
+        // Although, anybody making a block mesh should use the same attributes.
         if(!blockMesh.attributes.Equals(ChunkRenderer.chunkAttributes))
         {
             System.Console.Error.WriteLine("Block mesh attributes don't match required attributes");
@@ -52,32 +55,22 @@ struct ChunkBuildObject{
         //And offset it by a certain amount, since tesselating triangles is driving me bloody insane
         //TODO: calculate this offset to greater accuruacy
         var XOffset = 0.144f*parity;
+        Span<float> transformedVertex = stackalloc float[(int)totalAttribs];
         for(uint indexIndex = 0; indexIndex < blockMesh.indices.Length; indexIndex++)
         {
             if (blockMesh.triangleToFaces is not null && (blockMesh.triangleToFaces[indexIndex / 3] & blockedFaces) != 0) {
                 continue; // Skip this index if it should be removed
             }
             uint index = blockMesh.indices[indexIndex];
-            Span<float> vertex = new Span<float>(blockMesh.vertices, (int)(index*totalAttribs), (int)totalAttribs);
+            new Span<float>(blockMesh.vertices, (int)(index*totalAttribs), (int)totalAttribs).CopyTo(transformedVertex);
             (var sina, var cosa) = MathF.SinCos(angle);
-            Vector3 pos = new Vector3(vertex[0], vertex[1], vertex[2]);
-            pos = new Vector3(
-                pos.X *  cosa + pos.Z * sina + bx * MathBits.XScale + XOffset,
-                pos.Y                        + by * 0.5f,
-                pos.X * -sina + pos.Z * cosa + bz * 0.25f
-            );
-            mesh.AddVertex(
-                //x, y, z
-                pos.X,
-                pos.Y,
-                pos.Z,
-                //We leave normals and texture coordinates as-is
-                vertex[3],
-                vertex[4],
-                vertex[5],
-                vertex[6],
-                vertex[7]
-            );
+            //Vector3 pos = new Vector3(vertex[0], vertex[1], vertex[2]);
+            //pos = new Vector3(
+            transformedVertex[0] = transformedVertex[0] *  cosa + transformedVertex[2] * sina + bx * MathBits.XScale + XOffset;
+            transformedVertex[1] = transformedVertex[1]                                       + by * 0.5f;
+            transformedVertex[2] = transformedVertex[0] * -sina + transformedVertex[2] * cosa + bz * 0.25f;
+            //);
+            mesh.AddVertex(transformedVertex);
         }
         return true;
     }

@@ -155,7 +155,7 @@ class ChunkDrawObject
         new Vector3i( 0,-1, 0),
         new Vector3i(-1, 0, 0)
     };
-    //TODO: use a switch statement instead
+    //TODO: use a switch statement instead?
     private static readonly int[] reverseAdjacency = new int[]{
         -1,//-1,-1,-1
         -1,// 0,-1,-1
