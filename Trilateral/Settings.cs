@@ -29,9 +29,14 @@ public struct Settings
     //Multiplied by the number of threads on the system to get the actual number of threads to use
     // Requires restart to take effect
     public float renderThreadsMultiplier = 0.5f;
+
+    // The maximum number of chunks that can be uploaded each frame
+    public int maxChunkUpdatesPerFrame = 100;
+
     //How far away to load chunks, in meters
     // Takes effect immediately.
-    public float loadDistance = 120f;
+    public float horizontalLoadDistance = 200;
+    public float verticalLoadDistance = 120;
 
     //The target frames per second.
     // Takes effect after restart, not because I can't make it dynamic but because i'm too lazy

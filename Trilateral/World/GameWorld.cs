@@ -61,7 +61,7 @@ public sealed class GameWorld : IDisposable
     {
         camera.Fovy = Program.Game.Settings.fieldOfView;
         Profiler.PushRaw("UpdateChunks");
-        chunkManager.Update(playerChunk, Program.Game.Settings.loadDistance);
+        chunkManager.Update(playerChunk);
         Profiler.PopRaw("UpdateChunks");
     }
 

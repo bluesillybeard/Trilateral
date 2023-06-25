@@ -172,7 +172,7 @@ public sealed class ChunkRenderer
         {
             foreach(var chunk in chunksBeingBuilt)
             {
-                if(chunksFinishedBuilding.Count > 10)
+                if(chunksFinishedBuilding.Count > Program.Game.Settings.maxChunkUpdatesPerFrame)
                 {
                     break;
                 }

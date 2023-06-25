@@ -54,24 +54,26 @@ public sealed class ChunkManager
         renderer.NotifyChunkDeleted(pos);
     }
     Task? updateAsyncTask;
-    public void Update(Vector3i playerChunk, float loadDistance)
+    public void Update(Vector3i playerChunk)
     {
         //All of the updating happens asynchronously.
         if(updateAsyncTask is null || updateAsyncTask.IsCompleted)
         {
             updateAsyncTask = Task.Run(() =>
             {
-                UpdateAsync(playerChunk, loadDistance);
+                UpdateAsync(playerChunk);
             });
         }
         renderer.Update(this);
     }
 
     private DateTime LastStorageFlush;
-    private void UpdateAsync(Vector3i playerChunk, float loadDistance)
+    private void UpdateAsync(Vector3i playerChunk)
     {
+        var horizontalLoadDistance = Program.Game.Settings.horizontalLoadDistance;
+        var verticalLoadDistance = Program.Game.Settings.verticalLoadDistance;
         using var _ = Profiler.Push("UpdateAsync");
-        float loadDistanceSquared = loadDistance*loadDistance;
+        float horizontalLoadDistanceSquared = horizontalLoadDistance*horizontalLoadDistance;
         //NOTE: this is the position of the chunk the player is in.
         // NOT the actual exact position of the player
         Vector3 playerPos = MathBits.GetChunkWorldPosUncentered(playerChunk);
@@ -80,7 +82,7 @@ public sealed class ChunkManager
         foreach(var c in chunks)
         {
             var chunkWorldPos = MathBits.GetChunkWorldPos(c.Key);
-            if(Vector3.DistanceSquared(playerPos, chunkWorldPos) > loadDistanceSquared)
+            if(((playerPos - chunkWorldPos) * new Vector3(1, horizontalLoadDistance/verticalLoadDistance, 1)).LengthSquared > horizontalLoadDistanceSquared)
             {
                 chunksToUnload.Add(c.Key);
             }
@@ -112,7 +114,7 @@ public sealed class ChunkManager
         Profiler.PushRaw("ChunkLoadList");
         //It may be called a queue, but it's actually behaves more like a sorted bag.
         PriorityQueue<Vector3i, float> chunkLoadList = new PriorityQueue<Vector3i, float>();
-        Vector3i chunkRange = MathBits.GetChunkPos(new Vector3(loadDistance, loadDistance, loadDistance));
+        Vector3i chunkRange = MathBits.GetChunkPos(new Vector3(horizontalLoadDistance, verticalLoadDistance, horizontalLoadDistance));
         for(int cx=-chunkRange.X; cx<chunkRange.X; ++cx)
         {
             for(int cy=-chunkRange.Y; cy<chunkRange.Y; ++cy)
@@ -120,9 +122,9 @@ public sealed class ChunkManager
                 for(int cz=-chunkRange.Z; cz<chunkRange.Z; ++cz)
                 {
                     var chunkPos = new Vector3i(cx, cy, cz) + playerChunk;
-                    var chunkDistanceSquared = Vector3.DistanceSquared(playerPos, MathBits.GetChunkWorldPos(chunkPos));
+                    var chunkDistanceSquared =((playerPos - MathBits.GetChunkWorldPos(chunkPos)) * new Vector3(1, horizontalLoadDistance/verticalLoadDistance, 1)).LengthSquared;
                     if(
-                    chunkDistanceSquared < loadDistanceSquared &&
+                    chunkDistanceSquared < horizontalLoadDistanceSquared &&
                     !chunksBeingLoaded.Contains(chunkPos) &&
                     !chunks.ContainsKey(chunkPos)
                     ){
