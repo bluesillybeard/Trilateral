@@ -11,6 +11,7 @@ using Utility;
 using VRenderLib.Utility;
 using VRenderLib.Threading;
 using Trilateral;
+using Trilateral.World.ChunkGenerators;
 
 public sealed class ChunkManager
 {
