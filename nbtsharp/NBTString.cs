@@ -19,6 +19,7 @@ public class NBTString: INBTElement{
 
     public string Name{get => _name;}
     public object Contained{get => _value;}
+    public string ContainedString{get => _value;}
 
     public byte[] Serialize(){
         byte[] valueBytes = ASCIIEncoding.ASCII.GetBytes(_value);

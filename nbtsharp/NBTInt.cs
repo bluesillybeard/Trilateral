@@ -19,6 +19,7 @@ public class NBTInt: INBTElement{
 
     public string Name{get => _name;}
     public object Contained{get => _value;}
+    public int ContainedInt{get => _value;}
 
     public byte[] Serialize(){
         return INBTElement.AddHeader(this, _value);

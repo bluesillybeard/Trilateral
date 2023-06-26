@@ -25,19 +25,10 @@ public sealed class MainGameScreen : IScreen
         var render = IRender.CurrentRender;
         chunkShader = render.GetShader(new ShaderFeatures(ChunkRenderer.chunkAttributes, true, true));
         debug = new TextElement(new LayoutContainer(gui.GetRoot(), VAllign.top, HAllign.left), 0xFFFFFFFF, 10, "", font, gui.GetDisplay(), 0);
-        FastNoiseLite noise = new FastNoiseLite(Random.Shared.Next());
-        noise.SetNoiseType(FastNoiseLite.NoiseType.Cellular);
-        noise.SetFractalType(FastNoiseLite.FractalType.Ridged);
-        noise.SetFrequency(0.004f);
-        noise.SetFractalOctaves(5);
-        noise.SetFractalLacunarity(2.0f);
-        noise.SetFractalGain(0.5f);
         world = new GameWorld(
             staticProperties.pathToConfig + "/saves/" + worldName,
-            new BasicChunkGenerator(
-                blockRegistry["trilateral:grassBlock"],
-                noise
-        ), settings.renderThreadsMultiplier, settings.worldThreadsMultiplier);
+            "trilateral:simple"
+        , settings.renderThreadsMultiplier, settings.worldThreadsMultiplier);
     }
     public IScreen? Update(TimeSpan delta, BasicGUIPlane gui)
     {

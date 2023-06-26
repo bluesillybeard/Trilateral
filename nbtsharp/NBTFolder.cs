@@ -105,6 +105,29 @@ public class NBTFolder: INBTElement{
         return def;
     }
 
+    public INBTElement GetOrDefault(string name, Func<INBTElement> defgen)
+    {
+        if(_value.ContainsKey(name))
+        {
+            return _value[name];
+        }
+        return defgen();
+    }
+
+    public T GetOrDefault<T>(string name, Func<T> defgen)
+    where T : INBTElement
+    {
+        if(_value.ContainsKey(name))
+        {
+            var val = _value[name];
+            if(val is T element)
+            {
+                return element;
+            }
+        }
+        return defgen();
+    }
+
     
     public bool Remove(string name, out INBTElement value)
     {

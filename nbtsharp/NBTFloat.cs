@@ -19,6 +19,7 @@ public class NBTFloat : INBTElement{
 
     public string Name{get => _name;}
     public object Contained{get => _value;}
+    public float ContainedFloat{get => _value;}
 
     public byte[] Serialize(){
         int valueBytes = BitConverter.SingleToInt32Bits(_value);

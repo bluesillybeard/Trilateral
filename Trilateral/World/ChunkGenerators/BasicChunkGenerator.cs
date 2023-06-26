@@ -2,6 +2,10 @@ namespace Trilateral.World.ChunkGenerators;
 
 using World;
 using Trilateral.Utility;
+using nbtsharp;
+using System.Collections.Generic;
+using System;
+using Microsoft.VisualBasic;
 
 public class BasicChunkGenerator : IChunkGenerator
 {
@@ -12,7 +16,67 @@ public class BasicChunkGenerator : IChunkGenerator
     {
         this.fill = fill;
         this.noise = noise;
+    }
+    public BasicChunkGenerator(NBTFolder settings)
+    {
+        //fill = settings.fill ?? trilateral:grassBlock ?? VoidBlock
+        // (Yes, it's easier to explain in pseudocode than it is in english lol)
+        Block? fillOrNone = null;
+        //Try getting fill from the settings
+        if(settings.TryGet<NBTString>("fill", out var fillElement))
+        {
+            //The settings has the fill parameter, so we use that
+            if(!Program.Game.BlockRegistry.TryGetValue(fillElement.ContainedString, out fillOrNone))
+            {
+                //TryGetValue uses a default value. Idk what the default value for Block is.
+                // So, I make sure that it's null.
+                fillOrNone = null;
+            }
+        }
+        //If getting it from the settings didn't work, try using grass block
+        if(fillOrNone is null)
+        {
+            if(!Program.Game.BlockRegistry.TryGetValue("trilateral:grassBlock", out fillOrNone))
+            {
+                fillOrNone = null;
+            }
+        }
+        //If none of the above work, as a last resort, just use void block since it's guaranteed to be registered
+        if(fillOrNone is null)
+        {
+            fillOrNone = Program.Game.VoidBlock;
+        }
+        fill = fillOrNone;
 
+        int? seedOrNone = null;
+
+        if(settings.TryGet<NBTInt>("seed", out var seedElement))
+        {
+            seedOrNone = seedElement.ContainedInt;
+        }
+        if(seedOrNone is null)
+        {
+            seedOrNone = Random.Shared.Next();
+        }
+
+        //TODO: get noise from settings
+        noise = new FastNoiseLite(seedOrNone.Value);
+        noise.SetNoiseType(FastNoiseLite.NoiseType.Cellular);
+        noise.SetFractalType(FastNoiseLite.FractalType.Ridged);
+        noise.SetFrequency(0.004f);
+        noise.SetFractalOctaves(5);
+        noise.SetFractalLacunarity(2.0f);
+        noise.SetFractalGain(0.5f);
+    }
+
+    public NBTFolder GetSettingsNBT(string folderName)
+    {
+        return new NBTFolder(folderName, 
+            new INBTElement[]{
+                new NBTString("fill", fill.uid),
+                new NBTInt("seed", noise.GetSeed())
+            }
+        );
     }
     public Chunk GenerateChunk(int cx, int cy, int cz)
     {
@@ -33,5 +97,13 @@ public class BasicChunkGenerator : IChunkGenerator
             }
         }
         return c;
+    }
+
+    public static ChunkGeneratorRegistryEntry CreateEntry()
+    {
+        return new ChunkGeneratorRegistryEntry(
+            (s)=>{return new BasicChunkGenerator(s);},
+            new (string, ENBTType)[]{("fill", ENBTType.String), ("seed", ENBTType.Int)}
+        );
     }
 }

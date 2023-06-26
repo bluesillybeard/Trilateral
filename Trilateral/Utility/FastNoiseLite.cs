@@ -162,6 +162,16 @@ public class FastNoiseLite
     public void SetSeed(int seed) { mSeed = seed; }
 
     /// <summary>
+    /// Gets seed used for all noise types
+    /// </summary>
+    /// <remarks>
+    /// Default: 1337
+    /// <br>NOTE: This method is not originally a part of FastNoiseLite!
+    /// <br>Why the original file from github doesn't have this method os beyond me.
+    /// </remarks>
+    public int GetSeed(){ return mSeed;}
+
+    /// <summary>
     /// Sets frequency for all noise types
     /// </summary>
     /// <remarks>

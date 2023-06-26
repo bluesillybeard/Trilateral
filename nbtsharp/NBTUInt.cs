@@ -20,6 +20,7 @@ public class NBTUInt: INBTElement{
 
     public string Name{get => _name;}
     public object Contained{get => _value;}
+    public uint ContainedUint{get => _value;}
 
     public byte[] Serialize(){
         return INBTElement.AddHeader(this, (int)_value);

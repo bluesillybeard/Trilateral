@@ -25,7 +25,9 @@ using Trilateral.Game.Screen;
 public sealed class TrilateralGame
 {
     //The dictionary of every block in the game
-    public Dictionary<string, Block> BlockRegistry;
+    public readonly Dictionary<string, Block> BlockRegistry;
+    //Registry of chunk generators.
+    public readonly Dictionary<string, ChunkGeneratorRegistryEntry> ChunkGenerators;
     //The settings
     public readonly Settings Settings;
     //Properties that stay the same for a given installation and version of the game
@@ -106,6 +108,12 @@ public sealed class TrilateralGame
         BlockRegistry.Add("trilateral:void", VoidBlock);
         BlockRegistry.Add("trilateral:grassBlock", new Block(grass, grassTexture, chunkShader, "Grass", "trilateral:grassBlock"));
         BlockRegistry.Add("trilateral:glassBlock", new Block(glass, glassTexture, chunkShader, "Glass", "trilateral:glassBlock"));
+
+        ChunkGenerators = new Dictionary<string, ChunkGeneratorRegistryEntry>();
+        //TODO: use Reflection to get every class that extends IChunkGenerator?
+        // Add a method to IChunkGenerator to get an instance of its registry so the reflection idea is even plausible.
+        // (It would be really cool if an interface could have an unimplemented static method that all implementing classes must implement)
+        ChunkGenerators.Add("trilateral:simple", BasicChunkGenerator.CreateEntry());
         currentScreen = new MainMenuScreen(gui, ascii);
         Start = DateTime.Now;
         time = DateTime.Now;
