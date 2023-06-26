@@ -62,13 +62,14 @@ struct ChunkBuildObject{
                 continue; // Skip this index if it should be removed
             }
             uint index = blockMesh.indices[indexIndex];
-            new Span<float>(blockMesh.vertices, (int)(index*totalAttribs), (int)totalAttribs).CopyTo(transformedVertex);
+            var vertex = new  Span<float>(blockMesh.vertices, (int)(index*totalAttribs), (int)totalAttribs);
+            vertex.CopyTo(transformedVertex);
             (var sina, var cosa) = MathF.SinCos(angle);
             //Vector3 pos = new Vector3(vertex[0], vertex[1], vertex[2]);
             //pos = new Vector3(
-            transformedVertex[0] = transformedVertex[0] *  cosa + transformedVertex[2] * sina + bx * MathBits.XScale + XOffset;
-            transformedVertex[1] = transformedVertex[1]                                       + by * 0.5f;
-            transformedVertex[2] = transformedVertex[0] * -sina + transformedVertex[2] * cosa + bz * 0.25f;
+            transformedVertex[0] = vertex[0] *  cosa + vertex[2] * sina + bx * MathBits.XScale + XOffset;
+            transformedVertex[1] = vertex[1]                                       + by * 0.5f;
+            transformedVertex[2] = vertex[0] * -sina + vertex[2] * cosa + bz * 0.25f;
             //);
             mesh.AddVertex(transformedVertex);
         }

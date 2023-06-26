@@ -17,7 +17,7 @@ public sealed class ChunkManager
 {
     private readonly ConcurrentDictionary<Vector3i, Chunk> chunks;
     public readonly ChunkRenderer renderer;
-    private readonly IChunkGenerator generator;
+    public readonly IChunkGenerator generator;
     private readonly LocalThreadPool pool;
     //TODO: Figure out the best data structure for this.
     private readonly HashSet<Vector3i> chunksBeingLoaded; 

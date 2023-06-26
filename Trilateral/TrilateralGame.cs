@@ -113,7 +113,8 @@ public sealed class TrilateralGame
         //TODO: use Reflection to get every class that extends IChunkGenerator?
         // Add a method to IChunkGenerator to get an instance of its registry so the reflection idea is even plausible.
         // (It would be really cool if an interface could have an unimplemented static method that all implementing classes must implement)
-        ChunkGenerators.Add("trilateral:simple", BasicChunkGenerator.CreateEntry());
+        var BasicChunkGeneratorEntry = BasicChunkGenerator.CreateEntry();
+        ChunkGenerators.Add(BasicChunkGeneratorEntry.id, BasicChunkGeneratorEntry);
         currentScreen = new MainMenuScreen(gui, ascii);
         Start = DateTime.Now;
         time = DateTime.Now;

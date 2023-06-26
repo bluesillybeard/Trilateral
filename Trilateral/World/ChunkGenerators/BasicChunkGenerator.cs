@@ -6,6 +6,7 @@ using nbtsharp;
 using System.Collections.Generic;
 using System;
 using Microsoft.VisualBasic;
+using System.ComponentModel.DataAnnotations;
 
 public class BasicChunkGenerator : IChunkGenerator
 {
@@ -103,7 +104,10 @@ public class BasicChunkGenerator : IChunkGenerator
     {
         return new ChunkGeneratorRegistryEntry(
             (s)=>{return new BasicChunkGenerator(s);},
-            new (string, ENBTType)[]{("fill", ENBTType.String), ("seed", ENBTType.Int)}
+            new (string, ENBTType)[]{("fill", ENBTType.String), ("seed", ENBTType.Int)},
+            id
         );
     }
+    private const string id = "trilateral:basic";
+    public string GetId() {return id;}
 }
