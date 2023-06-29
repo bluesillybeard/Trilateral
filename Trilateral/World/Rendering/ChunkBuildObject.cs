@@ -6,11 +6,12 @@ using System;
 using vmodel;
 using Utility;
 using StbImageSharp;
-using System.Net.Sockets;
 
 //I honestly can't think of any other ways to optimize this code.
 // I suppose it IS a pretty complex process. I just can't think of a good way to make it simpler.
 // At the very least, it's bearably slow.
+// TODO: a dev with lots of optimization experience, be it future me or others, make this code as fast as possible.
+// Chunk building is a pretty big bottleneck in the world loading process.
 struct ChunkBuildObject{
     public static int HashCodeOf(IRenderTexture texture, IRenderShader shader)
     {
@@ -58,20 +59,20 @@ struct ChunkBuildObject{
         Span<float> transformedVertex = stackalloc float[(int)totalAttribs];
         for(uint indexIndex = 0; indexIndex < blockMesh.indices.Length; indexIndex++)
         {
+            //using var p = Profiler.Push("vertex");
             if (blockMesh.triangleToFaces is not null && (blockMesh.triangleToFaces[indexIndex / 3] & blockedFaces) != 0) {
                 continue; // Skip this index if it should be removed
             }
             uint index = blockMesh.indices[indexIndex];
             var vertex = new  Span<float>(blockMesh.vertices, (int)(index*totalAttribs), (int)totalAttribs);
             vertex.CopyTo(transformedVertex);
+            //SinCos made zero performance difference. It may be a hot path, but it's fast enough to be negligible.
             (var sina, var cosa) = MathF.SinCos(angle);
-            //Vector3 pos = new Vector3(vertex[0], vertex[1], vertex[2]);
-            //pos = new Vector3(
             transformedVertex[0] = vertex[0] *  cosa + vertex[2] * sina + bx * MathBits.XScale + XOffset;
             transformedVertex[1] = vertex[1]                                       + by * 0.5f;
             transformedVertex[2] = vertex[0] * -sina + vertex[2] * cosa + bz * 0.25f;
-            //);
             mesh.AddVertex(transformedVertex);
+            //p.Dispose();
         }
         return true;
     }

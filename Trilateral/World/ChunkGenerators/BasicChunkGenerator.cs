@@ -3,11 +3,11 @@ namespace Trilateral.World.ChunkGenerators;
 using World;
 using Trilateral.Utility;
 using nbtsharp;
-using System.Collections.Generic;
 using System;
-using Microsoft.VisualBasic;
-using System.ComponentModel.DataAnnotations;
 
+//The "original" world generator for Voxeele-- I mean Trilateral.
+// (I'm still getting used to the fact that I renamed it lol)
+// Served me well in the beginning
 public class BasicChunkGenerator : IChunkGenerator
 {
     public Block fill;

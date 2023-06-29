@@ -71,6 +71,9 @@ public sealed class ChunkManager
     private DateTime LastStorageFlush;
     private void UpdateAsync(Vector3i playerChunk)
     {
+        // This method is too slow for my liking
+        // However, it's a asynchronous so it's not a huge priority.
+        // TODO: optmization lol.
         var horizontalLoadDistance = Program.Game.Settings.horizontalLoadDistance;
         var verticalLoadDistance = Program.Game.Settings.verticalLoadDistance;
         using var _ = Profiler.Push("UpdateAsync");
