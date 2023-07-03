@@ -67,6 +67,6 @@ public struct WorldPos
     {
         var chunkDelta = MathBits.GetChunkPos(pos.offset);
         pos.chunk += chunkDelta;
-        pos.offset = pos.offset - MathBits.GetChunkWorldPosUncentered(chunkDelta);
+        pos.offset -= MathBits.GetChunkWorldPosUncentered(chunkDelta);
     }
 }

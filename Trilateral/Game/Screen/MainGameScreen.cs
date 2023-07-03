@@ -90,7 +90,7 @@ public sealed class MainGameScreen : IScreen
             cameraInc.Y = 1;
         }
         //1 meter/second
-        float movementSpeed = 1f;
+        float movementSpeed = 0.5f;
         if(keyboard.IsKeyDown(Keys.LeftShift)) movementSpeed = 5f;
         if(keyboard.IsKeyDown(Keys.LeftAlt)) movementSpeed = 1f/10f;
         var movement = cameraInc * movementSpeed;
@@ -103,6 +103,7 @@ public sealed class MainGameScreen : IScreen
             movement3d.offset.X += MathF.Cos(world.playerRotation.Y * Camera.degToRad) * movement.X;
             movement3d.offset.Z += MathF.Sin(world.playerRotation.Y * Camera.degToRad) * movement.X;
         }
+        movement3d.offset.Y = movement.Y;
         world.playerPos += movement3d;
         // Update camera based on mouse
         float sensitivity = 0.5f;
