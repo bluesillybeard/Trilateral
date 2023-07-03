@@ -5,7 +5,6 @@ using System;
 using World;
 public static class MathBits
 {
-
     //General math functions
 
     //These modulus functions do an actual modulus instead of whatever nonsense C# has by default.
@@ -97,6 +96,7 @@ public static class MathBits
     {
         //If there is some genius out there who can make this method faster,
         // please help me! I don't know what i'm doing.
+        // TODO: optimize, theoretically rewrite so it doesn't ust this lazy method
         Vector2 wxz = worldPos.Xz;
         //Go through every possible nearby position
         var possibleX = (int)(worldPos.X/XScale);
@@ -195,5 +195,10 @@ public static class MathBits
         // So, we have to convert it into a float, divide by Chunk.Size, floor it, then cast it into an int.
         Vector3 pf = (((Vector3)chunkPos)*Chunk.Size);
         return new Vector3i((int)MathF.Floor(pf.X), (int)MathF.Floor(pf.Y), (int)MathF.Floor(pf.Z));
+    }
+
+    public static Vector3i GetWorldBlockPos(WorldPos pos)
+    {
+        return GetBlockPos(pos.offset) + GetChunkBlockPos(pos.chunk);
     }
 }

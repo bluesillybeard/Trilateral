@@ -15,9 +15,9 @@ public sealed class GameWorld : IDisposable
 {
     string pathToSaveFolder;
     public readonly ChunkManager chunkManager;
-    //We keep the camera position small, and use a chunk's position.
-    public Vector3i playerChunk;
-    public Camera camera;
+    public WorldPos playerPos;
+    private Camera camera;
+    public Vector3 playerRotation{get => camera.Rotation; set => camera.Rotation = value;}
     public GameWorld(string pathToSaveFolder, string generatorId, float renderThreadsMultiplier, float worldThreadsMultiplier)
     {
         this.pathToSaveFolder = pathToSaveFolder;
@@ -68,16 +68,17 @@ public sealed class GameWorld : IDisposable
         var size = VRender.Render.WindowSize();
         var posArr = saveData.GetOrDefault<NBTFloatArr>("pos", new NBTFloatArr("pos", new float[]{0, 0, 0})).ContainedArray;
         var rotArr = saveData.GetOrDefault<NBTFloatArr>("rotation", new NBTFloatArr("rotation", new float[]{0, 0, 0})).ContainedArray;
-        camera = new Camera(new Vector3(posArr[0], posArr[1], posArr[2]), new Vector3(rotArr[0], rotArr[1], rotArr[2]), Program.Game.Settings.fieldOfView, size);
         var chunkArr = saveData.GetOrDefault<NBTIntArr>("chunk", new NBTIntArr("chunk", new int[]{0, 2, 0})).ContainedArray;
-        playerChunk = new Vector3i(chunkArr[0], chunkArr[1], chunkArr[2]);
+        playerPos = new WorldPos(new Vector3i(chunkArr[0], chunkArr[1], chunkArr[2]), new Vector3(posArr[0], posArr[1], posArr[2]));
+        camera = new Camera(playerPos.offset, new Vector3(rotArr[0], rotArr[1], rotArr[2]), Program.Game.Settings.fieldOfView, size);
+
     }
     
     public void Dispose()
     {
-        var pos = new NBTFloatArr("pos", new float[]{camera.Position.X, camera.Position.Y, camera.Position.Z});
+        var pos = new NBTFloatArr("pos", new float[]{playerPos.offset.X, playerPos.offset.Y, playerPos.offset.Z});
         var rotation = new NBTFloatArr("rotation", new float[]{camera.Rotation.X, camera.Rotation.Y, camera.Rotation.Z});
-        var chunk = new NBTIntArr("chunk", new int[]{playerChunk.X, playerChunk.Y, playerChunk.Z});
+        var chunk = new NBTIntArr("chunk", new int[]{playerPos.chunk.X, playerPos.chunk.Y, playerPos.chunk.Z});
         var generator = new NBTString("generator", chunkManager.generator.GetId());
         var generatorSettings = chunkManager.generator.GetSettingsNBT("generatorSettings");
         var saveData = new NBTFolder("save", new INBTElement[]{pos, chunk, rotation, generator, generatorSettings});
@@ -88,15 +89,17 @@ public sealed class GameWorld : IDisposable
     public void Update()
     {
         camera.Fovy = Program.Game.Settings.fieldOfView;
+        camera.SetAspect(VRender.Render.WindowSize());
+        camera.Position = playerPos.offset;
         Profiler.PushRaw("UpdateChunks");
-        chunkManager.Update(playerChunk);
+        chunkManager.Update(playerPos.chunk);
         Profiler.PopRaw("UpdateChunks");
     }
 
     public void Draw()
     {
         Profiler.PushRaw("RenderChunks");
-        chunkManager.Draw(camera, playerChunk);
+        chunkManager.Draw(camera, playerPos.chunk);
         Profiler.PopRaw("RenderChunks");
     }
 }

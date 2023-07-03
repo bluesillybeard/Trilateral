@@ -10,6 +10,7 @@ using Trilateral.World;
 using Trilateral.World.ChunkGenerators;
 using VRenderLib;
 using VRenderLib.Interface;
+using VRenderLib.Utility;
 
 public sealed class MainGameScreen : IScreen
 {
@@ -33,7 +34,7 @@ public sealed class MainGameScreen : IScreen
     public IScreen? Update(TimeSpan delta, BasicGUIPlane gui)
     {
         Profiler.PushRaw("DebugText");
-        Block? b = world.chunkManager.GetBlock(MathBits.GetBlockPos(world.camera.Position) + MathBits.GetChunkBlockPos(world.playerChunk));
+        Block? b = world.chunkManager.GetBlock(MathBits.GetWorldBlockPos(world.playerPos));
         string block = "none";
         if(b is not null)
         {
@@ -44,9 +45,7 @@ public sealed class MainGameScreen : IScreen
         debug.SetText(
               "FPS: " + (int)(1/(Program.Game.FrameDelta.Ticks/(double)TimeSpan.TicksPerSecond)) + '\n'
             + "UPS: " + (int)(1/(delta.Ticks/(double)TimeSpan.TicksPerSecond)) + '\n'
-            + "Player Position: " + world.camera.Position + '\n'
-            + "Player chunk: " + world.playerChunk + "\n"
-            + "Camera Rotation: " + world.camera.Rotation + '\n'
+            + "Player pos: " + world.playerPos + '\n'
             + "block:" + block + '\n'
             + "existing chunks:" + world.chunkManager.NumChunks + '\n'
             + "waiting chunks:" + world.chunkManager.renderer.WaitingChunks + '\n'
@@ -68,7 +67,7 @@ public sealed class MainGameScreen : IScreen
         //Place a block if the player preses a button
         if (keyboard.IsKeyDown(Keys.E))
         {
-            world.chunkManager.TrySetBlock(Program.Game.BlockRegistry["trilateral:glassBlock"], MathBits.GetBlockPos(world.camera.Position) + MathBits.GetChunkBlockPos(world.playerChunk));
+            world.chunkManager.TrySetBlock(Program.Game.BlockRegistry["trilateral:glassBlock"], MathBits.GetWorldBlockPos(world.playerPos));
         }
         if (keyboard.IsKeyReleased(Keys.C))
         {
@@ -90,22 +89,26 @@ public sealed class MainGameScreen : IScreen
         } else if (keyboard.IsKeyDown(Keys.Space)) {
             cameraInc.Y = 1;
         }
-        // Update camera position
-        float cameraSpeed = 1f / 6f;
-        if(keyboard.IsKeyDown(Keys.LeftShift)) cameraSpeed = 5f;
-        if(keyboard.IsKeyDown(Keys.LeftAlt)) cameraSpeed = 1f/15f;
-        world.camera.Move(cameraInc * cameraSpeed);
+        //1 meter/second
+        float movementSpeed = 1f;
+        if(keyboard.IsKeyDown(Keys.LeftShift)) movementSpeed = 5f;
+        if(keyboard.IsKeyDown(Keys.LeftAlt)) movementSpeed = 1f/10f;
+        var movement = cameraInc * movementSpeed;
+        WorldPos movement3d = new WorldPos();
+        if (movement.Z != 0) {
+            movement3d.offset.X = -MathF.Sin(world.playerRotation.Y * Camera.degToRad) * movement.Z;
+            movement3d.offset.Z += MathF.Cos(world.playerRotation.Y * Camera.degToRad) * movement.Z;
+        }
+        if (movement.X != 0) {
+            movement3d.offset.X += MathF.Cos(world.playerRotation.Y * Camera.degToRad) * movement.X;
+            movement3d.offset.Z += MathF.Sin(world.playerRotation.Y * Camera.degToRad) * movement.X;
+        }
+        world.playerPos += movement3d;
         // Update camera based on mouse
         float sensitivity = 0.5f;
         if (VRender.Render.CursorLocked || mouse.IsButtonDown(MouseButton.Right)) {
-            world.camera.Rotation += new Vector3((mouse.Y - mouse.PreviousY) * sensitivity, (mouse.X - mouse.PreviousX) * sensitivity, 0);
+            world.playerRotation += new Vector3((mouse.Y - mouse.PreviousY) * sensitivity, (mouse.X - mouse.PreviousX) * sensitivity, 0);
         }
-        world.camera.SetAspect(VRender.Render.WindowSize());
-        Vector3i cameraChunk = MathBits.GetChunkPos(world.camera.Position);
-        Vector3 cameraChunkWorldPos = MathBits.GetChunkWorldPosUncentered(cameraChunk);
-        Vector3 residual = world.camera.Position - cameraChunkWorldPos;
-        world.camera.Position = residual;
-        world.playerChunk += cameraChunk;
     }
     public void Draw(TimeSpan delta)
     {
