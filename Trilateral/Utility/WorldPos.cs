@@ -2,6 +2,7 @@
 // You'll see.
 
 using OpenTK.Mathematics;
+using Trilateral.Utility;
 using Trilateral.World;
 
 public struct WorldPos
@@ -64,8 +65,8 @@ public struct WorldPos
     //TODO: dot and cross products, since WorldPos is basically just a fancy way to store a vector
     public static void RestoreNormality(ref WorldPos pos)
     {
-        var chunkDelta = (Vector3i)(pos.offset / Chunk.Size);
+        var chunkDelta = MathBits.GetChunkPos(pos.offset);
         pos.chunk += chunkDelta;
-        pos.offset = pos.offset - chunkDelta * Chunk.Size;
+        pos.offset = pos.offset - MathBits.GetChunkWorldPosUncentered(chunkDelta);
     }
 }
