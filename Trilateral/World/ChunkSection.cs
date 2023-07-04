@@ -46,6 +46,7 @@ public sealed class ChunkSection : IDisposable
                 entries[index] = entry;
             }
             //Check for any overlaps
+            #if DEBUG
             for(int first=0; first<entries.Length; first++)
             {
                 for(int second = first+1; second < entries.Length; second++)
@@ -58,10 +59,10 @@ public sealed class ChunkSection : IDisposable
                     {
                         System.Console.Error.WriteLine("Chunk Collision in section \"" + filePath + "\"");
                         System.Console.Error.WriteLine("\tentries #" + first + " (" + firstEntry.offset + " " + firstEntry.length + ") & #" + second + " (" + secondEntry.offset + " " + secondEntry.length + ")");
-                        
                     }
                 }
             }
+            #endif
         }
         else 
         {
@@ -102,23 +103,13 @@ public sealed class ChunkSection : IDisposable
                 return;
             }
             //If it doesn't fit, find a place where it does
-            Profiler.PushRaw("FindFreeZone");
             //Set the current entry as empty, so it's allowed to override the data of the entry its replacing
             ChunkEntry oldEntry = entries[index];
             entries[index] = new ChunkEntry();
             var freeChunkOffset = FindFreeZone((uint)stream.Length);
-            Profiler.PopRaw("FindFreeZone");
-            // //Write 0xFF into the previous location, so it's more clear where the unused area is.
-            // file.Seek(oldEntry.offset, SeekOrigin.Begin);
-            // for(int i=0; i<oldEntry.length; i++)
-            // {
-            //     file.WriteByte(0xFF);
-            // }
             //Thankfully, FileStream is more than happy to expand the file for us.
-            Profiler.PushRaw("WriteToFile");
             file.Seek(freeChunkOffset, SeekOrigin.Begin);
             stream.CopyTo(file);
-            Profiler.PopRaw("WriteToFile");
             entries[index].offset = freeChunkOffset;
             entries[index].length = (uint)stream.Length;
             return;

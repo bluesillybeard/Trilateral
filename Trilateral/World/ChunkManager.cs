@@ -97,9 +97,6 @@ public sealed class ChunkManager
         }
         Profiler.PopRaw("ChunkUnload");
         Profiler.PushRaw("ChunksFinishedLoading");
-        //Profiler.PushRaw("PausePool");
-        //pool.Pause();
-        //Profiler.PopRaw("PausePool");
         lock(chunksFinishedLoading)
         {
             foreach(var chunk in chunksFinishedLoading)
@@ -113,7 +110,6 @@ public sealed class ChunkManager
             renderer.NotifyChunksAdded(chunksFinishedLoading);
             chunksFinishedLoading.Clear();
         }
-        //pool.Unpause();
         Profiler.PopRaw("ChunksFinishedLoading");
         Profiler.PushRaw("ChunkLoadList");
         //It may be called a queue, but it's actually behaves more like a sorted bag.
