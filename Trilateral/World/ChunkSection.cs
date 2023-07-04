@@ -1,6 +1,7 @@
 namespace Trilateral.World;
 
 using System;
+using System.Diagnostics;
 using System.IO;
 
 using OpenTK.Mathematics;
@@ -23,7 +24,7 @@ TODO: if saving/loading chunks is too slow, look at MMFs again and see if there 
 public sealed class ChunkSection : IDisposable
 {
     public const int Size = 16;
-    public const int Length = Size*Size*Size;
+    public const int NumberOfEntries = Size*Size*Size;
 
     private string filePath;
     private ChunkEntry[] entries;
@@ -33,11 +34,11 @@ public sealed class ChunkSection : IDisposable
     {
         this.filePath = filePath;
         file = new FileStream(filePath, FileMode.OpenOrCreate);
-        entries = new ChunkEntry[Length];
-        if(file.Length >= Length * 8)
+        entries = new ChunkEntry[NumberOfEntries];
+        if(file.Length >= NumberOfEntries * 8)
         {
             BinaryReader r = new BinaryReader(file);
-            for(int index=0; index<Length; index++)
+            for(int index=0; index<NumberOfEntries; index++)
             {
                 ChunkEntry entry = new ChunkEntry();
                 entry.offset = r.ReadUInt32();
@@ -52,8 +53,8 @@ public sealed class ChunkSection : IDisposable
                     ChunkEntry firstEntry = entries[first];
                     ChunkEntry secondEntry = entries[second];
                     if(firstEntry.offset == 0 || secondEntry.offset == 0)continue;
-                    if(firstEntry.offset <= secondEntry.offset && (firstEntry.offset + firstEntry.length) >= secondEntry.offset
-                    || secondEntry.offset <= firstEntry.offset && (secondEntry.offset + secondEntry.length) >= firstEntry.offset)
+                    if(firstEntry.offset <= secondEntry.offset && (firstEntry.offset + firstEntry.length) > secondEntry.offset
+                    || secondEntry.offset <= firstEntry.offset && (secondEntry.offset + secondEntry.length) > firstEntry.offset)
                     {
                         System.Console.Error.WriteLine("Chunk Collision in section \"" + filePath + "\"");
                         System.Console.Error.WriteLine("\tentries #" + first + " (" + firstEntry.offset + " " + firstEntry.length + ") & #" + second + " (" + secondEntry.offset + " " + secondEntry.length + ")");
@@ -65,7 +66,7 @@ public sealed class ChunkSection : IDisposable
         else 
         {
             BinaryWriter w = new BinaryWriter(file);
-            for(int index=0; index<Length; index++)
+            for(int index=0; index<NumberOfEntries; index++)
             {
                 ChunkEntry entry = new ChunkEntry();
                 entry.offset = 0;
@@ -78,20 +79,18 @@ public sealed class ChunkSection : IDisposable
 
     public void SaveChunk(Chunk c)
     {
-        //TODO: I'm pretty sure there's something wrong with this method
-        // But i'm not really sure what exactly
         using var _ = Profiler.Push("SaveChunkInSection");
         lock(file)
         {
             Vector3i pos = MathBits.Mod(c.pos, Size);
             int index = GetIndex(pos);
             //Serialize the chunk into RAM
-            MemoryStream stream = new MemoryStream();
+            MemoryStream stream = new MemoryStream(1024);
             Profiler.PushRaw("Serialize");
             c.SerializeToStream(stream);
-            //See if it will fit where the chunk already is
             stream.Seek(0, SeekOrigin.Begin);
             Profiler.PopRaw("Serialize");
+            //See if it will fit where the chunk already is
             if(entries[index].length >= stream.Length)
             {
                 Profiler.PushRaw("WriteToFile");
@@ -109,15 +108,15 @@ public sealed class ChunkSection : IDisposable
             entries[index] = new ChunkEntry();
             var freeChunkOffset = FindFreeZone((uint)stream.Length);
             Profiler.PopRaw("FindFreeZone");
-            //Write 0xFF into the previous location, so it's more clear where the unused area is.
-            file.Seek(oldEntry.offset, SeekOrigin.Begin);
-            for(int i=0; i<oldEntry.length; i++)
-            {
-                file.WriteByte(0xFF);
-            }
-            file.Seek(freeChunkOffset, SeekOrigin.Begin);
+            // //Write 0xFF into the previous location, so it's more clear where the unused area is.
+            // file.Seek(oldEntry.offset, SeekOrigin.Begin);
+            // for(int i=0; i<oldEntry.length; i++)
+            // {
+            //     file.WriteByte(0xFF);
+            // }
             //Thankfully, FileStream is more than happy to expand the file for us.
             Profiler.PushRaw("WriteToFile");
+            file.Seek(freeChunkOffset, SeekOrigin.Begin);
             stream.CopyTo(file);
             Profiler.PopRaw("WriteToFile");
             entries[index].offset = freeChunkOffset;
@@ -153,7 +152,7 @@ public sealed class ChunkSection : IDisposable
         {
             file.Seek(0, SeekOrigin.Begin);
             BinaryWriter w = new BinaryWriter(file);
-            for(int index=0; index<Length; index++)
+            for(int index=0; index<NumberOfEntries; index++)
             {
                 ChunkEntry entry = entries[index];
                 w.Write(entry.offset);
@@ -175,29 +174,47 @@ public sealed class ChunkSection : IDisposable
 
     private uint FindFreeZone(uint length)
     {
-        uint gapLength = 0;
-        for(uint offset = Length * 8; ; offset++)
+        //sort entries by their offset
+        Span<ChunkEntry> sortedEntries = stackalloc ChunkEntry[NumberOfEntries];
+        ((Span<ChunkEntry>)entries).CopyTo(sortedEntries);
+        sortedEntries.Sort((x, y) => {return (int)x.offset - (int)y.offset;});
+        //skip past all of the entries that aren't allocated
+        int i=0;
+        while(i<sortedEntries.Length && sortedEntries[i].offset == 0)
         {
-            if(gapLength >= length)
-            {
-                return offset - gapLength;
-            }
-            gapLength++;
-            int occupierIndex = GetOccupierIndex(offset);
-            if(occupierIndex != -1)
-            {
-                gapLength = 0;
-                //Skip to the end of the section
-                var entry = entries[occupierIndex];
-                offset += entry.length-1;
-            }
+            i++;
         }
-        throw new Exception("could not find a free zone. Should never happen under any circumstance!");
+        sortedEntries = sortedEntries.Slice(i);
+        if(sortedEntries.Length == 0)
+        {
+            //All of the entries are empty, so just return the start of the file's data area.
+            // I suppose it could be called the heap (of the file)
+            return NumberOfEntries*sizeof(uint)*2;
+        }
+        //Now find an empty spot, if there is one.
+        i=1;
+        while(i<sortedEntries.Length)
+        {
+            //calculate the gap between index i and index i-1
+            uint gapStart = sortedEntries[i-1].offset+sortedEntries[i-1].length;
+            uint gapEnd = sortedEntries[i].offset;
+            if(gapStart > gapEnd)
+            {
+                //This shouldn't happen
+                System.Console.Error.WriteLine("Invalid chunk section \"" + filePath + "\" : Entries overlap");
+                continue;
+            }
+            uint gap = gapEnd - gapStart;
+            if(gap >= length)return gapStart;
+            i++;
+        }
+        //If there were no gaps big enough, then we just return the end of the file, since the file stream will automatically expand it
+        return sortedEntries[sortedEntries.Length-1].offset + sortedEntries[sortedEntries.Length-1].length;
     }
 
     private int GetOccupierIndex(uint offset)
     {
-        for(int index = 0; index < Length; index++)
+        for(int index = 0; index < NumberOfEntries; index++)
         {
             var e = entries[index];
             if(e.offset <= offset && (e.offset + e.length) >= offset) return index;
