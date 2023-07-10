@@ -81,7 +81,9 @@ public sealed class ChunkSection : IDisposable
     public void SaveChunk(Chunk c)
     {
         using var _ = Profiler.Push("SaveChunkInSection");
-        lock(file)
+        //To avoid saving the same chunk multiple times at the same time.
+        // It shouldn't happen, but in case it does I don't want weird stuff happening
+        lock(c)
         {
             Vector3i pos = MathBits.Mod(c.pos, Size);
             int index = GetIndex(pos);
@@ -92,26 +94,38 @@ public sealed class ChunkSection : IDisposable
             stream.Seek(0, SeekOrigin.Begin);
             Profiler.PopRaw("Serialize");
             //See if it will fit where the chunk already is
-            if(entries[index].length >= stream.Length)
+            bool fits;
+            lock(entries)fits = entries[index].length >= stream.Length;
+            if(fits)
             {
+                lock(entries)entries[index].length = (uint)stream.Length;
                 Profiler.PushRaw("WriteToFile");
-                //if it fits, write it.
-                file.Seek(entries[index].offset, SeekOrigin.Begin);
-                stream.CopyTo(file);
-                entries[index].length = (uint)stream.Length;
+                lock(file)
+                {
+                    //if it fits, write it.
+                    file.Seek(entries[index].offset, SeekOrigin.Begin);
+                    stream.CopyTo(file);
+                }
                 Profiler.PopRaw("WriteToFile");
                 return;
             }
             //If it doesn't fit, find a place where it does
             //Set the current entry as empty, so it's allowed to override the data of the entry its replacing
-            ChunkEntry oldEntry = entries[index];
-            entries[index] = new ChunkEntry();
-            var freeChunkOffset = FindFreeZone((uint)stream.Length);
+            uint freeChunkOffset;
+            lock(entries)
+            {
+                freeChunkOffset = FindFreeZone((uint)stream.Length);
+                entries[index].offset = freeChunkOffset;
+                entries[index].length = (uint)stream.Length;
+            }
             //Thankfully, FileStream is more than happy to expand the file for us.
-            file.Seek(freeChunkOffset, SeekOrigin.Begin);
-            stream.CopyTo(file);
-            entries[index].offset = freeChunkOffset;
-            entries[index].length = (uint)stream.Length;
+            Profiler.PushRaw("WriteToFile");
+            lock(file)
+            {
+                file.Seek(freeChunkOffset, SeekOrigin.Begin);
+                stream.CopyTo(file);
+            }
+            Profiler.PopRaw("WriteToFile");
             return;
         }
     }
@@ -119,22 +133,19 @@ public sealed class ChunkSection : IDisposable
     public Chunk? LoadChunk(Vector3i absolutePos)
     {
         using var _ = Profiler.Push("LoadChunkInSection");
+        Vector3i pos = MathBits.Mod(absolutePos, Size);
+        int index = GetIndex(pos);
+        //If the entry is null, there is no chunk to load
+        ChunkEntry entry = entries[index];
+        if(entry.offset == 0) return null;
+        byte[] chunkData = new byte[entry.length];
         lock(file)
         {
-            Vector3i pos = MathBits.Mod(absolutePos, Size);
-            int index = GetIndex(pos);
-            //If the entry is null, there is no chunk to load
-            ChunkEntry entry = entries[index];
-            if(entry.offset == 0) return null;
             file.Seek(entry.offset, SeekOrigin.Begin);
-            //TODO (not important in the slightest): fix the length problem in a way that doesn't involve copying it to another stream
-            // Ideally, just find a different compression format that can actually figure out where the end is.
-            byte[] chunkData = new byte[entry.length];
             file.ReadExactly(chunkData, 0, (int)entry.length);
-            using MemoryStream chunkDataStream = new MemoryStream(chunkData);
-            return new Chunk(absolutePos, chunkDataStream);
         }
-        
+        using MemoryStream chunkDataStream = new MemoryStream(chunkData);
+        return new Chunk(absolutePos, chunkDataStream);
     }
 
     public void Dispose()
@@ -150,8 +161,8 @@ public sealed class ChunkSection : IDisposable
                 w.Write(entry.length);
             }
             w.Dispose();
+            file.Dispose();
         }
-        file.Dispose();
     }
 
     private int GetIndex(int x, int y, int z)

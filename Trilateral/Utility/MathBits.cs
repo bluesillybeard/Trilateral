@@ -87,6 +87,20 @@ public static class MathBits
             chunkPos.Z*(Chunk.Size*0.25f)
         );
     }
+
+    /**
+    <summary>
+    gets the world pos of the center of a chunk.
+    </summary>
+    */
+    public static Vector3 GetChunkWorldPosUncentered(int cx, int cy, int cz)
+    {
+        return new Vector3(
+            cx*(Chunk.Size*XScale),
+            cy*(Chunk.Size*0.5f),
+            cz*(Chunk.Size*0.25f)
+        );
+    }
     /**
     <summary>
     gets the block position given a world position.
@@ -136,20 +150,7 @@ public static class MathBits
     */
     public static Vector3 GetBlockWorldPos(Vector3i blockPos)
     {
-        //I'm sincerely sorry, I don't kbow how to explain what this is doing exactly.
-        // All you need to know is that it accounts for the tesselation of triangles.
-        var parity = ((blockPos.X+blockPos.Z) & 1) == 1;
-        var XOffset = -0.072f;
-        if(parity)
-        {
-            //TODO: calculate this offset to greater accuruacy
-            XOffset = 0.072f;
-        }
-        return new Vector3(
-            blockPos.X * MathBits.XScale + XOffset,
-            blockPos.Y * 0.5f,
-            blockPos.Z * 0.25f
-        );
+        return GetBlockWorldPos(blockPos.X, blockPos.Y, blockPos.Z);
     }
 
     public static Vector3 GetBlockWorldPos(int bx, int by, int bz)
@@ -157,11 +158,11 @@ public static class MathBits
         //I'm sincerely sorry, I don't kbow how to explain what this is doing exactly.
         // All you need to know is that it accounts for the tesselation of triangles.
         var parity = ((bx+bz) & 1) == 1;
-        var XOffset = 0f;
+        var XOffset = -0.072f;
         if(parity)
         {
             //TODO: calculate this offset to greater accuruacy
-            XOffset = 0.144f;
+            XOffset = 0.072f;
         }
         return new Vector3(
             bx * XScale + XOffset,

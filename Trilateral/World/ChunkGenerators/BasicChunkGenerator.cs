@@ -62,10 +62,10 @@ public class BasicChunkGenerator : IChunkGenerator
 
         //TODO: get noise from settings
         noise = new FastNoiseLite(seedOrNone.Value);
-        noise.SetNoiseType(FastNoiseLite.NoiseType.Cellular);
-        noise.SetFractalType(FastNoiseLite.FractalType.Ridged);
-        noise.SetFrequency(0.004f);
-        noise.SetFractalOctaves(5);
+        noise.SetNoiseType(FastNoiseLite.NoiseType.Perlin);
+        noise.SetFractalType(FastNoiseLite.FractalType.FBm);
+        noise.SetFrequency(0.01f);
+        noise.SetFractalOctaves(7);
         noise.SetFractalLacunarity(2.0f);
         noise.SetFractalGain(0.5f);
     }
@@ -81,17 +81,17 @@ public class BasicChunkGenerator : IChunkGenerator
     }
     public Chunk GenerateChunk(int cx, int cy, int cz)
     {
-        int csy = (int) (Chunk.Size * cy);
-        int csx = (int) (Chunk.Size * cx);
-        int csz = (int) (Chunk.Size * cz * 0.5773502692f);
+        var chunkWorldPos = MathBits.GetChunkWorldPosUncentered(cx, cy, cz);
         Chunk c = new Chunk(new OpenTK.Mathematics.Vector3i(cx, cy, cz), Program.Game.VoidBlock);
         for(uint xp = 0; xp < Chunk.Size; xp++){
             for(uint zp = 0; zp < Chunk.Size; zp++){
-                float height = noise.GetNoise(csx+xp, csz+(zp*0.5773502692f));
-                height = height*height*40;
+                var worldPos = MathBits.GetBlockWorldPos((int)xp, 0, (int)zp) + chunkWorldPos;
+                float height = noise.GetNoise(worldPos.X, worldPos.Z);
+                height = height*height*100;
                 //squaring it makes it better by making lower terrain flatter, and higher terrain more varied and mountain-like
                 for(uint yp = 0; yp < Chunk.Size; yp++){
-                    if(csy+yp < height) {
+                    worldPos = MathBits.GetBlockWorldPos((int)xp, (int)yp, (int)zp) + chunkWorldPos;
+                    if(worldPos.Y < height) {
                         c.SetBlock(fill, xp, yp, zp);
                     }
                 }
