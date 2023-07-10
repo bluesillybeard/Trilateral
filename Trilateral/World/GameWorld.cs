@@ -88,12 +88,12 @@ public sealed class GameWorld : IDisposable
 
     public void Update()
     {
+        Profiler.PushRaw("Update");
         camera.Fovy = Program.Game.Settings.fieldOfView;
         camera.SetAspect(VRender.Render.WindowSize());
         camera.Position = playerPos.offset;
-        Profiler.PushRaw("UpdateChunks");
         chunkManager.Update(playerPos.chunk);
-        Profiler.PopRaw("UpdateChunks");
+        Profiler.PopRaw("Update");
     }
 
     public void Draw()

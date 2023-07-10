@@ -24,10 +24,12 @@ public sealed class ChunkRenderer
     private List<Vector3i> newOrModifiedChunks;
     private List<Vector3i> chunksToRemove; //chunks that are waiting to be removed
     private List<Vector3i> otherChunksToRemove; //this swaps with chunksToRemove so that other threads can add chunks to remove without waiting for the other to be iterated.
-    private HashSet<Vector3i> chunksInRenderer; //Set of chunks that have been added but not removed.
+    
     //this is required for two reasons:
     // 1: makes looking up of a chunk is somewhere faster
     // 2: Sometimes chunks are culled (chunks that have no renderable mesh), so they aren't in the renderer but they are still accounted for.
+    private HashSet<Vector3i> chunksInRenderer; //Set of chunks that have been added but not removed.
+
     public ChunkRenderer(float renderThreadsMultiplier)
     {
         chunkDrawObjects = new Dictionary<Vector3i, ChunkDrawObject>();
@@ -43,15 +45,10 @@ public sealed class ChunkRenderer
 
     public void DrawChunks(Camera camera, Vector3i playerChunk)
     {
-        //seems this lock statement is unnessesary.
-        // How odd.
-        //lock(chunkDrawObjects)
-        //{
-            foreach(KeyValuePair<Vector3i, ChunkDrawObject> obj in chunkDrawObjects)
-            {
-                obj.Value.Draw(camera.GetTransform(), playerChunk);
-            }
-        //}
+        foreach(KeyValuePair<Vector3i, ChunkDrawObject> obj in chunkDrawObjects)
+        {
+            obj.Value.Draw(camera.GetTransform(), playerChunk);
+        }
     }
 
     public void NotifyChunkDeleted(Vector3i pos)
@@ -128,12 +125,7 @@ public sealed class ChunkRenderer
             ChunkDrawObject? draw = null;
             if(!removedFromUploading)
             {
-                //Seems this lock statement is unnessesary,
-                // which is odd.
-                //lock(chunkDrawObjects)
-                //{
-                    chunkDrawObjects.Remove(pos, out draw);
-                //}
+                chunkDrawObjects.Remove(pos, out draw);
             }
             if(draw is not null)draw.Dispose();
             lock(chunksInRenderer)chunksInRenderer.Remove(pos);
@@ -211,12 +203,10 @@ public sealed class ChunkRenderer
         {
             lock(chunksBeingUploaded)chunksBeingUploaded.Remove(chunk.pos);
             var draw = new ChunkDrawObject(chunk);
-            //TODO: not sure why I don't seem to need a lock statement here, figure it out.
             if(!chunkDrawObjects.TryAdd(chunk.pos, draw))
             {
                 chunkDrawObjects[chunk.pos].Dispose();
                 chunkDrawObjects[chunk.pos] = draw;
-                //System.Console.WriteLine("Replaced ChunkDrawObject:" + chunk.pos);
             }
         }
         Profiler.PopRaw("ChunksBeingUploaded");

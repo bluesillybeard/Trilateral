@@ -15,7 +15,7 @@ using Trilateral.World.ChunkGenerators;
 
 public sealed class ChunkManager
 {
-    private readonly ConcurrentDictionary<Vector3i, Chunk> chunks;
+    private readonly Dictionary<Vector3i, Chunk> chunks;
     public readonly ChunkRenderer renderer;
     public readonly IChunkGenerator generator;
     private readonly LocalThreadPool pool;
@@ -28,7 +28,7 @@ public sealed class ChunkManager
     public ChunkManager(IChunkGenerator generator, string pathToSaveFolder, float renderThreadsMultiplier, float worldThreadsMultiplier)
     {
         this.generator = generator;
-        chunks = new ConcurrentDictionary<Vector3i, Chunk>();//new Dictionary<Vector3i, Chunk>();
+        chunks = new Dictionary<Vector3i, Chunk>();
         renderer = new ChunkRenderer(renderThreadsMultiplier);
         pool = new LocalThreadPool(int.Max(1, (int)(Environment.ProcessorCount*worldThreadsMultiplier)));
         chunksBeingLoaded = new HashSet<Vector3i>();
@@ -51,61 +51,61 @@ public sealed class ChunkManager
     }
     private void UnloadChunk(Vector3i pos)
     {
-        this.chunks.Remove(pos, out var _);
+        lock(this.chunks)this.chunks.Remove(pos, out var _);
         renderer.NotifyChunkDeleted(pos);
     }
-    Task? updateAsyncTask;
     public void Update(Vector3i playerChunk)
     {
-        //All of the updating happens asynchronously.
-        if(updateAsyncTask is null || updateAsyncTask.IsCompleted)
-        {
-            updateAsyncTask = Task.Run(() =>
-            {
-                UpdateAsync(playerChunk);
-            });
-        }
+        UpdateChunks(playerChunk);
         renderer.Update(this);
     }
 
     private DateTime LastStorageFlush;
-    private void UpdateAsync(Vector3i playerChunk)
+    private void UpdateChunks(Vector3i playerChunk)
     {
-        // This method is too slow for my liking
-        // However, it's a asynchronous so it's not a huge priority.
-        // TODO: optmization lol.
         var horizontalLoadDistance = Program.Game.Settings.horizontalLoadDistance;
         var verticalLoadDistance = Program.Game.Settings.verticalLoadDistance;
-        using var _ = Profiler.Push("UpdateAsync");
+        using var _ = Profiler.Push("UpdateChunks");
         float horizontalLoadDistanceSquared = horizontalLoadDistance*horizontalLoadDistance;
         //NOTE: this is the position of the chunk the player is in.
         // NOT the actual exact position of the player
         Vector3 playerPos = MathBits.GetChunkWorldPosUncentered(playerChunk);
-        Profiler.PushRaw("ChunkUnload");
+        Profiler.PushRaw("ChunkToUnload");
         List<Vector3i> chunksToUnload = new List<Vector3i>();
-        foreach(var c in chunks)
+        var chunkDistanceFactor = new Vector3(1, horizontalLoadDistance/verticalLoadDistance, 1);
+        lock(chunks)
         {
-            var chunkWorldPos = MathBits.GetChunkWorldPos(c.Key);
-            if(((playerPos - chunkWorldPos) * new Vector3(1, horizontalLoadDistance/verticalLoadDistance, 1)).LengthSquared > horizontalLoadDistanceSquared)
+            foreach(var c in chunks)
             {
-                chunksToUnload.Add(c.Key);
+                var chunkWorldPos = MathBits.GetChunkWorldPos(c.Key);
+                if(((playerPos - chunkWorldPos) * chunkDistanceFactor).LengthSquared > horizontalLoadDistanceSquared)
+                {
+                    chunksToUnload.Add(c.Key);
+                }
             }
         }
+
+        Profiler.PopRaw("ChunkToUnload");
+        Profiler.PushRaw("UnloadChunks");
         foreach(var c in chunksToUnload)
         {
             UnloadChunk(c);
         }
-        Profiler.PopRaw("ChunkUnload");
+        Profiler.PopRaw("UnloadChunks");
         Profiler.PushRaw("ChunksFinishedLoading");
         lock(chunksFinishedLoading)
         {
             foreach(var chunk in chunksFinishedLoading)
             {
                 chunksBeingLoaded.Remove(chunk.pos);
-                if(!chunks.TryAdd(chunk.pos, chunk)){
-                    System.Console.Error.WriteLine("Failed to add chunk " + chunk.pos);
-                    continue;
+                lock(chunks)
+                {
+                    if(!chunks.TryAdd(chunk.pos, chunk)){
+                        System.Console.Error.WriteLine("Failed to add chunk " + chunk.pos);
+                        continue;
+                    }
                 }
+
             }
             renderer.NotifyChunksAdded(chunksFinishedLoading);
             chunksFinishedLoading.Clear();
@@ -122,11 +122,12 @@ public sealed class ChunkManager
                 for(int cz=-chunkRange.Z; cz<chunkRange.Z; ++cz)
                 {
                     var chunkPos = new Vector3i(cx, cy, cz) + playerChunk;
-                    var chunkDistanceSquared =((playerPos - MathBits.GetChunkWorldPos(chunkPos)) * new Vector3(1, horizontalLoadDistance/verticalLoadDistance, 1)).LengthSquared;
+                    var chunkDistanceSquared =((playerPos - MathBits.GetChunkWorldPos(chunkPos)) * chunkDistanceFactor).LengthSquared;
+                    
                     if(
-                    chunkDistanceSquared < horizontalLoadDistanceSquared &&
-                    !chunksBeingLoaded.Contains(chunkPos) &&
-                    !chunks.ContainsKey(chunkPos)
+                        chunkDistanceSquared < horizontalLoadDistanceSquared &&
+                        !chunksBeingLoaded.Contains(chunkPos) &&
+                        !chunks.ContainsKey(chunkPos)
                     ){
                         chunkLoadList.Enqueue(chunkPos, chunkDistanceSquared);
                     }
@@ -175,20 +176,25 @@ public sealed class ChunkManager
     {
         renderer.DrawChunks(cam, playerChunk);
     }
-    public IReadOnlyDictionary<Vector3i, Chunk> Chunks{get => chunks;}
     public int NumChunks {get => chunks.Count;}
     public int NumChunkSections {get => storage.NumberOfCachedSections;}
     public Chunk? GetChunk(Vector3i position)
     {
-        if(chunks.TryGetValue(position, out var c)){
-            return c;
+        lock(chunks)
+        {
+            if(chunks.TryGetValue(position, out var c)){
+                return c;
+            }
         }
         return null;
     }
     public Chunk? GetChunk(int x, int y, int z)
     {
-        if(chunks.TryGetValue(new Vector3i(x, y, z), out var c)){
-            return c;
+        lock(chunks)
+        {
+            if(chunks.TryGetValue(new Vector3i(x, y, z), out var c)){
+                return c;
+            }
         }
         return null;
     }
