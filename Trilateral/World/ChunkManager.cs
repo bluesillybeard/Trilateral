@@ -141,13 +141,7 @@ public sealed class ChunkManager
             var chunkPos = chunkLoadList.Dequeue();
             chunksBeingLoaded.Add(chunkPos);
             pool.SubmitTask(() => {
-                var chunk = LoadChunk(chunkPos, out var isNew);
-                chunk.Optimize();
-                if(isNew)
-                {
-                    lock(modifiedChunks)modifiedChunks.Add(chunk);
-                }
-                lock(chunksFinishedLoading)chunksFinishedLoading.Add(chunk);
+                LoadChunkTask(chunkPos);
             }, "LoadChunk");
         }
         Profiler.PopRaw("ChunkStartLoad");
@@ -172,6 +166,16 @@ public sealed class ChunkManager
         }
     }
 
+    private void LoadChunkTask(Vector3i chunkPos)
+    {
+        var chunk = LoadChunk(chunkPos, out var isNew);
+        chunk.Optimize();
+        if(isNew)
+        {
+            lock(modifiedChunks)modifiedChunks.Add(chunk);
+        }
+        lock(chunksFinishedLoading)chunksFinishedLoading.Add(chunk);
+    }
     public void Draw(Camera cam, Vector3i playerChunk)
     {
         renderer.DrawChunks(cam, playerChunk);
