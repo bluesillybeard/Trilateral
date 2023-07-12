@@ -1,7 +1,11 @@
 namespace Trilateral.Utility;
 
+using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using System;
+using System.ComponentModel.Design;
+using System.Linq;
+using vmodel;
 using World;
 public static class MathBits
 {
@@ -201,5 +205,74 @@ public static class MathBits
     public static Vector3i GetWorldBlockPos(WorldPos pos)
     {
         return GetBlockPos(pos.offset) + GetChunkBlockPos(pos.chunk);
+    }
+
+    public static bool MeshRaycast(VMesh mesh, Matrix4 transform, Vector2 pos, out Exception? exception)
+    {
+        try
+        {
+            //Check to make sure this mesh as a position component
+            if(!mesh.attributes.Contains(EAttribute.position))
+            {
+                throw new Exception("Mesh does not contain a position attribute");
+            }
+            uint positionOffset = 0;
+            foreach(EAttribute e in mesh.attributes)
+            {
+                if(e != EAttribute.position)
+                {
+                    positionOffset += (uint)e %5;
+                }
+            }
+            //for each triangle
+            for(uint triangleIndex = 0; triangleIndex < mesh.indices.Length/3; triangleIndex++)
+            {
+                //Get the vertices from the mesh
+                uint vertexIndex = triangleIndex*3;
+                uint v1i = mesh.indices[vertexIndex];
+                uint v2i = mesh.indices[vertexIndex+1];
+                uint v3i = mesh.indices[vertexIndex+2];
+                Span<float> v1s = mesh.GetVertex(v1i);
+                Span<float> v2s = mesh.GetVertex(v2i);
+                Span<float> v3s = mesh.GetVertex(v3i);
+                //extract the positions
+                Vector3 v1 = new Vector3(v1s[(int)positionOffset], v1s[(int)positionOffset+1], v1s[(int)positionOffset+2]);
+                Vector3 v2 = new Vector3(v2s[(int)positionOffset], v2s[(int)positionOffset+1], v2s[(int)positionOffset+2]);
+                Vector3 v3 = new Vector3(v3s[(int)positionOffset], v3s[(int)positionOffset+1], v3s[(int)positionOffset+2]);
+                //transform them by the matrix
+                v1 = Vector3.TransformPerspective(v1, transform);
+                v2 = Vector3.TransformPerspective(v2, transform);
+                v3 = Vector3.TransformPerspective(v3, transform);
+                //see if the triangle collides
+                if(v1.Z < 1.0f && v2.Z < 1.0f && v3.Z < 1.0f && PointInTriangle(v1.Xy, v2.Xy, v3.Xy, pos))
+                {
+                    exception = null;
+                    return true;
+                }
+            }
+            exception = null;
+            return false;
+        } catch( Exception e)
+        {
+            exception = e;
+            return false;
+        }
+    }
+
+    //thanks to https://www.tutorialspoint.com/Check-whether-a-given-point-lies-inside-a-Triangle for the following code
+    //I adapted it to fit my code better, and to fix a bug related to float precision
+
+    public static double TriangleArea(Vector2 A, Vector2 B, Vector2 C) {
+        return MathF.Abs((A.X * (B.Y - C.Y) + B.X * (C.Y - A.Y) + C.X * (A.Y - B.Y)) / 2.0f);
+    }
+
+    public static bool PointInTriangle(Vector2 A, Vector2 B, Vector2 C, Vector2 P) {
+        double area = TriangleArea (A, B, C) + .0000177;          ///area of triangle ABC //with a tiny bit of extra to avoid issues related to float precision errors
+        double area1 = TriangleArea (P, B, C);         ///area of PBC
+        double area2 = TriangleArea (A, P, C);         ///area of APC
+        double area3 = TriangleArea (A, B, P);        ///area of ABP
+
+        return (area >= area1 + area2 + area3);        ///when three triangles are forming the whole triangle
+        //I changed it to >= because floats cannot be trusted to hold perfectly accurate data,
     }
 }
