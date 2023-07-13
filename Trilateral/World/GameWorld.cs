@@ -16,7 +16,7 @@ public sealed class GameWorld : IDisposable
     string pathToSaveFolder;
     public readonly ChunkManager chunkManager;
     public WorldPos playerPos;
-    private Camera camera;
+    public Camera camera;
     public Vector3 playerRotation{get => camera.Rotation; set => camera.Rotation = value;}
     public GameWorld(string pathToSaveFolder, string generatorId, float renderThreadsMultiplier, float worldThreadsMultiplier)
     {

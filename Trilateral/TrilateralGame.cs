@@ -47,7 +47,7 @@ public sealed class TrilateralGame
     IRenderTexture ascii;
     public IRenderTexture MainFont {get => ascii;}
     BasicGUIPlane gui;
-    RenderDisplay renderDisplay;
+    public readonly RenderDisplay renderDisplay;
     IScreen currentScreen;
 
     public TrilateralGame(StaticProperties properties, Settings settings)

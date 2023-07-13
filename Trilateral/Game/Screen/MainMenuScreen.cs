@@ -1,8 +1,9 @@
 
 using System;
-using System.Runtime.InteropServices;
 using BasicGUI;
-using OpenTK.Graphics.OpenGL;
+using OpenTK.Graphics.ES11;
+using OpenTK.Mathematics;
+using VRenderLib;
 using VRenderLib.Interface;
 
 namespace Trilateral.Game.Screen;
@@ -36,6 +37,8 @@ public sealed class MainMenuScreen : IScreen
     }
     public IScreen? Update(TimeSpan delta, BasicGUIPlane gui)
     {
+        Vector2 mousePos = VRender.Render.Mouse().Position;
+        Vector2i size = VRender.Render.WindowSize();
         if(startGameButton.isDown)
         {
             OnExit();

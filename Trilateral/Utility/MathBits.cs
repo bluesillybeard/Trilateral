@@ -1,11 +1,12 @@
+#define RAYCASTDEBUG
+
 namespace Trilateral.Utility;
 
-using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
 using System;
-using System.ComponentModel.Design;
 using System.Linq;
 using vmodel;
+using VRenderLib;
 using World;
 public static class MathBits
 {
@@ -198,6 +199,8 @@ public static class MathBits
         //One would think we could just divide by Chunk.Size and call it a day.
         // But, integer division has an anomaly at 0, since the output is truncated instead of floored.
         // So, we have to convert it into a float, divide by Chunk.Size, floor it, then cast it into an int.
+
+        //TODO: is an if statement and use entirely integer formulas
         Vector3 pf = (((Vector3)chunkPos)*Chunk.Size);
         return new Vector3i((int)MathF.Floor(pf.X), (int)MathF.Floor(pf.Y), (int)MathF.Floor(pf.Z));
     }
@@ -211,6 +214,8 @@ public static class MathBits
     {
         try
         {
+            //OpenTK matrices are transpose compared to theyre uploaded to OpenGL
+            //transform.Transpose();
             //Check to make sure this mesh as a position component
             if(!mesh.attributes.Contains(EAttribute.position))
             {
@@ -219,10 +224,12 @@ public static class MathBits
             uint positionOffset = 0;
             foreach(EAttribute e in mesh.attributes)
             {
-                if(e != EAttribute.position)
+                if(e is EAttribute.position)
                 {
-                    positionOffset += (uint)e %5;
+                    break;
                 }
+                positionOffset += (uint)e %5;
+                
             }
             //for each triangle
             for(uint triangleIndex = 0; triangleIndex < mesh.indices.Length/3; triangleIndex++)
@@ -244,6 +251,16 @@ public static class MathBits
                 v2 = Vector3.TransformPerspective(v2, transform);
                 v3 = Vector3.TransformPerspective(v3, transform);
                 //see if the triangle collides
+
+                #if RAYCASTDEBUG
+                //renderDisplay uses pixel coordinates (fun?)
+                (var v1pxx, var v1pxy) = RenderDisplay.GLToPixel(v1.X, v1.Y);
+                (var v2pxx, var v2pxy) = RenderDisplay.GLToPixel(v2.X, v2.Y);
+                (var v3pxx, var v3pxy) = RenderDisplay.GLToPixel(v3.X, v3.Y);
+                Program.Game.renderDisplay.DrawLine(v1pxx, v1pxy, v2pxx, v2pxy, 0xFF00FFFF);
+                Program.Game.renderDisplay.DrawLine(v2pxx, v2pxy, v3pxx, v3pxy, 0xFF00FFFF);
+                Program.Game.renderDisplay.DrawLine(v1pxx, v1pxy, v3pxx, v3pxy, 0xFF00FFFF);
+                #endif
                 if(v1.Z < 1.0f && v2.Z < 1.0f && v3.Z < 1.0f && PointInTriangle(v1.Xy, v2.Xy, v3.Xy, pos))
                 {
                     exception = null;

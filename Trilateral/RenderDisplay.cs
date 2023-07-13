@@ -9,6 +9,7 @@ using BasicGUI;
 using vmodel;
 using Trilateral.Utility;
 using VRenderLib.Threading;
+using VRenderLib.Utility;
 
 namespace Trilateral;
 
@@ -128,24 +129,20 @@ public sealed class RenderDisplay : IDisplay
         mesh.AddVertex(glX1, glY0, 0, 0, 0.5f, r/256f, g/256f, b/256f, a/256f, 1);
         mesh.AddVertex(glX1, glY1, 0, 0, 0.5f, r/256f, g/256f, b/256f, a/256f, 1);
     }
-    public void DrawLine(int x1, int y1, int x2, int y2, uint rgb, byte depth = 0)
+    public void DrawLineWithThickness(int x1, int y1, int x2, int y2, uint rgb, float thickness, byte depth = 0)
     {
         var size = VRenderLib.VRender.Render.WindowSize();
         //we need to create a matrix transform that will turn our unit square into a pixel-sized object.
-
-        //start point
-        //start point + 1 pixel
-        float glX0 = ((x1 - 0.5f)/(float)size.X - 0.5f) * 2;
-        float glY0 = -((float)(y1 - 0.5f)/(float)size.Y - 0.5f) * 2;
-        //end point + 1 pixel
-        float glXf = ((float)(x2 - 0.5f)/(float)size.X - 0.5f) * 2;
-        float glYf = -((float)(y2 - 0.5f)/(float)size.Y - 0.5f) * 2;
-        //start point + 1 pixel
-        float glX01 = ((x1 + 0.5f)/(float)size.X - 0.5f) * 2;
-        float glY01 = -((float)(y1 + 0.5f)/(float)size.Y - 0.5f) * 2;
-        //end point + 1 pixel
-        float glXf1 = ((float)(x2 + 0.5f)/(float)size.X - 0.5f) * 2;
-        float glYf1 = -((float)(y2 + 0.5f)/(float)size.Y - 0.5f) * 2;
+        (var glX0, var glY0) = PixelToGL(x1, y1);
+        (var glXf, var glYf) = PixelToGL(x2, y2);
+        (var sina, var cosa) = MathF.SinCos(MathF.Atan2(y1-y2, x1-x2));
+        //This is so the line is always the same thickness no matter what the angle is
+        var xfactor = (sina*thickness)/size.X;
+        var yfactor = (cosa*thickness)/size.Y;
+        var glX01 = glX0 + xfactor;
+        var glY01 = glY0 + yfactor;
+        var glXf1 = glXf + xfactor;
+        var glYf1 = glYf + yfactor;
 
         //We need to convert the RGBA color into a vec4
         VRenderLib.VRender.ColorFromRGBA(out var r, out byte g, out byte b, out byte a, rgb);
@@ -160,8 +157,14 @@ public sealed class RenderDisplay : IDisplay
         //triangle two
         mesh.AddVertex(glX01, glY01, 0, 0, 0.5f, r/256f, g/256f, b/256f, a/256f, 1);
         mesh.AddVertex(glXf1, glYf1, 0, 0, 0.5f, r/256f, g/256f, b/256f, a/256f, 1);
-        mesh.AddVertex(glX0 , glY0 , 0, 0, 0.5f, r/256f, g/256f, b/256f, a/256f, 1);
+        mesh.AddVertex(glXf , glYf , 0, 0, 0.5f, r/256f, g/256f, b/256f, a/256f, 1);
     }
+
+    public void DrawLine(int x1, int y1, int x2, int y2, uint rgb, byte depth = 0)
+    {
+        DrawLineWithThickness(x1, y1, x2, y2, rgb, 2, depth);
+    }
+
 
     public void DrawVerticalLine(int x, int y1, int y2, uint rgb, byte depth = 0)
     {
@@ -368,12 +371,20 @@ public sealed class RenderDisplay : IDisplay
         return IRender.CurrentRender.Mouse().ScrollDelta.Y;
     }
 
-    private (float, float) PixelToGL(int x, int y)
+    public static (float, float) PixelToGL(int x, int y)
     {
         Vector2 size = VRenderLib.VRender.Render.WindowSize();
         float glX = (x/(float)size.X - 0.5f) * 2;
         float glY = -(y/(float)size.Y - 0.5f) * 2;
         return (glX, glY);
+    }
+
+    public static (int, int) GLToPixel(float glx, float gly)
+    {
+        Vector2 size = VRenderLib.VRender.Render.WindowSize();
+        int pxX = (int)(((glx + 1)*(size.X))/2);
+        int pxY = -(int)(((gly + 1)*(size.Y))/2);
+        return (pxX, pxY);
     }
     private Keys KeyCodeToKeys(KeyCode key)
     {
