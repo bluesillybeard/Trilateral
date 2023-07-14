@@ -265,10 +265,9 @@ public sealed class RenderDisplay : IDisplay
     }
 
     //Extra rendering functions not used by BasicGUI
-
-    public void DrawMeshLines(VMesh mesh, Matrix4 transform, uint RGBA, out Exception? exception)
+    public void DrawMeshLines(VMesh mesh, Matrix4 transform, uint RGBA, int thickness, out Exception? exception)
     {
-        try{
+try{
             //Check to make sure this mesh as a position component
             if(!mesh.attributes.Contains(EAttribute.position))
             {
@@ -309,9 +308,9 @@ public sealed class RenderDisplay : IDisplay
                     (var v1pxx, var v1pxy) = GLToPixel(v1.X, v1.Y);
                     (var v2pxx, var v2pxy) = GLToPixel(v2.X, v2.Y);
                     (var v3pxx, var v3pxy) = GLToPixel(v3.X, v3.Y);
-                    DrawLine(v1pxx, v1pxy, v2pxx, v2pxy, RGBA);
-                    DrawLine(v2pxx, v2pxy, v3pxx, v3pxy, RGBA);
-                    DrawLine(v1pxx, v1pxy, v3pxx, v3pxy, RGBA);
+                    DrawLineWithThickness(v1pxx, v1pxy, v2pxx, v2pxy, RGBA, thickness);
+                    DrawLineWithThickness(v2pxx, v2pxy, v3pxx, v3pxy, RGBA, thickness);
+                    DrawLineWithThickness(v1pxx, v1pxy, v3pxx, v3pxy, RGBA, thickness);
                 }
             }
             exception = null;
@@ -319,6 +318,11 @@ public sealed class RenderDisplay : IDisplay
         {
             exception = e;
         }
+    }
+
+    public void DrawMeshLines(VMesh mesh, Matrix4 transform, uint RGBA, out Exception? exception)
+    {
+        DrawMeshLines(mesh, transform, RGBA, 2, out exception);
     }
     //INPUTS AND OUTPUTS
     public int GetMouseX()

@@ -225,7 +225,7 @@ public static class MathBits
     }
     /**
     <summary>
-    Gets the chunk that a block pos is within
+    Gets the block pos of a chunk
     </summary>
     */
     public static Vector3i GetChunkBlockPos(Vector3i chunkPos)
@@ -328,5 +328,21 @@ public static class MathBits
 
         return (area >= area1 + area2 + area3);        ///when three triangles are forming the whole triangle
         //I changed it to >= because floats cannot be trusted to hold perfectly accurate data,
+    }
+
+    public static Matrix4 GetBlockTransformMatrix(Vector3i blockPos)
+    {
+        //Create a transform for the block mesh
+        var parity = ((blockPos.X+blockPos.Z) & 1);
+        var angle = (MathF.PI/3)*parity;
+        //TODO: calculate this offset to greater accuruacy
+        var XOffset = 0.144f*parity;
+
+        (var sina, var cosa) = MathF.SinCos(angle);
+        Matrix4 blockTransform = Matrix4.Identity
+        * Matrix4.CreateRotationY(angle)
+        * Matrix4.CreateTranslation(blockPos.X * MathBits.XScale + XOffset, blockPos.Y * 0.5f, blockPos.Z * 0.25f);
+
+        return blockTransform;
     }
 }

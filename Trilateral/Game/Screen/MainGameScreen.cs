@@ -4,6 +4,7 @@
 namespace Trilateral.Game.Screen;
 using System;
 using System.Collections.Generic;
+using System.Security.Principal;
 using BasicGUI;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
@@ -114,9 +115,17 @@ public sealed class MainGameScreen : IScreen
         if (VRender.Render.CursorLocked || mouse.IsButtonDown(MouseButton.Middle)) {
             world.playerRotation += new Vector3((mouse.Y - mouse.PreviousY) * sensitivity, (mouse.X - mouse.PreviousX) * sensitivity, 0);
         }
-        bool left = mouse.IsButtonDown(MouseButton.Left);
+        bool left = mouse.IsButtonPressed(MouseButton.Left);
         bool right = mouse.IsButtonPressed(MouseButton.Right);
         GetSelectedBlock(2, world.playerPos, out var blockSelected, out var placePos);
+        var block = world.chunkManager.GetBlock(blockSelected);
+        if(block is not null && block.draw)
+        {
+            var blockTransform = MathBits.GetBlockTransformMatrix(blockSelected - MathBits.GetChunkBlockPos(world.playerPos.chunk));
+            var cameraTransform = world.camera.GetTransform();
+            Program.Game.renderDisplay.DrawMeshLines(block.model.mesh, blockTransform * cameraTransform, 0x443355FF, 5, out var e);
+            //TODO: handle e
+        }
         if(left || right)
         {
             if(left)
@@ -162,24 +171,7 @@ public sealed class MainGameScreen : IScreen
                     //if(!block.draw)continue; //empty block -> skip
                     var mesh = block.model.mesh;
                     if(mesh.indices.Length == 0) mesh = Program.Game.VoidBlock.model.mesh;
-
-                    //Create a transform for the block mesh
-                    var parity = ((offsetBlockPos.X+offsetBlockPos.Z) & 1);
-                    var angle = (MathF.PI/3)*parity;
-                    //TODO: calculate this offset to greater accuruacy
-                    var XOffset = 0.144f*parity;
-
-                    (var sina, var cosa) = MathF.SinCos(angle);
-
-                    //I basically need to take the following transform code and encode it into a matrix.
-                    // It was taken from ChunkBuildObject, in order to replicate the transform of a single block.
-                    // transformedVertex[0] = vertex[0] *  cosa + vertex[2] * sina + bx * MathBits.XScale + XOffset;
-                    // transformedVertex[1] = vertex[1]                                       + by * 0.5f;
-                    // transformedVertex[2] = vertex[0] * -sina + vertex[2] * cosa + bz * 0.25f;
-                    //wasn't too hard. I originally did it manually, but doing it this way is WAAY more intuitive, even if it's slightly slower.
-                    Matrix4 blockTransform = Matrix4.Identity
-                     * Matrix4.CreateRotationY(angle)
-                     * Matrix4.CreateTranslation(offsetBlockPos.X * MathBits.XScale + XOffset, offsetBlockPos.Y * 0.5f, offsetBlockPos.Z * 0.25f);
+                    var blockTransform = MathBits.GetBlockTransformMatrix(offsetBlockPos);
                     Matrix4 transform = blockTransform * cameraTransform;
                     if(MathBits.MeshRaycast(mesh, transform, mousePos, out var e))
                     {
@@ -203,9 +195,11 @@ public sealed class MainGameScreen : IScreen
             var angle = (MathF.PI/3)*parity;
             //TODO: calculate this offset to greater accuruacy
             var XOffset = 0.144f*parity;
-            Matrix4 blockTransform = Matrix4.Identity
-                * Matrix4.CreateRotationY(angle)
-                * Matrix4.CreateTranslation((blockPos.X - playerBaseBlockPos.X) * MathBits.XScale + XOffset, (blockPos.Y - playerBaseBlockPos.Y)* 0.5f, (blockPos.Z - playerBaseBlockPos.Z) * 0.25f);
+            var blockTransform = MathBits.GetBlockTransformMatrix(offsetBlockPos);
+
+            // Matrix4 blockTransform = Matrix4.Identity
+            //     * Matrix4.CreateRotationY(angle)
+            //     * Matrix4.CreateTranslation((blockPos.X - playerBaseBlockPos.X) * MathBits.XScale + XOffset, (blockPos.Y - playerBaseBlockPos.Y)* 0.5f, (blockPos.Z - playerBaseBlockPos.Z) * 0.25f);
             Matrix4 transform = blockTransform * cameraTransform;
             Program.Game.renderDisplay.DrawMeshLines(block.model.mesh, transform, 0x00FFFFFF, out var e);
             if(e is not null)
