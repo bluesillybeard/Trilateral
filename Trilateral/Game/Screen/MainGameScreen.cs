@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Security.Principal;
 using BasicGUI;
 using OpenTK.Mathematics;
+using OpenTK.Windowing.Common;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using Trilateral;
 using Trilateral.Utility;
@@ -60,8 +61,6 @@ public sealed class MainGameScreen : IScreen
         Profiler.PopRaw("DebugText");
         UpdatePlayer(delta);
         world.Update();
-        var mousePosPixels = (Vector2i) VRender.Render.Mouse().Position;
-        Program.Game.renderDisplay.DrawLine(mousePosPixels.X, mousePosPixels.Y, mousePosPixels.X+100, mousePosPixels.Y+100, 0xFF00FFFF);
         return this;
     }
 
@@ -76,7 +75,7 @@ public sealed class MainGameScreen : IScreen
         }
         if (keyboard.IsKeyReleased(Keys.C))
         {
-            VRender.Render.CursorLocked  = !VRender.Render.CursorLocked;
+            VRender.Render.CursorState = VRender.Render.CursorState == CursorState.Grabbed ? CursorState.Hidden : CursorState.Grabbed;
         }
         Vector3 cameraInc = new Vector3();
         if (keyboard.IsKeyDown(Keys.W)) {
@@ -112,7 +111,7 @@ public sealed class MainGameScreen : IScreen
         world.playerPos += movement3d;
         // Update rotation based on mouse
         float sensitivity = 0.5f;
-        if (VRender.Render.CursorLocked || mouse.IsButtonDown(MouseButton.Middle)) {
+        if (VRender.Render.CursorState == CursorState.Grabbed || mouse.IsButtonDown(MouseButton.Middle)) {
             world.playerRotation += new Vector3((mouse.Y - mouse.PreviousY) * sensitivity, (mouse.X - mouse.PreviousX) * sensitivity, 0);
         }
         bool left = mouse.IsButtonPressed(MouseButton.Left);

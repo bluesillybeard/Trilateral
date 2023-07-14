@@ -21,6 +21,7 @@ using World.ChunkGenerators;
 using Utility;
 using System.Runtime.CompilerServices;
 using Trilateral.Game.Screen;
+using OpenTK.Windowing.Common;
 
 public sealed class TrilateralGame
 {
@@ -118,6 +119,7 @@ public sealed class TrilateralGame
         currentScreen = new MainMenuScreen(gui, ascii);
         Start = DateTime.Now;
         time = DateTime.Now;
+        VRender.Render.CursorState = CursorState.Hidden;
     }
     void Update(TimeSpan delta)
     {
@@ -140,6 +142,16 @@ public sealed class TrilateralGame
         // RenderDisplay only collects the mesh when "drawing",
         // Nothing actually gets rendered until DrawToScreen is called.
         gui.Draw();
+        //Draw a little cursor thing.
+        // draw it here, it uses the same drawing system that the GUI uses, so it's drawn on updates instead of frames.
+        // This is mainly for my own recording purposes, because OBS doesn't capture the cursor properly for some reason
+        // The lack or cursor might have something to do with Flatpak, or my compositor, or maybe even X11 itself.
+        // Instead of fixing OBS, I just added my own little cursor.
+        var mousePosPixels = (Vector2i) VRender.Render.Mouse().Position;
+        renderDisplay.DrawLineWithThickness(mousePosPixels.X, mousePosPixels.Y, mousePosPixels.X+20, mousePosPixels.Y+20, 0xFF00FFFF, 4);
+        renderDisplay.DrawLineWithThickness(mousePosPixels.X, mousePosPixels.Y, mousePosPixels.X+15, mousePosPixels.Y+30, 0xFF00FFFF, 4);
+        renderDisplay.DrawLineWithThickness(mousePosPixels.X+20, mousePosPixels.Y+20, mousePosPixels.X+15, mousePosPixels.Y+30, 0xFF00FFFF, 4);
+        
         Profiler.PopRaw("GUIIterate");
         Profiler.PopRaw("Update");
         Profiler.PushRaw("PostUpdate");
