@@ -120,11 +120,11 @@ public sealed class MainGameScreen : IScreen
         {
             if(left)
             {
-                world.chunkManager.TrySetBlock(Program.Game.VoidBlock, blockSelected);
+                //world.chunkManager.TrySetBlock(Program.Game.VoidBlock, blockSelected);
             }
             if(placePos is not null && right && Program.Game.BlockRegistry.TryGetValue("trilateral:glassBlock", out var blockToPlace))
             {
-                world.chunkManager.TrySetBlock(blockToPlace, placePos.Value);
+                //world.chunkManager.TrySetBlock(blockToPlace, placePos.Value);
             }
         }
         
@@ -169,15 +169,6 @@ public sealed class MainGameScreen : IScreen
                     // transformedVertex[0] = vertex[0] *  cosa + vertex[2] * sina + bx * MathBits.XScale + XOffset;
                     // transformedVertex[1] = vertex[1]                                       + by * 0.5f;
                     // transformedVertex[2] = vertex[0] * -sina + vertex[2] * cosa + bz * 0.25f;
-
-                    //wasn't too hard
-                    Matrix4 blockTransform = new Matrix4(
-                        cosa, 0, sina,MathBits.XScale + XOffset,
-                        0,    1, 0,   blockPos.Y * 0.5f,
-                        -sina,0, cosa,blockPos.Z * 0.25f,
-                        0,    0, 0,   1
-                    );
-                    //blockTransform.Transpose();
                     /*
                     I used this to help guide me on how to set it up
                     (It's OpenTK Matrix4's transform method)
@@ -188,12 +179,19 @@ public sealed class MainGameScreen : IScreen
                         vec.X * mat.Row0.W + vec.Y * mat.Row1.W + vec.Z * mat.Row2.W + vec.W * mat.Row3.W
                     );
                     */
-
-                    //something isn't right here because even just the camera by itself seems completely broken
+                    //wasn't too hard
+                    Matrix4 blockTransform = Matrix4.Identity;
+                    blockTransform = Matrix4.CreateTranslation(MathBits.XScale + XOffset, blockPos.Y * 0.5f, blockPos.Z * 0.25f) * blockTransform;
+                    blockTransform = Matrix4.CreateRotationY(angle) * blockTransform;
+                    //  = new Matrix4(
+                    //     cosa, 0, sina,MathBits.XScale + XOffset,
+                    //     0,    1, 0,   blockPos.Y * 0.5f,
+                    //     -sina,0, cosa,blockPos.Z * 0.25f,
+                    //     0,    0, 0,   1
+                    // );
+                    //blockTransform.Transpose();
                     Matrix4 cameraTransform = world.camera.GetTransform();
-                    //cameraTransform.Transpose();
-                    //TODO: make sure these are in the right order
-                    Matrix4 transform = Matrix4.Identity;//cameraTransform;
+                    Matrix4 transform = blockTransform * cameraTransform;
                     if(MathBits.MeshRaycast(mesh, transform, Vector2.Zero, out var e))
                     {
                         float distance = (playerBlockPos - blockPos).EuclideanLength;

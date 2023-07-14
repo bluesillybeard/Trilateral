@@ -253,13 +253,17 @@ public static class MathBits
                 //see if the triangle collides
 
                 #if RAYCASTDEBUG
-                //renderDisplay uses pixel coordinates (fun?)
-                (var v1pxx, var v1pxy) = RenderDisplay.GLToPixel(v1.X, v1.Y);
-                (var v2pxx, var v2pxy) = RenderDisplay.GLToPixel(v2.X, v2.Y);
-                (var v3pxx, var v3pxy) = RenderDisplay.GLToPixel(v3.X, v3.Y);
-                Program.Game.renderDisplay.DrawLine(v1pxx, v1pxy, v2pxx, v2pxy, 0xFF00FFFF);
-                Program.Game.renderDisplay.DrawLine(v2pxx, v2pxy, v3pxx, v3pxy, 0xFF00FFFF);
-                Program.Game.renderDisplay.DrawLine(v1pxx, v1pxy, v3pxx, v3pxy, 0xFF00FFFF);
+                if(v1.Z < 1.0f && v2.Z < 1.0f && v3.Z < 1.0f)
+                {
+                    //renderDisplay uses pixel coordinates (fun?)
+                    (var v1pxx, var v1pxy) = RenderDisplay.GLToPixel(v1.X, v1.Y);
+                    (var v2pxx, var v2pxy) = RenderDisplay.GLToPixel(v2.X, v2.Y);
+                    (var v3pxx, var v3pxy) = RenderDisplay.GLToPixel(v3.X, v3.Y);
+                    Program.Game.renderDisplay.DrawLine(v1pxx, v1pxy, v2pxx, v2pxy, 0xFF00FFFF);
+                    Program.Game.renderDisplay.DrawLine(v2pxx, v2pxy, v3pxx, v3pxy, 0xFF00FFFF);
+                    Program.Game.renderDisplay.DrawLine(v1pxx, v1pxy, v3pxx, v3pxy, 0xFF00FFFF);
+                }
+                
                 #endif
                 if(v1.Z < 1.0f && v2.Z < 1.0f && v3.Z < 1.0f && PointInTriangle(v1.Xy, v2.Xy, v3.Xy, pos))
                 {

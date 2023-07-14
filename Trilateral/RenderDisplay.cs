@@ -382,8 +382,8 @@ public sealed class RenderDisplay : IDisplay
     public static (int, int) GLToPixel(float glx, float gly)
     {
         Vector2 size = VRenderLib.VRender.Render.WindowSize();
-        int pxX = (int)(((glx + 1)*(size.X))/2);
-        int pxY = -(int)(((gly + 1)*(size.Y))/2);
+        int pxX = (int)(((glx + 1)*(size.X/2f)));
+        int pxY = (int)(((-gly + 1)*(size.Y/2f)));
         return (pxX, pxY);
     }
     private Keys KeyCodeToKeys(KeyCode key)
