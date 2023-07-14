@@ -258,9 +258,36 @@ public sealed class ChunkManager
             return false;
         }
         //Then set the actual block itself
-        chunk.SetBlock(block, MathBits.Mod(blockPos.X, Chunk.Size), MathBits.Mod(blockPos.Y, Chunk.Size), MathBits.Mod(blockPos.Z, Chunk.Size));
+        uint relativeX = MathBits.Mod(blockPos.X, Chunk.Size);
+        uint relativeY = MathBits.Mod(blockPos.Y, Chunk.Size);
+        uint relativeZ = MathBits.Mod(blockPos.Z, Chunk.Size);
+        chunk.SetBlock(block, relativeX, relativeY, relativeZ);
         lock(modifiedChunks)modifiedChunks.Add(chunk);
         renderer.NotifyChunkModified(chunk.pos);
+        if(relativeX == Chunk.Size-1)
+        {
+            renderer.NotifyChunkModified(chunk.pos + Vector3i.UnitX);
+        }
+        else if(relativeX == 0)
+        {
+            renderer.NotifyChunkModified(chunk.pos - Vector3i.UnitX);
+        }
+        if(relativeY == Chunk.Size-1)
+        {
+            renderer.NotifyChunkModified(chunk.pos + Vector3i.UnitY);
+        }
+        else if(relativeY == 0)
+        {
+            renderer.NotifyChunkModified(chunk.pos - Vector3i.UnitY);
+        }
+        if(relativeZ == Chunk.Size-1)
+        {
+            renderer.NotifyChunkModified(chunk.pos + Vector3i.UnitZ);
+        }
+        else if(relativeZ == 0)
+        {
+            renderer.NotifyChunkModified(chunk.pos - Vector3i.UnitZ);
+        }
         return true;
     }
 
