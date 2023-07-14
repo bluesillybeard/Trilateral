@@ -1,3 +1,5 @@
+#define RAYCASTDEBUG
+
 //This is the screen where most of the game is played.
 namespace Trilateral.Game.Screen;
 using System;
@@ -112,19 +114,18 @@ public sealed class MainGameScreen : IScreen
         if (VRender.Render.CursorLocked || mouse.IsButtonDown(MouseButton.Middle)) {
             world.playerRotation += new Vector3((mouse.Y - mouse.PreviousY) * sensitivity, (mouse.X - mouse.PreviousX) * sensitivity, 0);
         }
-        bool left = mouse.IsButtonPressed(MouseButton.Left);
+        bool left = mouse.IsButtonDown(MouseButton.Left);
         bool right = mouse.IsButtonPressed(MouseButton.Right);
-        GetSelectedBlock(2, world.playerPos, out var blockSelected, out var placePos);
-
+        GetSelectedBlock(5, world.playerPos, out var blockSelected, out var placePos);
         if(left || right)
         {
             if(left)
             {
-                //world.chunkManager.TrySetBlock(Program.Game.VoidBlock, blockSelected);
+                world.chunkManager.TrySetBlock(Program.Game.VoidBlock, blockSelected);
             }
             if(placePos is not null && right && Program.Game.BlockRegistry.TryGetValue("trilateral:glassBlock", out var blockToPlace))
             {
-                //world.chunkManager.TrySetBlock(blockToPlace, placePos.Value);
+                world.chunkManager.TrySetBlock(blockToPlace, placePos.Value);
             }
         }
         
@@ -147,7 +148,7 @@ public sealed class MainGameScreen : IScreen
             {
                 for(int dbz = -blockRange.Z; dbz < blockRange.Z; dbz++ )
                 {
-                    Vector3i blockPos = new Vector3i(dbx, dby, dbz) + MathBits.GetWorldBlockPos(playerPos);
+                    Vector3i blockPos = new Vector3i(dbx, dby, dbz) + playerBlockPos;
                     var block = world.chunkManager.GetBlock(blockPos);
                     if(block is null)continue; //no block -> skip
 
@@ -180,21 +181,14 @@ public sealed class MainGameScreen : IScreen
                     );
                     */
                     //wasn't too hard
-                    Matrix4 blockTransform = Matrix4.Identity;
-                    blockTransform = Matrix4.CreateTranslation(MathBits.XScale + XOffset, blockPos.Y * 0.5f, blockPos.Z * 0.25f) * blockTransform;
-                    blockTransform = Matrix4.CreateRotationY(angle) * blockTransform;
-                    //  = new Matrix4(
-                    //     cosa, 0, sina,MathBits.XScale + XOffset,
-                    //     0,    1, 0,   blockPos.Y * 0.5f,
-                    //     -sina,0, cosa,blockPos.Z * 0.25f,
-                    //     0,    0, 0,   1
-                    // );
-                    //blockTransform.Transpose();
+                    Matrix4 blockTransform = Matrix4.Identity
+                     * Matrix4.CreateRotationY(angle)
+                     * Matrix4.CreateTranslation(blockPos.X * MathBits.XScale + XOffset, blockPos.Y * 0.5f, blockPos.Z * 0.25f);
                     Matrix4 cameraTransform = world.camera.GetTransform();
                     Matrix4 transform = blockTransform * cameraTransform;
-                    if(MathBits.MeshRaycast(mesh, transform, Vector2.Zero, out var e))
+                    if(MathBits.MeshRaycast(mesh, transform, mousePos, out var e))
                     {
-                        float distance = (playerBlockPos - blockPos).EuclideanLength;
+                        float distance = (MathBits.GetBlockWorldPos(blockPos) - MathBits.GetBlockWorldPos(playerBlockPos)).Length;
                         blocksInRay.Enqueue(blockPos, distance);
                     }
                 }
@@ -206,8 +200,27 @@ public sealed class MainGameScreen : IScreen
         {
             var blockPos = blocksInRay.Dequeue();
             var block = world.chunkManager.GetBlock(blockPos);
-            if(block is null)continue;
-            if(!block.draw || block.model.mesh.indices.Length==0)
+            if(block is null)
+            {
+                throw new Exception("null block shouldn't happen, because null blocks shouldn't have been placed into the block raycast list in the first place!");
+            }
+            #if RAYCASTDEBUG
+            var parity = ((blockPos.X+blockPos.Z) & 1);
+            var angle = (MathF.PI/3)*parity;
+            //TODO: calculate this offset to greater accuruacy
+            var XOffset = 0.144f*parity;
+            Matrix4 blockTransform = Matrix4.Identity
+                * Matrix4.CreateRotationY(angle)
+                * Matrix4.CreateTranslation(blockPos.X * MathBits.XScale + XOffset, blockPos.Y * 0.5f, blockPos.Z * 0.25f);
+            Matrix4 cameraTransform = world.camera.GetTransform();
+            Matrix4 transform = blockTransform * cameraTransform;
+            Program.Game.renderDisplay.RenderMeshLines(block.model.mesh, transform, out var e);
+            if(e is not null)
+            {
+                System.Console.Error.WriteLine("ERROR rendering debug block mesh:" + e.Message + "\n" + e.StackTrace);
+            }
+            #endif
+            if(block.draw)
             {
                 blockSelected = blockPos;
                 placePos = last;

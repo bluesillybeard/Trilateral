@@ -15,6 +15,14 @@ namespace Trilateral;
 
 //TODO: rewrite this entire class because it's honestly kinda messy and is missing a ton of features
 // Preferrably rewrite it after actual font support is added
+
+/**
+<summary>
+This class was originally created simply for getting BasicGUI to work.
+However, it may be referenced and used for any rendering purpose.
+It is frequently used for debug rendering.
+</summary>
+*/
 public sealed class RenderDisplay : IDisplay
 {
 
@@ -132,9 +140,9 @@ public sealed class RenderDisplay : IDisplay
     public void DrawLineWithThickness(int x1, int y1, int x2, int y2, uint rgb, float thickness, byte depth = 0)
     {
         var size = VRenderLib.VRender.Render.WindowSize();
-        //we need to create a matrix transform that will turn our unit square into a pixel-sized object.
         (var glX0, var glY0) = PixelToGL(x1, y1);
         (var glXf, var glYf) = PixelToGL(x2, y2);
+        //TODO: find a way to do this without using trig functions (if that's even posible)
         (var sina, var cosa) = MathF.SinCos(MathF.Atan2(y1-y2, x1-x2));
         //This is so the line is always the same thickness no matter what the angle is
         var xfactor = (sina*thickness)/size.X;
@@ -174,6 +182,8 @@ public sealed class RenderDisplay : IDisplay
     {
         DrawLine(x1, y, x2, y, rgb, depth);
     }
+
+    //TODO: image drawing functions
     public void DrawImage(object image, int x, int y, byte depth = 0)
     {
     }
@@ -251,6 +261,63 @@ public sealed class RenderDisplay : IDisplay
         {
             int lineWidth = line.Length * fontSize;
             if(lineWidth > width)width = lineWidth;
+        }
+    }
+
+    //Extra rendering functions not used by BasicGUI
+
+    public void RenderMeshLines(VMesh mesh, Matrix4 transform, out Exception? exception)
+    {
+        try{
+            //Check to make sure this mesh as a position component
+            if(!mesh.attributes.Contains(EAttribute.position))
+            {
+                throw new Exception("Mesh does not contain a position attribute");
+            }
+            uint positionOffset = 0;
+            foreach(EAttribute e in mesh.attributes)
+            {
+                if(e is EAttribute.position)
+                {
+                    break;
+                }
+                positionOffset += (uint)e %5;
+                
+            }
+            //for each triangle
+            for(uint triangleIndex = 0; triangleIndex < mesh.indices.Length/3; triangleIndex++)
+            {
+                //Get the vertices from the mesh
+                uint vertexIndex = triangleIndex*3;
+                uint v1i = mesh.indices[vertexIndex];
+                uint v2i = mesh.indices[vertexIndex+1];
+                uint v3i = mesh.indices[vertexIndex+2];
+                Span<float> v1s = mesh.GetVertex(v1i);
+                Span<float> v2s = mesh.GetVertex(v2i);
+                Span<float> v3s = mesh.GetVertex(v3i);
+                //extract the positions
+                Vector3 v1 = new Vector3(v1s[(int)positionOffset], v1s[(int)positionOffset+1], v1s[(int)positionOffset+2]);
+                Vector3 v2 = new Vector3(v2s[(int)positionOffset], v2s[(int)positionOffset+1], v2s[(int)positionOffset+2]);
+                Vector3 v3 = new Vector3(v3s[(int)positionOffset], v3s[(int)positionOffset+1], v3s[(int)positionOffset+2]);
+                //transform them by the matrix
+                v1 = Vector3.TransformPerspective(v1, transform);
+                v2 = Vector3.TransformPerspective(v2, transform);
+                v3 = Vector3.TransformPerspective(v3, transform);
+
+                if(v1.Z < 1.0f && v2.Z < 1.0f && v3.Z < 1.0f)
+                {
+                    (var v1pxx, var v1pxy) = GLToPixel(v1.X, v1.Y);
+                    (var v2pxx, var v2pxy) = GLToPixel(v2.X, v2.Y);
+                    (var v3pxx, var v3pxy) = GLToPixel(v3.X, v3.Y);
+                    DrawLine(v1pxx, v1pxy, v2pxx, v2pxy, 0xFF00FFFF);
+                    DrawLine(v2pxx, v2pxy, v3pxx, v3pxy, 0xFF00FFFF);
+                    DrawLine(v1pxx, v1pxy, v3pxx, v3pxy, 0xFF00FFFF);
+                }
+            }
+            exception = null;
+        } catch( Exception e)
+        {
+            exception = e;
         }
     }
     //INPUTS AND OUTPUTS

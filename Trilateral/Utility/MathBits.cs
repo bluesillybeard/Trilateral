@@ -1,4 +1,4 @@
-#define RAYCASTDEBUG
+//#define RAYCASTDEBUG
 
 namespace Trilateral.Utility;
 
@@ -214,8 +214,6 @@ public static class MathBits
     {
         try
         {
-            //OpenTK matrices are transpose compared to theyre uploaded to OpenGL
-            //transform.Transpose();
             //Check to make sure this mesh as a position component
             if(!mesh.attributes.Contains(EAttribute.position))
             {
@@ -283,15 +281,16 @@ public static class MathBits
     //thanks to https://www.tutorialspoint.com/Check-whether-a-given-point-lies-inside-a-Triangle for the following code
     //I adapted it to fit my code better, and to fix a bug related to float precision
 
-    public static double TriangleArea(Vector2 A, Vector2 B, Vector2 C) {
+    public static float TriangleArea(Vector2 A, Vector2 B, Vector2 C) {
         return MathF.Abs((A.X * (B.Y - C.Y) + B.X * (C.Y - A.Y) + C.X * (A.Y - B.Y)) / 2.0f);
+             //Math. abs((p1x * (p2y - p3y) + p2x * (p3y - p1y) + p3x * (p1y - p2y)) / 2.0);
     }
 
     public static bool PointInTriangle(Vector2 A, Vector2 B, Vector2 C, Vector2 P) {
-        double area = TriangleArea (A, B, C) + .0000177;          ///area of triangle ABC //with a tiny bit of extra to avoid issues related to float precision errors
-        double area1 = TriangleArea (P, B, C);         ///area of PBC
-        double area2 = TriangleArea (A, P, C);         ///area of APC
-        double area3 = TriangleArea (A, B, P);        ///area of ABP
+        float area = TriangleArea (A, B, C) + .0000177f;          ///area of triangle ABC //with a tiny bit of extra to avoid issues related to float precision errors
+        float area1 = TriangleArea (P, B, C);         ///area of PBC
+        float area2 = TriangleArea (A, P, C);         ///area of APC
+        float area3 = TriangleArea (A, B, P);        ///area of ABP
 
         return (area >= area1 + area2 + area3);        ///when three triangles are forming the whole triangle
         //I changed it to >= because floats cannot be trusted to hold perfectly accurate data,
