@@ -266,7 +266,7 @@ public sealed class RenderDisplay : IDisplay
 
     //Extra rendering functions not used by BasicGUI
 
-    public void RenderMeshLines(VMesh mesh, Matrix4 transform, out Exception? exception)
+    public void DrawMeshLines(VMesh mesh, Matrix4 transform, uint RGBA, out Exception? exception)
     {
         try{
             //Check to make sure this mesh as a position component
@@ -309,9 +309,9 @@ public sealed class RenderDisplay : IDisplay
                     (var v1pxx, var v1pxy) = GLToPixel(v1.X, v1.Y);
                     (var v2pxx, var v2pxy) = GLToPixel(v2.X, v2.Y);
                     (var v3pxx, var v3pxy) = GLToPixel(v3.X, v3.Y);
-                    DrawLine(v1pxx, v1pxy, v2pxx, v2pxy, 0xFF00FFFF);
-                    DrawLine(v2pxx, v2pxy, v3pxx, v3pxy, 0xFF00FFFF);
-                    DrawLine(v1pxx, v1pxy, v3pxx, v3pxy, 0xFF00FFFF);
+                    DrawLine(v1pxx, v1pxy, v2pxx, v2pxy, RGBA);
+                    DrawLine(v2pxx, v2pxy, v3pxx, v3pxy, RGBA);
+                    DrawLine(v1pxx, v1pxy, v3pxx, v3pxy, RGBA);
                 }
             }
             exception = null;

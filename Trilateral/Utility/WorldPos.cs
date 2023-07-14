@@ -69,4 +69,10 @@ public struct WorldPos
         pos.chunk += chunkDelta;
         pos.offset -= MathBits.GetChunkWorldPosUncentered(chunkDelta);
     }
+
+    //TODO: at some point, all references to this should be gone and it should be able to be removed.
+    // In an ideal world. WorldPos should be a drop-in replacement for Vector3.
+    public Vector3 LegacyValue{
+        get {return offset + MathBits.GetChunkWorldPosUncentered(chunk.X, chunk.Y, chunk.Z);}
+    }
 }

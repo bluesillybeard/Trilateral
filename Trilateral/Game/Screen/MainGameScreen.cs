@@ -1,4 +1,4 @@
-#define RAYCASTDEBUG
+//#define RAYCASTDEBUG
 
 //This is the screen where most of the game is played.
 namespace Trilateral.Game.Screen;
@@ -116,7 +116,7 @@ public sealed class MainGameScreen : IScreen
         }
         bool left = mouse.IsButtonDown(MouseButton.Left);
         bool right = mouse.IsButtonPressed(MouseButton.Right);
-        GetSelectedBlock(5, world.playerPos, out var blockSelected, out var placePos);
+        GetSelectedBlock(2, world.playerPos, out var blockSelected, out var placePos);
         if(left || right)
         {
             if(left)
@@ -134,12 +134,15 @@ public sealed class MainGameScreen : IScreen
 
     public void GetSelectedBlock(float range, WorldPos playerPos, out Vector3i blockSelected, out Vector3i? placePos)
     {
+        Matrix4 cameraTransform = world.camera.GetTransform();
         placePos = null;
         var mousePosPixels = (Vector2i) VRender.Render.Mouse().Position;
         Vector2 mousePos;
         (mousePos.X, mousePos.Y) = RenderDisplay.PixelToGL(mousePosPixels.X, mousePosPixels.Y);
         Vector3i blockRange =  MathBits.GetWorldBlockPos(new WorldPos(Vector3i.Zero, new Vector3(range, range, range)));
         Vector3i playerBlockPos = MathBits.GetWorldBlockPos(playerPos);
+        Vector3i playerOffsetBlockPos = MathBits.GetBlockPos(playerPos.offset);
+        Vector3i playerBaseBlockPos = playerBlockPos - playerOffsetBlockPos;
         blockSelected = playerBlockPos;
         PriorityQueue<Vector3i, float> blocksInRay = new PriorityQueue<Vector3i, float>();
         for(int dbx = -blockRange.X; dbx < blockRange.X; dbx++ )
@@ -148,8 +151,11 @@ public sealed class MainGameScreen : IScreen
             {
                 for(int dbz = -blockRange.Z; dbz < blockRange.Z; dbz++ )
                 {
+                    Vector3i offsetBlockPos = new Vector3i(dbx, dby, dbz) + playerOffsetBlockPos;
                     Vector3i blockPos = new Vector3i(dbx, dby, dbz) + playerBlockPos;
-                    var block = world.chunkManager.GetBlock(blockPos);
+                    float distance = (MathBits.GetBlockWorldPos(blockPos) - playerPos).LegacyValue.Length;
+                    if(distance > range)continue;
+                    var block = world.chunkManager.GetBlock(offsetBlockPos);
                     if(block is null)continue; //no block -> skip
 
                     //We actually include empty blocks, so when we are iterating at the end we can figure out where a block would be placed
@@ -158,7 +164,7 @@ public sealed class MainGameScreen : IScreen
                     if(mesh.indices.Length == 0) mesh = Program.Game.VoidBlock.model.mesh;
 
                     //Create a transform for the block mesh
-                    var parity = ((blockPos.X+blockPos.Z) & 1);
+                    var parity = ((offsetBlockPos.X+offsetBlockPos.Z) & 1);
                     var angle = (MathF.PI/3)*parity;
                     //TODO: calculate this offset to greater accuruacy
                     var XOffset = 0.144f*parity;
@@ -170,25 +176,13 @@ public sealed class MainGameScreen : IScreen
                     // transformedVertex[0] = vertex[0] *  cosa + vertex[2] * sina + bx * MathBits.XScale + XOffset;
                     // transformedVertex[1] = vertex[1]                                       + by * 0.5f;
                     // transformedVertex[2] = vertex[0] * -sina + vertex[2] * cosa + bz * 0.25f;
-                    /*
-                    I used this to help guide me on how to set it up
-                    (It's OpenTK Matrix4's transform method)
-                    result = new Vector4(
-                        vec.X * mat.Row0.X + vec.Y * mat.Row1.X + vec.Z * mat.Row2.X + vec.W * mat.Row3.X,
-                        vec.X * mat.Row0.Y + vec.Y * mat.Row1.Y + vec.Z * mat.Row2.Y + vec.W * mat.Row3.Y,
-                        vec.X * mat.Row0.Z + vec.Y * mat.Row1.Z + vec.Z * mat.Row2.Z + vec.W * mat.Row3.Z,
-                        vec.X * mat.Row0.W + vec.Y * mat.Row1.W + vec.Z * mat.Row2.W + vec.W * mat.Row3.W
-                    );
-                    */
-                    //wasn't too hard
+                    //wasn't too hard. I originally did it manually, but doing it this way is WAAY more intuitive, even if it's slightly slower.
                     Matrix4 blockTransform = Matrix4.Identity
                      * Matrix4.CreateRotationY(angle)
-                     * Matrix4.CreateTranslation(blockPos.X * MathBits.XScale + XOffset, blockPos.Y * 0.5f, blockPos.Z * 0.25f);
-                    Matrix4 cameraTransform = world.camera.GetTransform();
+                     * Matrix4.CreateTranslation(offsetBlockPos.X * MathBits.XScale + XOffset, offsetBlockPos.Y * 0.5f, offsetBlockPos.Z * 0.25f);
                     Matrix4 transform = blockTransform * cameraTransform;
                     if(MathBits.MeshRaycast(mesh, transform, mousePos, out var e))
                     {
-                        float distance = (MathBits.GetBlockWorldPos(blockPos) - MathBits.GetBlockWorldPos(playerBlockPos)).Length;
                         blocksInRay.Enqueue(blockPos, distance);
                     }
                 }
@@ -211,10 +205,9 @@ public sealed class MainGameScreen : IScreen
             var XOffset = 0.144f*parity;
             Matrix4 blockTransform = Matrix4.Identity
                 * Matrix4.CreateRotationY(angle)
-                * Matrix4.CreateTranslation(blockPos.X * MathBits.XScale + XOffset, blockPos.Y * 0.5f, blockPos.Z * 0.25f);
-            Matrix4 cameraTransform = world.camera.GetTransform();
+                * Matrix4.CreateTranslation((blockPos.X - playerBaseBlockPos.X) * MathBits.XScale + XOffset, (blockPos.Y - playerBaseBlockPos.Y)* 0.5f, (blockPos.Z - playerBaseBlockPos.Z) * 0.25f);
             Matrix4 transform = blockTransform * cameraTransform;
-            Program.Game.renderDisplay.RenderMeshLines(block.model.mesh, transform, out var e);
+            Program.Game.renderDisplay.DrawMeshLines(block.model.mesh, transform, 0x00FFFFFF, out var e);
             if(e is not null)
             {
                 System.Console.Error.WriteLine("ERROR rendering debug block mesh:" + e.Message + "\n" + e.StackTrace);

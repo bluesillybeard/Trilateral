@@ -131,7 +131,7 @@ public static class MathBits
         {
             for(int z=z0+1; z<z1; z++)
             {
-                Vector2 wp = GetBlockWorldPos(x, 0, z).Xz;
+                Vector2 wp = GetBlockWorldPosLegacy(x, 0, z).Xz;
                 float distanceSquared = Vector2.DistanceSquared(wp, wxz);
                 if(distanceSquared < nearestDistanceSquared)
                 {
@@ -153,14 +153,39 @@ public static class MathBits
     gets the world position of the center of a block,
     </summary>
     */
-    public static Vector3 GetBlockWorldPos(Vector3i blockPos)
+    public static WorldPos GetBlockWorldPos(Vector3i blockPos)
     {
         return GetBlockWorldPos(blockPos.X, blockPos.Y, blockPos.Z);
     }
 
-    public static Vector3 GetBlockWorldPos(int bx, int by, int bz)
+    public static WorldPos GetBlockWorldPos(int bx, int by, int bz)
     {
-        //I'm sincerely sorry, I don't kbow how to explain what this is doing exactly.
+        //I'm sincerely sorry, I don't know how to explain what this is doing exactly.
+        // All you need to know is that it accounts for the tesselation of triangles.
+        var parity = ((bx+bz) & 1) == 1;
+        var XOffset = -0.072f;
+        if(parity)
+        {
+            //TODO: calculate this offset to greater accuruacy
+            XOffset = 0.072f;
+        }
+        var chunk = GetBlockChunkPos(bx, by, bz);
+        var chunkBlock = GetChunkBlockPos(chunk);
+        bx -= chunkBlock.X;
+        by -= chunkBlock.Y;
+        bz -= chunkBlock.Z;
+
+        var offset = new Vector3(
+            bx * XScale + XOffset,
+            by * 0.5f,
+            bz * 0.25f
+        );
+        return new WorldPos(chunk, offset);
+    }
+
+    public static Vector3 GetBlockWorldPosLegacy(int bx, int by, int bz)
+    {
+        //I'm sincerely sorry, I don't know how to explain what this is doing exactly.
         // All you need to know is that it accounts for the tesselation of triangles.
         var parity = ((bx+bz) & 1) == 1;
         var XOffset = -0.072f;
@@ -189,6 +214,15 @@ public static class MathBits
         return new Vector3i((int)MathF.Floor(pf.X), (int)MathF.Floor(pf.Y), (int)MathF.Floor(pf.Z));
     }
 
+    /**
+    <summary>
+    Gets the chunk that a block pos is within
+    </summary>
+    */
+    public static Vector3i GetBlockChunkPos(int bx, int by, int bz)
+    {
+        return GetBlockChunkPos(new Vector3i(bx, by, bz));
+    }
     /**
     <summary>
     Gets the chunk that a block pos is within

@@ -85,12 +85,12 @@ public class BasicChunkGenerator : IChunkGenerator
         Chunk c = new Chunk(new OpenTK.Mathematics.Vector3i(cx, cy, cz), Program.Game.VoidBlock);
         for(uint xp = 0; xp < Chunk.Size; xp++){
             for(uint zp = 0; zp < Chunk.Size; zp++){
-                var worldPos = MathBits.GetBlockWorldPos((int)xp, 0, (int)zp) + chunkWorldPos;
+                var worldPos = MathBits.GetBlockWorldPosLegacy((int)xp, 0, (int)zp) + chunkWorldPos;
                 float height = noise.GetNoise(worldPos.X, worldPos.Z);
                 height = height*height*100;
                 //squaring it makes it better by making lower terrain flatter, and higher terrain more varied and mountain-like
                 for(uint yp = 0; yp < Chunk.Size; yp++){
-                    worldPos = MathBits.GetBlockWorldPos((int)xp, (int)yp, (int)zp) + chunkWorldPos;
+                    worldPos = MathBits.GetBlockWorldPosLegacy((int)xp, (int)yp, (int)zp) + chunkWorldPos;
                     if(worldPos.Y < height) {
                         c.SetBlock(fill, xp, yp, zp);
                     }
