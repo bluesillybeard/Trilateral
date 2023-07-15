@@ -9,5 +9,10 @@ uniform mat4 model;
 void main(){
     texCoord = textureCoords;
     gl_Position = vec4(position, 1.0) * model * camera;
-    screenPos = gl_Position.xyz;
+    //The depth is in "screen space". Think of it like the screen has an imaginary third dimention.
+    // I don't use gl_FragCoord since that gives me the coordinates in pixels, for whatever reason.
+    // (I don't want pixels! I want normalized coordinates!)
+    // gl_Position is in clip space, which took me about an hour to figure out lol.
+    // This is why I should have payed more attention when I was reading learnopengl.com...
+    screenPos = gl_Position.xyz / gl_Position.w;
 }
