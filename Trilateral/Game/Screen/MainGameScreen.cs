@@ -4,6 +4,7 @@
 namespace Trilateral.Game.Screen;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Security.Principal;
 using BasicGUI;
 using OpenTK.Mathematics;
@@ -20,7 +21,6 @@ public sealed class MainGameScreen : IScreen
 {
     TextElement debug;
     GameWorld world;
-    IRenderShader chunkShader;
     public MainGameScreen(BasicGUIPlane gui, string worldName)
     {
         var font = Program.Game.MainFont;
@@ -28,7 +28,6 @@ public sealed class MainGameScreen : IScreen
         var settings  = Program.Game.Settings;
         var blockRegistry =  Program.Game.BlockRegistry;
         var render = IRender.CurrentRender;
-        chunkShader = render.GetShader(new ShaderFeatures(ChunkRenderer.chunkAttributes, true, true));
         debug = new TextElement(new LayoutContainer(gui.GetRoot(), VAllign.top, HAllign.left), 0xFFFFFFFF, 10, "", font, gui.GetDisplay(), 0);
         world = new GameWorld(
             staticProperties.pathToConfig + "/saves/" + worldName,

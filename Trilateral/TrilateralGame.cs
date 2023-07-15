@@ -22,6 +22,7 @@ using Utility;
 using System.Runtime.CompilerServices;
 using Trilateral.Game.Screen;
 using OpenTK.Windowing.Common;
+using System.IO;
 
 public sealed class TrilateralGame
 {
@@ -102,7 +103,7 @@ public sealed class TrilateralGame
             glassTexture = render.LoadTexture(glass.texture);
         }
         BlockRegistry = new Dictionary<string, IBlock>();
-        var chunkShader = render.GetShader(new ShaderFeatures(ChunkRenderer.chunkAttributes, true, true));
+        var chunkShader = render.GetShader(File.ReadAllText("Resources/shaders/ChunkShader/vertex.glsl"), File.ReadAllText("Resources/shaders/ChunkShader/fragment.glsl"), ChunkRenderer.chunkAttributes);
         //TODO: load these from a file
         //Yes, a void block (empty space) is literally just a glass block that doesn't get drawn.
         AirBlock = new SimpleBlock(glass, glassTexture, chunkShader, false, "Air", "trilateral:air");
