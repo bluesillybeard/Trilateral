@@ -30,8 +30,8 @@ public class Chunk
     const uint Length = Size*Size*Size;
     public Vector3i pos;
     private ushort[]? blocks;
-    List<Block>? uidToBlock;
-    private Block fill;
+    List<IBlock>? uidToBlock;
+    private IBlock fill;
     private Dictionary<string, ushort>? blockToUid;
     public bool IsFill()
     {
@@ -57,14 +57,14 @@ public class Chunk
             blockToUid = null;
         }
     }
-    private ushort GetOrAdd(Block block)
+    private ushort GetOrAdd(IBlock block)
     {
         if(uidToBlock is null || blockToUid is null)
         {
-            uidToBlock = new List<Block>();
+            uidToBlock = new List<IBlock>();
             blockToUid = new Dictionary<string, ushort>();
         }
-        if(blockToUid.TryGetValue(block.uid, out var id))
+        if(blockToUid.TryGetValue(block.UUID, out var id))
         {
             return id;
         }
@@ -72,27 +72,27 @@ public class Chunk
         return id;
     }
 
-    private ushort Add(Block block)
+    private ushort Add(IBlock block)
     {
         if(uidToBlock is null || blockToUid is null)
         {
-            uidToBlock = new List<Block>();
+            uidToBlock = new List<IBlock>();
             blockToUid = new Dictionary<string, ushort>();
         }
         var id = (ushort)uidToBlock.Count;
-        if(blockToUid.TryAdd(block.uid, id))
+        if(blockToUid.TryAdd(block.UUID, id))
         {
             uidToBlock.Add(block);
             return id;
         }
         else 
         {
-            System.Console.WriteLine("WARNING: Tried to add duplicate blockToUid mapping for block \"" + block.name + "\" in chunk " + pos);
+            System.Console.WriteLine("WARNING: Tried to add duplicate blockToUid mapping for block \"" + block.Name + "\" in chunk " + pos);
             return 0;
         }
     }
     //creates a new empty chunk
-    public Chunk(Vector3i pos, Block fill)
+    public Chunk(Vector3i pos, IBlock fill)
     {
         this.blocks = null;
         uidToBlock = null;
@@ -101,7 +101,7 @@ public class Chunk
         this.fill = fill;
     }
 
-    private Chunk(Block[] initBlocks, Vector3i pos, Block fill)
+    private Chunk(IBlock[] initBlocks, Vector3i pos, IBlock fill)
     {
         this.pos = pos;
         if(initBlocks.Length != Length)
@@ -111,7 +111,7 @@ public class Chunk
         this.blocks = new ushort[Length];
         for(uint index = 0; index<Length; index++)
         {
-            Block? block = initBlocks[index];
+            IBlock? block = initBlocks[index];
             ushort id;
             id = GetOrAdd(block);
             this.blocks[index] = id;
@@ -143,7 +143,7 @@ public class Chunk
             if(!Program.Game.BlockRegistry.TryGetValue(blockid, out var block))
             {
                 //the block ID doesn't exist, so we just use void
-                block = Program.Game.VoidBlock;
+                block = Program.Game.AirBlock;
                 System.Console.WriteLine("WARNING: block id \'" + blockid + "\' does not exist in the block registry");
             }
             fill = block;
@@ -160,7 +160,7 @@ public class Chunk
                 blocks[i] = block;
             }
             //read in block mappings
-            uidToBlock = new List<Block>();
+            uidToBlock = new List<IBlock>();
             blockToUid = new Dictionary<string, ushort>();
             StringBuilder b = new StringBuilder();
             while(reader.PeekChar() != -1)
@@ -171,7 +171,7 @@ public class Chunk
                     if(!Program.Game.BlockRegistry.TryGetValue(b.ToString(), out var block))
                     {
                         //the block ID doesn't exist, so we just use void
-                        block = Program.Game.VoidBlock;
+                        block = Program.Game.AirBlock;
                         System.Console.WriteLine("WARNING: block id \'" + b.ToString() + "\' does not exist in the block registry. Chunk " + pos);
                     }
                     Add(block);
@@ -187,12 +187,12 @@ public class Chunk
         }
         throw new Exception("Invalid chunk type " + flag + "in chunk " + pos);
     }
-    public Block GetBlock(uint x, uint y, uint z)
+    public IBlock GetBlock(uint x, uint y, uint z)
     {
         uint index = y + Size*x + Size*Size*z;
         return GetBlock(index);
     }
-    private Block GetBlock(uint index)
+    private IBlock GetBlock(uint index)
     {
         if(this.blocks == null || uidToBlock == null)
         {
@@ -201,7 +201,7 @@ public class Chunk
         var uid = this.blocks[index];
         return uidToBlock[uid];
     }
-    private void SetBlock(Block block, uint index)
+    private void SetBlock(IBlock block, uint index)
     {
         if(this.blocks is null)
         {
@@ -210,7 +210,7 @@ public class Chunk
         }
         this.blocks[index] = GetOrAdd(block);
     }
-    public void SetBlock(Block block, uint x, uint y, uint z)
+    public void SetBlock(IBlock block, uint x, uint y, uint z)
     {
         uint index = y + Size*x + Size*Size*z;
         SetBlock(block, index);
@@ -229,7 +229,7 @@ public class Chunk
         if(IsFill() || blocks is null || uidToBlock is null)
         {
             stream.Write(BitConverter.GetBytes((uint)ChunkSerializationFlag.filled));
-            stream.Write(Encoding.ASCII.GetBytes(fill.uid));
+            stream.Write(Encoding.ASCII.GetBytes(fill.UUID));
             stream.WriteByte((byte)0);
             return;
         }
@@ -253,7 +253,7 @@ public class Chunk
             }
             else 
             {
-                id = block.uid;
+                id = block.UUID;
             }
             // write a null-terminated string id.
             stream.Write(Encoding.ASCII.GetBytes(id));

@@ -32,14 +32,14 @@ struct ChunkBuildObject{
         mesh = new MeshBuilder(ChunkRenderer.chunkAttributes);
     }
 
-    public bool AddBlock(uint bx, uint by, uint bz, Block block, Vector3i chunkPos, Chunk[] adjacent)
+    public bool AddBlock(uint bx, uint by, uint bz, IBlock block, Vector3i chunkPos, Chunk[] adjacent)
     {
         var blockedFaces = GetBlockedFaces(bx, by, bz, chunkPos, adjacent);
         //skip surrounded blocks
         if((~blockedFaces & 0b11111) == 0){
             return true;
         }
-        var blockMesh = block.model.mesh;
+        var blockMesh = block.Model.mesh;
         var totalAttribs = blockMesh.attributes.TotalAttributes();
         //TODO: try to convert the attributes if they don't match
         // Although, anybody making a block mesh should use the same attributes.
@@ -136,7 +136,7 @@ struct ChunkBuildObject{
             {
                 continue;
             }
-            adjacentOpaque = adjacentBlock.model.opaqueFaces ?? 0;
+            adjacentOpaque = adjacentBlock.Model.opaqueFaces ?? 0;
             blockedFaces |= (byte)(adjacentOpaque & (1<<i));
         }
         return blockedFaces;

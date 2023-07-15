@@ -31,15 +31,15 @@ class ChunkDrawObjectBuilding
         for(uint x=0; x<Chunk.Size; x++){
             for(uint y=0; y<Chunk.Size; y++){
                 for(uint z=0; z<Chunk.Size; z++){
-                    Block block = chunk.GetBlock(x, y, z);
-                    if(!block.draw){
+                    IBlock block = chunk.GetBlock(x, y, z);
+                    if(!block.Draw){
                         continue;
                     }
-                    int buildObjectHash = ChunkBuildObject.HashCodeOf(block.texture, block.shader);
+                    int buildObjectHash = ChunkBuildObject.HashCodeOf(block.Texture, block.Shader);
                     var index = builds.FindIndex((obj) => {return obj.GetHashCode() == buildObjectHash;});
                     if(index == -1){
                         index = builds.Count;
-                        builds.Add(new ChunkBuildObject(block.texture, block.shader, block.model.texture));
+                        builds.Add(new ChunkBuildObject(block.Texture, block.Shader, block.Model.texture));
                     }
                     var buildObject = builds[index];
                     if(!buildObject.AddBlock(x, y, z, block, pos, chunks))

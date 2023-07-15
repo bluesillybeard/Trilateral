@@ -203,7 +203,7 @@ public sealed class ChunkManager
         return null;
     }
 
-    public Block? GetBlock(Vector3i pos)
+    public IBlock? GetBlock(Vector3i pos)
     {
         //First, figure out which chunk the block is in
         Chunk? chunk = GetChunk(
@@ -219,7 +219,7 @@ public sealed class ChunkManager
         return chunk.GetBlock(MathBits.Mod(pos.X, Chunk.Size), MathBits.Mod(pos.Y, Chunk.Size), MathBits.Mod(pos.Z, Chunk.Size));
     }
 
-    public Block? GetBlock(Vector3i chunkPos, uint x, uint y, uint z)
+    public IBlock? GetBlock(Vector3i chunkPos, uint x, uint y, uint z)
     {
         //First, figure out which chunk the block is in
         Chunk? chunk = GetChunk(chunkPos);
@@ -231,7 +231,7 @@ public sealed class ChunkManager
         return chunk.GetBlock(x, y, z);
     }
 
-    public Block? GetBlock(Vector3i chunkPos, int x, int y, int z)
+    public IBlock? GetBlock(Vector3i chunkPos, int x, int y, int z)
     {
         //First, figure out which chunk the block is in
         // TODO: find an integer-only version of this
@@ -249,7 +249,7 @@ public sealed class ChunkManager
         return chunk.GetBlock(MathBits.Mod(x, Chunk.Size), MathBits.Mod(y, Chunk.Size), MathBits.Mod(z, Chunk.Size));
     }
 
-    public bool TrySetBlock(Block block, Vector3i blockPos)
+    public bool TrySetBlock(IBlock block, Vector3i blockPos)
     {
         //First, figure out which chunk the block is in
         Chunk? chunk = GetChunk(MathBits.GetBlockChunkPos(blockPos));

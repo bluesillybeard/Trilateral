@@ -10,10 +10,10 @@ using System;
 // Served me well in the beginning
 public class BasicChunkGenerator : IChunkGenerator
 {
-    public Block fill;
+    public IBlock fill;
     public FastNoiseLite noise;
 
-    public BasicChunkGenerator(Block fill, FastNoiseLite noise)
+    public BasicChunkGenerator(IBlock fill, FastNoiseLite noise)
     {
         this.fill = fill;
         this.noise = noise;
@@ -22,7 +22,7 @@ public class BasicChunkGenerator : IChunkGenerator
     {
         //fill = settings.fill ?? trilateral:grassBlock ?? VoidBlock
         // (Yes, it's easier to explain in pseudocode than it is in english lol)
-        Block? fillOrNone = null;
+        IBlock? fillOrNone = null;
         //Try getting fill from the settings
         if(settings.TryGet<NBTString>("fill", out var fillElement))
         {
@@ -45,7 +45,7 @@ public class BasicChunkGenerator : IChunkGenerator
         //If none of the above work, as a last resort, just use void block since it's guaranteed to be registered
         if(fillOrNone is null)
         {
-            fillOrNone = Program.Game.VoidBlock;
+            fillOrNone = Program.Game.AirBlock;
         }
         fill = fillOrNone;
 
@@ -74,7 +74,7 @@ public class BasicChunkGenerator : IChunkGenerator
     {
         return new NBTFolder(folderName, 
             new INBTElement[]{
-                new NBTString("fill", fill.uid),
+                new NBTString("fill", fill.UUID),
                 new NBTInt("seed", noise.GetSeed())
             }
         );
@@ -82,7 +82,7 @@ public class BasicChunkGenerator : IChunkGenerator
     public Chunk GenerateChunk(int cx, int cy, int cz)
     {
         var chunkWorldPos = MathBits.GetChunkWorldPosUncentered(cx, cy, cz);
-        Chunk c = new Chunk(new OpenTK.Mathematics.Vector3i(cx, cy, cz), Program.Game.VoidBlock);
+        Chunk c = new Chunk(new OpenTK.Mathematics.Vector3i(cx, cy, cz), Program.Game.AirBlock);
         for(uint xp = 0; xp < Chunk.Size; xp++){
             for(uint zp = 0; zp < Chunk.Size; zp++){
                 var worldPos = MathBits.GetBlockWorldPosLegacy((int)xp, 0, (int)zp) + chunkWorldPos;

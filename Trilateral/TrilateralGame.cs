@@ -26,7 +26,7 @@ using OpenTK.Windowing.Common;
 public sealed class TrilateralGame
 {
     //The dictionary of every block in the game
-    public readonly Dictionary<string, Block> BlockRegistry;
+    public readonly Dictionary<string, IBlock> BlockRegistry;
     //Registry of chunk generators.
     public readonly Dictionary<string, ChunkGeneratorRegistryEntry> ChunkGenerators;
     //The settings
@@ -34,7 +34,7 @@ public sealed class TrilateralGame
     //Properties that stay the same for a given installation and version of the game
     public readonly StaticProperties StaticProperties;
     //VoidBlock, since it's the only block that will always exist no matter what.
-    public readonly Block VoidBlock;
+    public readonly IBlock AirBlock;
     //When the game finished loading
     public readonly DateTime Start;
     DateTime time;
@@ -101,14 +101,14 @@ public sealed class TrilateralGame
             glass = glassOrNothing.Value;
             glassTexture = render.LoadTexture(glass.texture);
         }
-        BlockRegistry = new Dictionary<string, Block>();
+        BlockRegistry = new Dictionary<string, IBlock>();
         var chunkShader = render.GetShader(new ShaderFeatures(ChunkRenderer.chunkAttributes, true, true));
         //TODO: load these from a file
         //Yes, a void block (empty space) is literally just a glass block that doesn't get drawn.
-        VoidBlock = new Block(glass, glassTexture, chunkShader, false, "void", "trilateral:void");
-        BlockRegistry.Add("trilateral:void", VoidBlock);
-        BlockRegistry.Add("trilateral:grassBlock", new Block(grass, grassTexture, chunkShader, "Grass", "trilateral:grassBlock"));
-        BlockRegistry.Add("trilateral:glassBlock", new Block(glass, glassTexture, chunkShader, "Glass", "trilateral:glassBlock"));
+        AirBlock = new SimpleBlock(glass, glassTexture, chunkShader, false, "Air", "trilateral:air");
+        BlockRegistry.Add("trilateral:air", AirBlock);
+        BlockRegistry.Add("trilateral:grassBlock", new SimpleBlock(grass, grassTexture, chunkShader, "Grass", "trilateral:grassBlock"));
+        BlockRegistry.Add("trilateral:glassBlock", new SimpleBlock(glass, glassTexture, chunkShader, "Glass", "trilateral:glassBlock"));
 
         ChunkGenerators = new Dictionary<string, ChunkGeneratorRegistryEntry>();
         //TODO: use Reflection to get every class that extends IChunkGenerator?

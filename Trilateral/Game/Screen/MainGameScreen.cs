@@ -38,11 +38,11 @@ public sealed class MainGameScreen : IScreen
     public IScreen? Update(TimeSpan delta, BasicGUIPlane gui)
     {
         Profiler.PushRaw("DebugText");
-        Block? b = world.chunkManager.GetBlock(MathBits.GetWorldBlockPos(world.playerPos));
+        IBlock? b = world.chunkManager.GetBlock(MathBits.GetWorldBlockPos(world.playerPos));
         string block = "none";
         if(b is not null)
         {
-            block = b.name;
+            block = b.Name;
         }
         //TODO: multiple debug menus
         // ALSO TODO: realtime performance profile chart, like Minecraft's pie chart.
@@ -118,18 +118,18 @@ public sealed class MainGameScreen : IScreen
         bool right = mouse.IsButtonPressed(MouseButton.Right);
         GetSelectedBlock(2, world.playerPos, out var blockSelected, out var placePos);
         var block = world.chunkManager.GetBlock(blockSelected);
-        if(block is not null && block.draw)
+        if(block is not null && block.Draw)
         {
             var blockTransform = MathBits.GetBlockTransformMatrix(blockSelected - MathBits.GetChunkBlockPos(world.playerPos.chunk));
             var cameraTransform = world.camera.GetTransform();
-            Program.Game.renderDisplay.DrawMeshLines(block.model.mesh, blockTransform * cameraTransform, 0x443355FF, 5, out var e);
+            Program.Game.renderDisplay.DrawMeshLines(block.Model.mesh, blockTransform * cameraTransform, 0x443355FF, 5, out var e);
             //TODO: handle e
         }
         if(left || right)
         {
             if(left)
             {
-                world.chunkManager.TrySetBlock(Program.Game.VoidBlock, blockSelected);
+                world.chunkManager.TrySetBlock(Program.Game.AirBlock, blockSelected);
             }
             if(placePos is not null && right && Program.Game.BlockRegistry.TryGetValue("trilateral:glassBlock", out var blockToPlace))
             {
@@ -168,8 +168,8 @@ public sealed class MainGameScreen : IScreen
 
                     //We actually include empty blocks, so when we are iterating at the end we can figure out where a block would be placed
                     //if(!block.draw)continue; //empty block -> skip
-                    var mesh = block.model.mesh;
-                    if(mesh.indices.Length == 0) mesh = Program.Game.VoidBlock.model.mesh;
+                    var mesh = block.Model.mesh;
+                    if(mesh.indices.Length == 0) mesh = Program.Game.AirBlock.Model.mesh;
                     var blockTransform = MathBits.GetBlockTransformMatrix(offsetBlockPos);
                     Matrix4 transform = blockTransform * cameraTransform;
                     if(MathBits.MeshRaycast(mesh, transform, mousePos, out var e))
@@ -206,7 +206,7 @@ public sealed class MainGameScreen : IScreen
                 System.Console.Error.WriteLine("ERROR rendering debug block mesh:" + e.Message + "\n" + e.StackTrace);
             }
             #endif
-            if(block.draw)
+            if(block.Draw)
             {
                 blockSelected = blockPos;
                 placePos = last;
