@@ -1,7 +1,6 @@
 #version 330 core
 
 
-
 //interleave code from https://graphics.stanford.edu/~seander/bithacks.html#InterleaveBMN
 // I can't figure out const arrays in GLSL.
 // I heard somewhere that it's explicitly disallowed, which makes zero sense to me at all.
@@ -52,24 +51,32 @@ uint reverseBits(uint v)
     return v;
 }
 
+
+//TODO: figure out how to fix this so it's actually normalized
 float bayerMatrix2D(uint i, uint j)
 {
     const uint n = 8u;
-    return reverseBits(interleave(i ^ j, i)) / (n * n);
+    i = i % n;
+    j = j % n;
+    return reverseBits(interleave(i ^ j, i)) / float(64);
 }
 
 float getThreshold(vec3 input)
 {
     //return xorshift32(floatBitsToUint(input.x + input.y * 5 + input.z * 11)) / 4294967296.0;
-    return bayerMatrix2D(uint((input.y)*65535), uint((input.x)*65535));
+    const uint depthScale = 32768u;
+    uint x = uint(input.x);
+    uint y = uint(input.y);
+    uint z = uint(input.z*depthScale);
+    return bayerMatrix2D(x+z*2u, y+z);
 }
 
 out vec4 colorOut;
 in vec2 texCoord;
-in vec3 screenPos;
+in float depth;
 uniform sampler2D tex;
 void main(){
-    colorOut = vec4(getThreshold(screenPos));//texture(tex, texCoord);
+    colorOut = vec4(getThreshold(vec3(gl_FragCoord.xy, depth)));//texture(tex, texCoord);
     
     //if(colorOut.a < getThreshold(screenPos))discard;
 }
