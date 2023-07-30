@@ -42,7 +42,12 @@ public sealed class MainMenuScreen : IScreen
         if(startGameButton.isDown)
         {
             OnExit();
-            return new MainGameScreen(gui, worldName.GetText());
+            string worldName = this.worldName.GetText();
+            if(worldName != string.Empty)
+            {
+                string worldPath = StringVerifiers.ConvertPathToSecure(worldName);
+                return new MainGameScreen(gui, worldPath, worldName);
+            }
         }
         return this;
     }

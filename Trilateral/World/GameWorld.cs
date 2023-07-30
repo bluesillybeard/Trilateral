@@ -18,7 +18,7 @@ public sealed class GameWorld : IDisposable
     public WorldPos playerPos;
     public Camera camera;
     public Vector3 playerRotation{get => camera.Rotation; set => camera.Rotation = value;}
-    public GameWorld(string pathToSaveFolder, string generatorId, float renderThreadsMultiplier, float worldThreadsMultiplier)
+    public GameWorld(string pathToSaveFolder, string defaultGeneratorId, float renderThreadsMultiplier, float worldThreadsMultiplier)
     {
         this.pathToSaveFolder = pathToSaveFolder;
         NBTFolder? saveData = null;
@@ -38,14 +38,14 @@ public sealed class GameWorld : IDisposable
             NBTFloatArr pos = new NBTFloatArr("pos", new float[]{0, 0, 0});
             NBTFloatArr rotation = new NBTFloatArr("rotation", new float[]{0, 0, 0});
             NBTIntArr chunk = new NBTIntArr("chunk", new int[]{0, 2, 0});
-            generatorElement = new NBTString("generator", generatorId);
+            generatorElement = new NBTString("generator", defaultGeneratorId);
             //We don't create the generator settings here since those are initialized by the chunk generator itself.
             saveData = new NBTFolder("save", new INBTElement[]{pos, chunk, rotation, generatorElement});
         }
         //get the generator settings if they exist
         NBTFolder generatorSettings = saveData.GetOrDefault<NBTFolder>("generatorSettings", new NBTFolder("generatorSettings", new INBTElement[0]));
         //Override the generator passed into the constructor with the one already in the save file
-        generatorElement = saveData.GetOrDefault<NBTString>("generator", new NBTString("generator", generatorId));
+        generatorElement = saveData.GetOrDefault<NBTString>("generator", new NBTString("generator", defaultGeneratorId));
         var saveGeneratorId = generatorElement.ContainedString;
         //Get the generator from the id
         IChunkGenerator? generator = null;
@@ -56,7 +56,7 @@ public sealed class GameWorld : IDisposable
         //Couldn't find generator entry or something. try the one given to the constructor
         if(generator is null)
         {
-            if(Program.Game.ChunkGenerators.TryGetValue(generatorId, out generatorEntry))
+            if(Program.Game.ChunkGenerators.TryGetValue(defaultGeneratorId, out generatorEntry))
                 generator = generatorEntry.Instantiate(generatorSettings);
         }
         //still couldn't find it, try just making a simple one

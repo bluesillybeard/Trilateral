@@ -21,7 +21,7 @@ public sealed class MainGameScreen : IScreen
 {
     TextElement debug;
     GameWorld world;
-    public MainGameScreen(BasicGUIPlane gui, string worldName)
+    public MainGameScreen(BasicGUIPlane gui, string worldPath, string worldName)
     {
         var font = Program.Game.MainFont;
         var staticProperties = Program.Game.StaticProperties;
@@ -30,7 +30,7 @@ public sealed class MainGameScreen : IScreen
         var render = IRender.CurrentRender;
         debug = new TextElement(new LayoutContainer(gui.GetRoot(), VAllign.top, HAllign.left), 0xFFFFFFFF, 10, "", font, gui.GetDisplay(), 0);
         world = new GameWorld(
-            staticProperties.pathToConfig + "/saves/" + worldName,
+            staticProperties.pathToConfig + "/saves/" + worldPath,
             "trilateral:simple"
         , settings.renderThreadsMultiplier, settings.worldThreadsMultiplier);
     }
