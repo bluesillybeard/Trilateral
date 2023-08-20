@@ -2,22 +2,14 @@
 ### Replace 'Java style' async code with the (not so new) C# async+await syntax.
 ## IMPORTANT NOTES:
 - Async by itself does not spawn new threads- it simply uses interrupts to create efficient context switching within a single thread.
-- use Task.Run instead of thread pools. It works more or less the same as the current thread pool system.
-- - A downside of removing thread pools is less control, however that control is unnessesary and is not currently used anyway.
-- Most of the changes should stay within the ChunkManager class and the classes/structs related to it.
-- Because removing thread pools causes all tasks to share the same one, using async and await to split individual tasks apart will likely be a good idea
 ## IMPORTANT GOALS
-- Remove thread pools. C# doesn't have them built-in for a reason. That will fix the problem of creating >2x as many threads as required
-- make it more clear which methods can be called on which threads
-- - three possibilities: Game thread, Main thread, pool thread
-- - Main thread is reserved for tasks that require interacting with the OpenGL context
-- - Note: might expand to four possibilities: Game, Frame, Main, Pool, since another goal is to separate rendering and updating
-- - It might be worth making EVERYTHING run within a pool thread, to make things consistently async, but we'll see how doable that is.
+- Remove usage of VRender thread pools. [DONE]
 - make rendering and updating asynchronous
 - - In addition, make the GUI and camera update with the framerate, while gameplay-important items update with the 30 UPS clock
 - - interpolation to make future things smoother, although nothing in the current engine can even use interpolation
+- - might require 
 - Make chunk building process less long-winded, and possibly optimize it a bit, although that's a lower priority
-
+- - might be worth doing anyway in order to shorten how long the delay is from queuing a task and it actually completing
 # Trilateral
 Minecraft, except triangular
 

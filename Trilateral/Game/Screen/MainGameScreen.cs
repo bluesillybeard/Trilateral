@@ -63,6 +63,7 @@ public sealed class MainGameScreen : IScreen
         return this;
     }
 
+    Vector3i selectedBlock;
     void UpdatePlayer(TimeSpan delta)
     {
         KeyboardState keyboard = VRender.Render.Keyboard();
@@ -115,20 +116,12 @@ public sealed class MainGameScreen : IScreen
         }
         bool left = mouse.IsButtonPressed(MouseButton.Left);
         bool right = mouse.IsButtonPressed(MouseButton.Right);
-        GetSelectedBlock(2, world.playerPos, out var blockSelected, out var placePos);
-        var block = world.chunkManager.GetBlock(blockSelected);
-        if(block is not null && block.Draw)
-        {
-            var blockTransform = MathBits.GetBlockTransformMatrix(blockSelected - MathBits.GetChunkBlockPos(world.playerPos.chunk));
-            var cameraTransform = world.camera.GetTransform();
-            Program.Game.renderDisplay.DrawMeshLines(block.Model.mesh, blockTransform * cameraTransform, 0x443355FF, 5, out var e);
-            //TODO: handle e
-        }
+        GetSelectedBlock(2, world.playerPos, out selectedBlock, out var placePos);
         if(left || right)
         {
             if(left)
             {
-                world.chunkManager.TrySetBlock(Program.Game.AirBlock, blockSelected);
+                world.chunkManager.TrySetBlock(Program.Game.AirBlock, selectedBlock);
             }
             if(placePos is not null && right && Program.Game.BlockRegistry.TryGetValue("trilateral:glassBlock", out var blockToPlace))
             {
@@ -221,6 +214,14 @@ public sealed class MainGameScreen : IScreen
     public void Draw(TimeSpan delta)
     {
         world.Draw();
+        var block = world.chunkManager.GetBlock(selectedBlock);
+        if(block is not null && block.Draw)
+        {
+            var blockTransform = MathBits.GetBlockTransformMatrix(selectedBlock - MathBits.GetChunkBlockPos(world.playerPos.chunk));
+            var cameraTransform = world.camera.GetTransform();
+            Program.Game.renderDisplay.DrawMeshLines(block.Model.mesh, blockTransform * cameraTransform, 0x443355FF, 5, out var e);
+            //TODO: handle e
+        }
     }
 
     public void OnExit()

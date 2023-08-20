@@ -135,25 +135,6 @@ public sealed class TrilateralGame
             throw new NotImplementedException("LOL i haven't programmed a way programatically to close a VRender application");
         }
         currentScreen = nextScreen;
-        Profiler.PushRaw("GUIIterate");
-        Vector2i size = VRender.Render.WindowSize();
-        gui.SetSize(size.X, size.Y);
-        gui.Iterate();
-        //We "draw" the GUI here.
-        // RenderDisplay only collects the mesh when "drawing",
-        // Nothing actually gets rendered until DrawToScreen is called.
-        gui.Draw();
-        //Draw a little cursor thing.
-        // draw it here, it uses the same drawing system that the GUI uses, so it's drawn on updates instead of frames.
-        // This is mainly for my own recording purposes, because OBS doesn't capture the cursor properly for some reason
-        // The lack or cursor might have something to do with Flatpak, or my compositor, or maybe even X11 itself.
-        // Instead of fixing OBS, I just added my own little cursor.
-        var mousePosPixels = (Vector2i) VRender.Render.Mouse().Position;
-        renderDisplay.DrawLineWithThickness(mousePosPixels.X, mousePosPixels.Y, mousePosPixels.X+20, mousePosPixels.Y+20, 0xFF00FFFF, 4);
-        renderDisplay.DrawLineWithThickness(mousePosPixels.X, mousePosPixels.Y, mousePosPixels.X+15, mousePosPixels.Y+30, 0xFF00FFFF, 4);
-        renderDisplay.DrawLineWithThickness(mousePosPixels.X+20, mousePosPixels.Y+20, mousePosPixels.X+15, mousePosPixels.Y+30, 0xFF00FFFF, 4);
-        
-        Profiler.PopRaw("GUIIterate");
         Profiler.PopRaw("Update");
         Profiler.PushRaw("PostUpdate");
         postUpdateActive = true;
@@ -170,7 +151,25 @@ public sealed class TrilateralGame
         try{
             currentScreen.Draw(delta);
             Profiler.PushRaw("RenderGUI");
-            //This renders the mesh that was collected during the update method.
+            Vector2i size = VRender.Render.WindowSize();
+            gui.SetSize(size.X, size.Y);
+            gui.Iterate();
+            //We "draw" the GUI here.
+            // RenderDisplay only collects the mesh when "drawing",
+            // Nothing actually gets rendered until DrawToScreen is called.
+            gui.Draw();
+            //Draw a little cursor thing.
+            // This is mainly for my own recording purposes, because OBS doesn't capture the cursor properly for some reason
+            // The lack or cursor might have something to do with Flatpak, or my compositor, or maybe even X11 itself.
+            // Instead of fixing OBS, I just added my own little cursor.
+            var mousePosPixels = (Vector2i) VRender.Render.Mouse().Position;
+            renderDisplay.DrawLineWithThickness(mousePosPixels.X, mousePosPixels.Y, mousePosPixels.X+20, mousePosPixels.Y+20, 0xAA00AAFF, 8);
+            renderDisplay.DrawLineWithThickness(mousePosPixels.X, mousePosPixels.Y, mousePosPixels.X+15, mousePosPixels.Y+30, 0xAA00AAFF, 8);
+            renderDisplay.DrawLineWithThickness(mousePosPixels.X+20, mousePosPixels.Y+20, mousePosPixels.X+15, mousePosPixels.Y+30, 0xAA00AAFF, 8);
+            renderDisplay.DrawLineWithThickness(mousePosPixels.X, mousePosPixels.Y, mousePosPixels.X+20, mousePosPixels.Y+20, 0xFFFFFFFF, 4);
+            renderDisplay.DrawLineWithThickness(mousePosPixels.X, mousePosPixels.Y, mousePosPixels.X+15, mousePosPixels.Y+30, 0xFFFFFFFF, 4);
+            renderDisplay.DrawLineWithThickness(mousePosPixels.X+20, mousePosPixels.Y+20, mousePosPixels.X+15, mousePosPixels.Y+30, 0xFFFFFFFF, 4);
+            
             renderDisplay.DrawToScreen();
             Profiler.PopRaw("RenderGUI");
             VRender.Render.EndRenderQueue();

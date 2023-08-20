@@ -147,11 +147,14 @@ public sealed class RenderDisplay : IDisplay
         //This is so the line is always the same thickness no matter what the angle is
         var xfactor = (sina*thickness)/size.X;
         var yfactor = (cosa*thickness)/size.Y;
+        glX0 -= xfactor/2;
+        glY0 -= yfactor/2;
+        glXf -= xfactor/2;
+        glYf -= yfactor/2;
         var glX01 = glX0 + xfactor;
         var glY01 = glY0 + yfactor;
         var glXf1 = glXf + xfactor;
         var glYf1 = glYf + yfactor;
-
         //We need to convert the RGBA color into a vec4
         VRenderLib.VRender.ColorFromRGBA(out var r, out byte g, out byte b, out byte a, rgb);
 

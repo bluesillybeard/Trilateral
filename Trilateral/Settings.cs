@@ -40,7 +40,7 @@ public struct Settings
 
     //The target frames per second.
     // Takes effect after restart, not because I can't make it dynamic but because i'm too lazy
-    public uint targetFPS = 30;
+    public uint targetFPS = 60;
 
     //Weather to try to sync the framerate with the display.
     // The frame timing code is pretty janky atm, so this might cause strange issues.
