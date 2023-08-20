@@ -186,7 +186,11 @@ public sealed class MainGameScreen : IScreen
             var block = world.chunkManager.GetBlock(blockPos);
             if(block is null)
             {
-                throw new Exception("null block shouldn't happen, because null blocks shouldn't have been placed into the block raycast list in the first place!");
+                //This might be null if the chunk unloaded after the block was added to the list of blocks in the ray
+                // It is insanely unlikely, but it still happened during testing so yeah
+                // throw new Exception("null block shouldn't happen, because null blocks shouldn't have been placed into the block raycast list in the first place!");
+                System.Console.Error.WriteLine("Null block found in raycast list");
+                break;
             }
             #if RAYCASTDEBUG
             var parity = ((blockPos.X+blockPos.Z) & 1);

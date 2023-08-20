@@ -33,7 +33,7 @@ public static class MathBits
         return (uint)(num < 0 ? ((num+1)%div + div-1) : (num%div));
     }
     //There is nothing wrong with C#'s division operator, in fact it does exactly what it needs to.
-    // However, it is sometimes useful to floor instead of  truncate the answer, and that is what this does.
+    // However, it is sometimes useful to floor instead of truncate the answer, and that is what this does.
 
     public static int DivideFloor(int num, int div)
     {
@@ -81,7 +81,7 @@ public static class MathBits
     }
     /**
     <summary>
-    gets the world pos of the center of a chunk.
+    gets the world pos of a chunk.
     </summary>
     */
     public static Vector3 GetChunkWorldPosUncentered(Vector3i chunkPos)
@@ -95,7 +95,7 @@ public static class MathBits
 
     /**
     <summary>
-    gets the world pos of the center of a chunk.
+    gets the world pos of a chunk.
     </summary>
     */
     public static Vector3 GetChunkWorldPosUncentered(int cx, int cy, int cz)

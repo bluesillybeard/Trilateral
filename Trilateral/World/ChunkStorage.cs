@@ -5,10 +5,18 @@ using System.IO;
 using System;
 using System.Collections.Generic;
 using Trilateral.Utility;
+using System.Threading.Tasks;
+
 sealed class ChunkStorage
 {
     private string pathToSaveFolder;
     private Dictionary<Vector3i, ChunkSection> sections;
+    // Save chunks periodically rather than whenever they change
+    private HashSet<Chunk> chunksToSave;
+    // A second list that is swapped with the main one
+    // when a flush starts, so the game can keep running
+    // while the world is being saved in the background.
+    private HashSet<Chunk> otherChunksToSave;
     public ChunkStorage(string pathToSaveFolder)
     {
         this.pathToSaveFolder = pathToSaveFolder;
@@ -21,8 +29,23 @@ sealed class ChunkStorage
             Directory.CreateDirectory(pathToSaveFolder + "/chunks/");
         }
         sections = new Dictionary<Vector3i, ChunkSection>();
+        chunksToSave = new HashSet<Chunk>();
+        otherChunksToSave = new HashSet<Chunk>();
     }
     public void SaveChunk(Chunk chunk)
+    {
+        lock(chunksToSave)
+        {
+            //TODO: maybe find a better way to replace pre-existing chunks.
+            if(chunksToSave.Contains(chunk))
+            {
+                chunksToSave.Remove(chunk);
+            }
+            chunksToSave.Add(chunk);
+        }
+    }
+
+    private void SaveChunkForReal(Chunk chunk)
     {
         Profiler.PushRaw("SaveChunk");
         try{
@@ -44,7 +67,6 @@ sealed class ChunkStorage
             System.Console.Error.WriteLine("Error saving chunk " + chunk.pos + ": " + e.Message + "\nStacktrace:" + e.StackTrace);
         }
         Profiler.PopRaw("SaveChunk");
-        
     }
     public Chunk? LoadChunk(Vector3i pos)
     {
@@ -77,9 +99,31 @@ sealed class ChunkStorage
         get => sections.Count;
     }
 
-    public void Flush()
+    private bool Flushing = false;
+
+    public async void Flush()
     {
-        System.Console.WriteLine("Flushing chunk storage");
+        if(Flushing){
+            System.Console.WriteLine("Chunk flush is taking longer than " + Program.Game.Settings.chunkFlushPeriod + "; flush attempted to occur twice concurrently");
+            return;
+        }
+        Flushing = true;
+        System.Console.WriteLine("Started flushing chunk storage");
+        //swap chunksToSave and otherChunksToSave
+        lock(chunksToSave)
+        {
+            var temp = otherChunksToSave;
+            otherChunksToSave = chunksToSave;
+            chunksToSave =  temp;
+        }
+        await Parallel.ForEachAsync(otherChunksToSave, (chunk, token) =>         {
+            // It is worth noting that because chunks are references,
+            // It is possible for a chunk to be modified while it's being serialized.
+            // However, I doubt that will be an issue.
+            SaveChunkForReal(chunk);
+            return ValueTask.CompletedTask;
+        });
+        otherChunksToSave.Clear();
         lock(sections)
         {
             foreach(var section in sections)
@@ -88,5 +132,7 @@ sealed class ChunkStorage
             }
             sections.Clear();
         }
+        Flushing = false;
+        System.Console.WriteLine("Finished flushing chunk storage");
     }
 }

@@ -30,7 +30,7 @@ public class BasicChunkGenerator : IChunkGenerator
             if(!Program.Game.BlockRegistry.TryGetValue(fillElement.ContainedString, out fillOrNone))
             {
                 //TryGetValue uses a default value. Idk what the default value for Block is.
-                // So, I make sure that it's null.
+                // So, make sure that it's null.
                 fillOrNone = null;
             }
         }

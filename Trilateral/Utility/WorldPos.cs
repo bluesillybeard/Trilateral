@@ -1,9 +1,5 @@
-//Why on earth would I make an entire struct just to store a position in the world?
-// You'll see.
-
 using OpenTK.Mathematics;
 using Trilateral.Utility;
-using Trilateral.World;
 
 public struct WorldPos
 {

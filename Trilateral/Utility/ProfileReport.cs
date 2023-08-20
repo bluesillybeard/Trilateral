@@ -2,17 +2,27 @@ namespace Trilateral.Utility;
 using System.Collections.Generic;
 using System;
 using System.Text;
+using System.Threading;
+
 public class ProfileReport
 {
     Dictionary<int, ProfileInProgress> profiles;
+    //This is because, despite the appearance, push and pop are thread-safe
+    // However toString is not thread safe
+    // I don't want push and pop to wait for each other
+    // But ToString has to wait until there are no push or pop operations in progress.
+    uint numberOfPushOrPopOperations;
+    object numberOfPushOrPopOperationsMutex;
 
     public ProfileReport()
     {
         profiles = new Dictionary<int, ProfileInProgress>();
+        numberOfPushOrPopOperationsMutex = new object();
     }
 
     public void Push(string name, int thread, TimeSpan time)
     {
+        lock(numberOfPushOrPopOperationsMutex)numberOfPushOrPopOperations++;
         //First, verify that this thread's root exist.
         if(!profiles.TryGetValue(thread, out var pair))
         {
@@ -31,14 +41,16 @@ public class ProfileReport
         //Finally, we can actually update the profiling point with the newly pushed data
         child.lastPushTime = time;
         pair.current = child;
-
+        lock(numberOfPushOrPopOperationsMutex)numberOfPushOrPopOperations--;
     }
 
     public void Pop(string name, int thread, TimeSpan time)
     {
+        lock(numberOfPushOrPopOperationsMutex)numberOfPushOrPopOperations++;
         //Check to make sure it exists
         if(!profiles.TryGetValue(thread, out var pair))
         {
+            lock(numberOfPushOrPopOperationsMutex)numberOfPushOrPopOperations--;
             throw new Exception("This profile is invalid! A nonexistent value was popped.");
         }
         var current = pair.current;
@@ -56,17 +68,26 @@ public class ProfileReport
         current.calls++;
         
         //And Then move back to the parent, since this node is finished.
-        if(current.parent is null)return;
+        if(current.parent is null){
+            lock(numberOfPushOrPopOperationsMutex)numberOfPushOrPopOperations--;
+            return;
+        }
         pair.current = current.parent;
+        lock(numberOfPushOrPopOperationsMutex)numberOfPushOrPopOperations--;
     }
     public override string ToString()
     {
-        StringBuilder b = new StringBuilder();
-        foreach(KeyValuePair<int, ProfileInProgress> profile in profiles)
+        //Spin wait, which is probably bad but I do't really care
+        while(numberOfPushOrPopOperations > 0){}
+        lock(numberOfPushOrPopOperationsMutex)
         {
-            profile.Value.root.Print(b, 0);
+            StringBuilder b = new StringBuilder();
+            foreach(KeyValuePair<int, ProfileInProgress> profile in profiles)
+            {
+                profile.Value.root.Print(b, 0);
+            }
+            return b.ToString();
         }
-        return b.ToString();
     }
 }
 class ProfileInProgress
