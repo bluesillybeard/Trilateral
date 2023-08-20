@@ -51,7 +51,7 @@ public sealed class MainMenuScreen : IScreen
         }
         return this;
     }
-    public void Draw(TimeSpan delta)
+    public void Draw(TimeSpan delta, IDrawCommandQueue drawCommandQueue)
     {
         //the GUI nodes are drawn separately
     }

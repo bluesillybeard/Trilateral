@@ -100,11 +100,11 @@ public sealed class RenderDisplay : IDisplay
         }
     }
 
-    public void DrawToScreen()
+    public void DrawToScreen(IDrawCommandQueue queue)
     {
         if(gpuMesh is not null)
         {
-            VRender.Render.Draw(
+            queue.Draw(
                 defaultFont, gpuMesh, shader, Enumerable.Empty<KeyValuePair<string, object>>(), false
             );
         }

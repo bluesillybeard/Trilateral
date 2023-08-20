@@ -211,9 +211,9 @@ public sealed class MainGameScreen : IScreen
             last = blockPos;
         }
     }
-    public void Draw(TimeSpan delta)
+    public void Draw(TimeSpan delta, IDrawCommandQueue drawCommandQueue)
     {
-        world.Draw();
+        world.Draw(drawCommandQueue);
         var block = world.chunkManager.GetBlock(selectedBlock);
         if(block is not null && block.Draw)
         {

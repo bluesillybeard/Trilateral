@@ -123,7 +123,7 @@ class ChunkDrawObject
             drawable.model.mesh.Dispose();
         }
     }
-    public void Draw(Matrix4 cameraTransform, Vector3i playerChunk)
+    public void Draw(Matrix4 cameraTransform, Vector3i playerChunk, IDrawCommandQueue drawCommandQueue)
     {
         //Skip if there are no meshes to draw
         if(drawables.Count == 0)return;
@@ -138,7 +138,7 @@ class ChunkDrawObject
         if(drawables is null)return;
         foreach(var drawable in drawables)
         {
-            VRender.Render.Draw(
+            drawCommandQueue.Draw(
                 drawable.model.texture, drawable.model.mesh,
                 drawable.shader, uniforms, true
             );

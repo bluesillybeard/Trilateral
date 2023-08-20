@@ -9,6 +9,7 @@ using Trilateral.Utility;
 using Trilateral.World;
 using Trilateral.World.ChunkGenerators;
 using VRenderLib;
+using VRenderLib.Interface;
 using VRenderLib.Utility;
 
 public sealed class GameWorld : IDisposable
@@ -96,10 +97,10 @@ public sealed class GameWorld : IDisposable
         Profiler.PopRaw("Update");
     }
 
-    public void Draw()
+    public void Draw(IDrawCommandQueue drawCommandQueue)
     {
         Profiler.PushRaw("RenderChunks");
-        chunkManager.Draw(camera, playerPos.chunk);
+        chunkManager.Draw(camera, playerPos.chunk, drawCommandQueue);
         Profiler.PopRaw("RenderChunks");
     }
 }

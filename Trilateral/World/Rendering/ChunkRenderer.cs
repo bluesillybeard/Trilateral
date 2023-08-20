@@ -8,6 +8,7 @@ using VRenderLib.Utility;
 using VRenderLib.Threading;
 using Utility;
 using System.Threading.Tasks;
+using VRenderLib.Interface;
 
 public sealed class ChunkRenderer
 {
@@ -41,11 +42,11 @@ public sealed class ChunkRenderer
         chunksInRenderer = new HashSet<Vector3i>();
     }
 
-    public void DrawChunks(Camera camera, Vector3i playerChunk)
+    public void DrawChunks(Camera camera, Vector3i playerChunk, IDrawCommandQueue drawCommandQueue)
     {
         foreach(KeyValuePair<Vector3i, ChunkDrawObject> obj in chunkDrawObjects)
         {
-            obj.Value.Draw(camera.GetTransform(), playerChunk);
+            obj.Value.Draw(camera.GetTransform(), playerChunk, drawCommandQueue);
         }
     }
 

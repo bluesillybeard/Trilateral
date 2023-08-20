@@ -12,6 +12,7 @@ using VRenderLib.Utility;
 using VRenderLib.Threading;
 using Trilateral;
 using Trilateral.World.ChunkGenerators;
+using VRenderLib.Interface;
 
 public sealed class ChunkManager
 {
@@ -175,9 +176,9 @@ public sealed class ChunkManager
         }
         lock(chunksFinishedLoading)chunksFinishedLoading.Add(chunk);
     }
-    public void Draw(Camera cam, Vector3i playerChunk)
+    public void Draw(Camera cam, Vector3i playerChunk, IDrawCommandQueue drawCommandQueue)
     {
-        renderer.DrawChunks(cam, playerChunk);
+        renderer.DrawChunks(cam, playerChunk, drawCommandQueue);
     }
     public int NumChunks {get => chunks.Count;}
     public int NumChunkSections {get => storage.NumberOfCachedSections;}

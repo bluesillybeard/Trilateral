@@ -135,6 +135,8 @@ public sealed class TrilateralGame
             throw new NotImplementedException("LOL i haven't programmed a way programatically to close a VRender application");
         }
         currentScreen = nextScreen;
+        //the GUI is iterated on updates so keyboard/mouse input timing actually make sense
+        gui.Iterate();
         Profiler.PopRaw("Update");
         Profiler.PushRaw("PostUpdate");
         postUpdateActive = true;
@@ -142,18 +144,17 @@ public sealed class TrilateralGame
 
     bool postFrameActive = false;
     bool postUpdateActive = false;
-    void Render(TimeSpan delta){
+    void Render(TimeSpan delta, IDrawCommandQueue drawCommandQueue){
         double deltaSeconds = delta.Ticks/(double)TimeSpan.TicksPerSecond;
         if(postFrameActive)Profiler.PopRaw("PostFrame");
         if(postUpdateActive)Profiler.PopRaw("PostUpdate");
         Profiler.PushRaw("Render");
         totalFrames++;
         try{
-            currentScreen.Draw(delta);
+            currentScreen.Draw(delta, drawCommandQueue);
             Profiler.PushRaw("RenderGUI");
             Vector2i size = VRender.Render.WindowSize();
             gui.SetSize(size.X, size.Y);
-            gui.Iterate();
             //We "draw" the GUI here.
             // RenderDisplay only collects the mesh when "drawing",
             // Nothing actually gets rendered until DrawToScreen is called.
@@ -170,9 +171,8 @@ public sealed class TrilateralGame
             renderDisplay.DrawLineWithThickness(mousePosPixels.X, mousePosPixels.Y, mousePosPixels.X+15, mousePosPixels.Y+30, 0xFFFFFFFF, 4);
             renderDisplay.DrawLineWithThickness(mousePosPixels.X+20, mousePosPixels.Y+20, mousePosPixels.X+15, mousePosPixels.Y+30, 0xFFFFFFFF, 4);
             
-            renderDisplay.DrawToScreen();
+            renderDisplay.DrawToScreen(drawCommandQueue);
             Profiler.PopRaw("RenderGUI");
-            VRender.Render.EndRenderQueue();
             frameDelta = delta;
         } catch (Exception e)
         {
