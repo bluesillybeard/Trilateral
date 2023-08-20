@@ -75,39 +75,25 @@ public sealed class RenderDisplay : IDisplay
     public IRenderTexture defaultFont;
     private MeshBuilder mesh;
     private IRenderShader shader;
-    private ExecutorTask<IRenderMesh>? meshTask;
-    private IRenderMesh? gpuMesh;
     public void BeginFrame()
     {
-        // Start uploading the mesh when a frame starts, so it has the entire frame to finish
-        var vmesh = mesh.ToMesh();
-        meshTask = VRender.Render.SubmitToQueueHighPriority<IRenderMesh>(()=>{
-            Profiler.PushRaw("UploadGUIMesh");
-            var mesh = VRenderLib.VRender.Render.LoadMesh(vmesh);
-            Profiler.PopRaw("UploadGUIMesh");
-            return mesh;
-        }, "UploadGUIMesh");
         mesh.Clear();
     }
     public void EndFrame()
     {
-        if(meshTask is not null)
-        {
-            Profiler.PushRaw("GUIWaitMesh");
-            meshTask.WaitUntilDone();
-            Profiler.PopRaw("GUIWaitMesh");
-            gpuMesh = meshTask.GetResult();
-        }
     }
 
     public void DrawToScreen(IDrawCommandQueue queue)
     {
-        if(gpuMesh is not null)
-        {
-            queue.Draw(
-                defaultFont, gpuMesh, shader, Enumerable.Empty<KeyValuePair<string, object>>(), false
-            );
-        }
+        Profiler.PushRaw("GuiMesh");
+        var vmesh = mesh.ToMesh();
+        queue.Custom(() => {
+            Profiler.PushRaw("GuiRender");
+            var gpuMesh = VRender.Render.LoadMesh(vmesh);
+            queue.DrawDirect(defaultFont, gpuMesh, shader, Enumerable.Empty<KeyValuePair<string, object>>(), false);
+            Profiler.PopRaw("GuiRender");
+        });
+        Profiler.PopRaw("GuiMesh");
     }
     public void DrawPixel(int x, int y, uint rgb, byte depth = 0)
     {
