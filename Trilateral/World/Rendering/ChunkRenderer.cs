@@ -7,12 +7,11 @@ using vmodel;
 using VRenderLib.Utility;
 using VRenderLib.Threading;
 using Utility;
+using System.Threading.Tasks;
 
 public sealed class ChunkRenderer
 {
     public static readonly Attributes chunkAttributes = new Attributes(new EAttribute[]{EAttribute.position, EAttribute.textureCoords, EAttribute.normal});
-    private LocalThreadPool chunkDrawPool;
-    //TODO: Use different types, instead of it all being draw objects.
     private Dictionary<Vector3i, ChunkDrawObject> chunkDrawObjects; //Chunks that are ready to be drawn.
     public int DrawableChunks {get => chunkDrawObjects.Count;}
     private Dictionary<Vector3i, ChunkDrawObjectUploading> chunksUploading; //Chunks that are in the provess of being uploaded to the GPU
@@ -39,7 +38,6 @@ public sealed class ChunkRenderer
         newOrModifiedChunks = new List<Vector3i>();
         chunksToRemove = new List<Vector3i>();
         otherChunksToRemove = new List<Vector3i>();
-        chunkDrawPool = new LocalThreadPool(int.Max(1, (int)(Environment.ProcessorCount * renderThreadsMultiplier)));
         chunksInRenderer = new HashSet<Vector3i>();
     }
 
@@ -82,9 +80,9 @@ public sealed class ChunkRenderer
         var obj = new ChunkDrawObjectBuilding(pos);
         chunksBuilding.TryAdd(pos, obj);
         obj.InProgress = true;
-        chunkDrawPool.SubmitTask(() => {
+        Task.Run(() => {
             obj.Build(chunks);
-        }, "BuildChunk"+pos);
+        });
     }
     public void Update(ChunkManager chunkManager)
     {
@@ -230,6 +228,5 @@ public sealed class ChunkRenderer
 
     public void Dispose()
     {
-        chunkDrawPool.Stop();
     }
 }

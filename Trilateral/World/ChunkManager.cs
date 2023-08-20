@@ -18,7 +18,6 @@ public sealed class ChunkManager
     private readonly Dictionary<Vector3i, Chunk> chunks;
     public readonly ChunkRenderer renderer;
     public readonly IChunkGenerator generator;
-    private readonly LocalThreadPool pool;
     //TODO: Figure out the best data structure for this.
     private readonly HashSet<Vector3i> chunksBeingLoaded; 
     private readonly List<Chunk> chunksFinishedLoading;
@@ -30,7 +29,7 @@ public sealed class ChunkManager
         this.generator = generator;
         chunks = new Dictionary<Vector3i, Chunk>();
         renderer = new ChunkRenderer(renderThreadsMultiplier);
-        pool = new LocalThreadPool(int.Max(1, (int)(Environment.ProcessorCount*worldThreadsMultiplier)));
+        //pool = new LocalThreadPool(int.Max(1, (int)(Environment.ProcessorCount*worldThreadsMultiplier)));
         chunksBeingLoaded = new HashSet<Vector3i>();
         chunksFinishedLoading = new List<Chunk>();
         storage = new ChunkStorage(pathToSaveFolder);
@@ -140,9 +139,9 @@ public sealed class ChunkManager
         {
             var chunkPos = chunkLoadList.Dequeue();
             chunksBeingLoaded.Add(chunkPos);
-            pool.SubmitTask(() => {
+            Task.Run(() => {
                 LoadChunkTask(chunkPos);
-            }, "LoadChunk");
+            });
         }
         Profiler.PopRaw("ChunkStartLoad");
         Profiler.PushRaw("SaveModifiedChunks");
@@ -150,9 +149,9 @@ public sealed class ChunkManager
         {
             foreach(var chunk in modifiedChunks)
             {
-                pool.SubmitTask(() => {
+                Task.Run(() => {
                     SaveChunk(chunk);
-                }, "SaveChunk");
+                });
             }
             modifiedChunks.Clear();
         }
@@ -294,7 +293,6 @@ public sealed class ChunkManager
     public void Dispose()
     {
         renderer.Dispose();
-        pool.Stop();
         storage.Flush();
     }
 }

@@ -5,6 +5,7 @@
 - use Task.Run instead of thread pools. It works more or less the same as the current thread pool system.
 - - A downside of removing thread pools is less control, however that control is unnessesary and is not currently used anyway.
 - Most of the changes should stay within the ChunkManager class and the classes/structs related to it.
+- Because removing thread pools causes all tasks to share the same one, using async and await to split individual tasks apart will likely be a good idea
 ## IMPORTANT GOALS
 - Remove thread pools. C# doesn't have them built-in for a reason. That will fix the problem of creating >2x as many threads as required
 - make it more clear which methods can be called on which threads
