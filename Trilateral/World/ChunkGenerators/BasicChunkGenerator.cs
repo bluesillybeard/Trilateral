@@ -8,7 +8,7 @@ using System;
 //The "original" world generator for Voxeele-- I mean Trilateral.
 // (I'm still getting used to the fact that I renamed it lol)
 // Served me well in the beginning
-public class BasicChunkGenerator : IChunkGenerator
+public sealed class BasicChunkGenerator : IChunkGenerator
 {
     public IBlock fill;
     public FastNoiseLite noise;

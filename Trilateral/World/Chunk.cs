@@ -13,7 +13,7 @@ using OpenTK.Mathematics;
 //  It's well worth the tiny bit of extra memory to store the mapping from ID to Block
 //  1.6gb -> 0.7gb (roughly half)
 // 
-public class Chunk
+public sealed class Chunk
 {
     // Chunks are quite unusually shaped (geometrically speaking), but the data is stored as a cube.
     // I chose 40x40x40 because it is the largest size that allows my memory optimization to work.
@@ -86,7 +86,7 @@ public class Chunk
         }
         else
         {
-            System.Console.WriteLine("WARNING: Tried to add duplicate blockToUid mapping for block \"" + block.Name + "\" in chunk " + pos);
+            Console.WriteLine("WARNING: Tried to add duplicate blockToUid mapping for block \"" + block.Name + "\" in chunk " + pos);
             return 0;
         }
     }
@@ -137,8 +137,7 @@ public class Chunk
             //Read in block data
             for(int i=0; i<Length; ++i)
             {
-                var block = reader.ReadUInt16();
-                blocks[i] = block;
+                blocks[i] = reader.ReadUInt16();
             }
             //read in block mappings
             uidToBlock = new List<IBlock>();
@@ -211,7 +210,7 @@ public class Chunk
         {
             stream.Write(BitConverter.GetBytes((uint)ChunkSerializationFlag.filled));
             stream.Write(Encoding.ASCII.GetBytes(fill.UUID));
-            stream.WriteByte((byte)0);
+            stream.WriteByte(0);
             return;
         }
         //It's not empty, so we need to actually serialize it (sad)
@@ -229,7 +228,7 @@ public class Chunk
             var block = uidToBlock[i];
             string id;
             if(block is null){
-                System.Console.WriteLine("WARNING: Replaced block with local id " + i + " with 'void'");
+                Console.WriteLine("WARNING: Replaced block with local id " + i + " with 'void'");
                 id = "trilateral:void";
             }
             else
@@ -238,7 +237,7 @@ public class Chunk
             }
             // write a null-terminated string id.
             stream.Write(Encoding.ASCII.GetBytes(id));
-            stream.WriteByte((byte)0);
+            stream.WriteByte(0);
         }
     }
 }

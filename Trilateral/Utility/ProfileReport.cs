@@ -4,7 +4,7 @@ using System;
 using System.Text;
 using System.Threading;
 
-public class ProfileReport
+public sealed class ProfileReport
 {
     readonly Dictionary<int, ProfileInProgress> profiles;
     //This is because, despite the appearance, push and pop are thread-safe

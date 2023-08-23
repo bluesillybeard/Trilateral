@@ -52,7 +52,7 @@ namespace Trilateral
         }
     }
 
-    public class CustomOutTextWriter : TextWriter
+    public sealed class CustomOutTextWriter : TextWriter
     {
         public CustomOutTextWriter(TextWriter back, ConsoleColor color)
         {

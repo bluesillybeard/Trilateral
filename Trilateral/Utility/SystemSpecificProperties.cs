@@ -2,7 +2,7 @@ namespace Trilateral.Utility;
 
 using System;
 
-public class StaticProperties
+public sealed class StaticProperties
 {
     public readonly string pathToConfig;
     public readonly Version gameVersion;

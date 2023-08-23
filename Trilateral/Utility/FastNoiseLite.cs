@@ -56,7 +56,7 @@ using System.Runtime.CompilerServices;
 using FNLfloat = System.Single;
 //using FNLfloat = System.Double;
 
-public class FastNoiseLite
+public sealed class FastNoiseLite
 {
     private const MethodImplOptions INLINE = MethodImplOptions.AggressiveInlining;
     private const MethodImplOptions OPTIMISE =MethodImplOptions.AggressiveOptimization;

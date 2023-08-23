@@ -8,7 +8,7 @@ using VRenderLib.Threading;
 using VRenderLib;
 using Trilateral.Utility;
 
-class ChunkDrawObjectBuilding
+sealed class ChunkDrawObjectBuilding
 {
     public ChunkDrawObjectBuilding(Vector3i pos)
     {
@@ -57,7 +57,7 @@ class ChunkDrawObjectBuilding
     }
 }
 
-class ChunkDrawObjectUploading
+sealed class ChunkDrawObjectUploading
 {
     public ChunkDrawObjectUploading(Vector3i pos, DateTime time)
     {
@@ -102,7 +102,7 @@ class ChunkDrawObjectUploading
     }
 }
 
-class ChunkDrawObject
+sealed class ChunkDrawObject
 {
     public readonly DateTime LastUpdate; //when the chunk was last updated
     public readonly Vector3i pos;
