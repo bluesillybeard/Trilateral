@@ -48,6 +48,7 @@ public class ProfileReport
 
     public void Pop(string name, int thread, TimeSpan time)
     {
+        _ = name;
         lock(numberOfPushOrPopOperationsMutex)numberOfPushOrPopOperations++;
         //Check to make sure it exists
         if(!profiles.TryGetValue(thread, out var pair))
@@ -57,7 +58,7 @@ public class ProfileReport
         }
         var current = pair.current;
         //Add the elapsed time to the total
-        var delta = (time - current.lastPushTime);
+        var delta = time - current.lastPushTime;
         current.totalDelta += delta;
         if(current.largestDelta < delta)
         {

@@ -26,7 +26,6 @@ public sealed class MainGameScreen : IScreen
         _ = worldName;
         var font = Program.Game.MainFont;
         var staticProperties = Program.Game.StaticProperties;
-        var settings  = Program.Game.Settings;
         debug = new TextElement(new LayoutContainer(gui.GetRoot(), VAllign.top, HAllign.left), 0xFFFFFFFF, 10, "", font, gui.GetDisplay(), 0);
         world = new GameWorld(
             staticProperties.pathToConfig + "/saves/" + worldPath,

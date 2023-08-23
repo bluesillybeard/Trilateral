@@ -19,7 +19,7 @@ public sealed class ChunkRenderer
     public int UploadingChunks {get => chunksUploading.Count;}
     private readonly Dictionary<Vector3i, ChunkDrawObjectBuilding> chunksBuilding; //chunks that are in the process of being built
     public int BuildingChunks {get => chunksBuilding.Count;}
-    private readonly List<Vector3i> chunksInWait; //Chunks that are waiting to be built
+    private readonly LinkedList<Vector3i> chunksInWait; //Chunks that are waiting to be built
     public int WaitingChunks {get => chunksInWait.Count;}
     private readonly List<Vector3i> newOrModifiedChunks;
     private List<Vector3i> chunksToRemove; //chunks that are waiting to be removed
@@ -35,7 +35,7 @@ public sealed class ChunkRenderer
         chunkDrawObjects = new Dictionary<Vector3i, ChunkDrawObject>();
         chunksUploading = new Dictionary<Vector3i, ChunkDrawObjectUploading>();
         chunksBuilding = new Dictionary<Vector3i, ChunkDrawObjectBuilding>();
-        chunksInWait = new List<Vector3i>();
+        chunksInWait = new LinkedList<Vector3i>();
         newOrModifiedChunks = new List<Vector3i>();
         chunksToRemove = new List<Vector3i>();
         otherChunksToRemove = new List<Vector3i>();
@@ -97,35 +97,18 @@ public sealed class ChunkRenderer
         }
         foreach(var pos in otherChunksToRemove)
         {
-            lock(chunksInWait)chunksInWait.Remove(pos);
-            ChunkDrawObject? draw = null;
+            chunksInWait.Remove(pos);
+            bool removedFromDraw = chunkDrawObjects.Remove(pos, out ChunkDrawObject? draw);
             draw?.Dispose();
-            bool removedFromDraw = chunkDrawObjects.Remove(pos, out draw);
             bool removedFromBuilding = false;
-            if(!removedFromDraw)
+            if (!removedFromDraw && chunksBuilding.Remove(pos, out var building))
             {
-                Profiler.PushRaw("lockBuilding");
-                lock(chunksBuilding)
-                {
-                    Profiler.PopRaw("lockBuilding");
-                    if(chunksBuilding.Remove(pos, out var building))
-                    {
-                        building.Cancelled = true;
-                        removedFromBuilding = true;
-                    }
-                }
+                building.Cancelled = true;
+                removedFromBuilding = true;
             }
-            if(!removedFromBuilding)
+            if (!removedFromBuilding && chunksUploading.Remove(pos, out var uploading))
             {
-                Profiler.PushRaw("lockUploading");
-                lock(chunksUploading)
-                {
-                    Profiler.PopRaw("lockUploading");
-                    if(chunksUploading.Remove(pos, out var uploading))
-                    {
-                        uploading.Cancelled = true;
-                    }
-                }
+                uploading.Cancelled = true;
             }
             lock(chunksInRenderer)chunksInRenderer.Remove(pos);
         }
@@ -134,29 +117,37 @@ public sealed class ChunkRenderer
         Profiler.PushRaw("ChunksInWait");
         lock(newOrModifiedChunks)
         {
-            lock(chunksInWait)chunksInWait.AddRange(newOrModifiedChunks);
+            foreach(var chunk in newOrModifiedChunks)
+            {
+                chunksInWait.AddLast(chunk);
+            }
             newOrModifiedChunks.Clear();
         }
-        //TODO: perhaps using a linked list might be faster
-        lock(chunksInWait)
+        //When I switched from using a List to a LinkedList,
+        // it made a HUMUNGOUS speed difference!
+        // Let that be a lesson: changing data structure can be the difference between lag and no lag.
+        var currentNode = chunksInWait.First;
+        while(currentNode is not null)
         {
-            for(int i=chunksInWait.Count-1; i>=0; --i)
+            var next = currentNode.Next;
+            var pos = currentNode.Value;
+            var adj = GetAdjacentChunks(chunkManager, pos);
+            if(adj is null)
             {
-                var pos = chunksInWait[i];
-                var adj = GetAdjacentChunks(chunkManager, pos);
-                if(adj is null)
-                {
-                    continue;
-                }
-                BuildChunk(pos, adj);
-                chunksInWait.RemoveAt(i--);
+                //Is there a way to avoid using a goto? yes.
+                // Does it actually make the code any better? No.
+                // People hate on goto for good reason, but I don't believe it's universally bad.
+                goto Cont;
             }
+            BuildChunk(pos, adj);
+            chunksInWait.Remove(currentNode);
+            Cont:
+            currentNode = next;
         }
         Profiler.PopRaw("ChunksInWait");
         Profiler.PushRaw("ChunksBeingBuilt");
         //Chunks that are being built or just finished building
         List<ChunkDrawObjectBuilding> chunksFinishedBuilding = new();
-        lock(chunksBuilding)
         {
             foreach(var chunk in chunksBuilding)
             {
@@ -173,11 +164,11 @@ public sealed class ChunkRenderer
         }
         foreach(var chunk in chunksFinishedBuilding)
         {
-            lock(chunksBuilding)chunksBuilding.Remove(chunk.pos);
+            chunksBuilding.Remove(chunk.pos);
             var uploading = new ChunkDrawObjectUploading(chunk.pos, chunk.LastUpdate);
             if(!chunksUploading.TryAdd(chunk.pos, uploading))
             {
-                System.Console.Error.WriteLine("ERROR: Failed to add ChunkDrawObjectUploading " + chunk.pos);
+                Console.Error.WriteLine("ERROR: Failed to add ChunkDrawObjectUploading " + chunk.pos);
             }
             uploading.SendToGPU(chunk);
         }
@@ -185,20 +176,16 @@ public sealed class ChunkRenderer
         Profiler.PushRaw("ChunksBeingUploaded");
         List<ChunkDrawObjectUploading> chunksFinishedUploading = new();
         //Go through the chunks that are being uploaded or are done uploading
-        //TODO: possibly split lock into two sections
-        lock(chunksUploading)
+        foreach(var chunk in chunksUploading)
         {
-            foreach(var chunk in chunksUploading)
+            if(!chunk.Value.InProgress)
             {
-                if(!chunk.Value.InProgress)
-                {
-                    chunksFinishedUploading.Add(chunk.Value);
-                }
+                chunksFinishedUploading.Add(chunk.Value);
             }
         }
         foreach(var chunk in chunksFinishedUploading)
         {
-            lock(chunksUploading)chunksUploading.Remove(chunk.pos);
+            chunksUploading.Remove(chunk.pos);
             var draw = new ChunkDrawObject(chunk);
             if(!chunkDrawObjects.TryAdd(chunk.pos, draw))
             {
