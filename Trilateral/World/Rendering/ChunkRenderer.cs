@@ -12,25 +12,25 @@ using VRenderLib.Interface;
 
 public sealed class ChunkRenderer
 {
-    public static readonly Attributes chunkAttributes = new Attributes(new EAttribute[]{EAttribute.position, EAttribute.textureCoords, EAttribute.normal});
-    private Dictionary<Vector3i, ChunkDrawObject> chunkDrawObjects; //Chunks that are ready to be drawn.
+    public static readonly Attributes chunkAttributes = new(new EAttribute[]{EAttribute.position, EAttribute.textureCoords, EAttribute.normal});
+    private readonly Dictionary<Vector3i, ChunkDrawObject> chunkDrawObjects; //Chunks that are ready to be drawn.
     public int DrawableChunks {get => chunkDrawObjects.Count;}
-    private Dictionary<Vector3i, ChunkDrawObjectUploading> chunksUploading; //Chunks that are in the provess of being uploaded to the GPU
+    private readonly Dictionary<Vector3i, ChunkDrawObjectUploading> chunksUploading; //Chunks that are in the provess of being uploaded to the GPU
     public int UploadingChunks {get => chunksUploading.Count;}
-    private Dictionary<Vector3i, ChunkDrawObjectBuilding> chunksBuilding; //chunks that are in the process of being built
+    private readonly Dictionary<Vector3i, ChunkDrawObjectBuilding> chunksBuilding; //chunks that are in the process of being built
     public int BuildingChunks {get => chunksBuilding.Count;}
-    private List<Vector3i> chunksInWait; //Chunks that are waiting to be built
+    private readonly List<Vector3i> chunksInWait; //Chunks that are waiting to be built
     public int WaitingChunks {get => chunksInWait.Count;}
-    private List<Vector3i> newOrModifiedChunks;
+    private readonly List<Vector3i> newOrModifiedChunks;
     private List<Vector3i> chunksToRemove; //chunks that are waiting to be removed
     private List<Vector3i> otherChunksToRemove; //this swaps with chunksToRemove so that other threads can add chunks to remove without waiting for the other to be iterated.
-    
+
     //this is required for two reasons:
     // 1: makes looking up of a chunk is somewhere faster
     // 2: Sometimes chunks are culled (chunks that have no renderable mesh), so they aren't in the renderer but they are still accounted for.
-    private HashSet<Vector3i> chunksInRenderer; //Set of chunks that have been added but not removed.
+    private readonly HashSet<Vector3i> chunksInRenderer; //Set of chunks that have been added but not removed.
 
-    public ChunkRenderer(float renderThreadsMultiplier)
+    public ChunkRenderer()
     {
         chunkDrawObjects = new Dictionary<Vector3i, ChunkDrawObject>();
         chunksUploading = new Dictionary<Vector3i, ChunkDrawObjectUploading>();
@@ -81,9 +81,7 @@ public sealed class ChunkRenderer
         var obj = new ChunkDrawObjectBuilding(pos);
         chunksBuilding.TryAdd(pos, obj);
         obj.InProgress = true;
-        Task.Run(() => {
-            obj.Build(chunks);
-        });
+        Task.Run(() => obj.Build(chunks));
     }
     public void Update(ChunkManager chunkManager)
     {
@@ -101,7 +99,7 @@ public sealed class ChunkRenderer
         {
             lock(chunksInWait)chunksInWait.Remove(pos);
             ChunkDrawObject? draw = null;
-            if(draw is not null)draw.Dispose();
+            draw?.Dispose();
             bool removedFromDraw = chunkDrawObjects.Remove(pos, out draw);
             bool removedFromBuilding = false;
             if(!removedFromDraw)
@@ -157,7 +155,7 @@ public sealed class ChunkRenderer
         Profiler.PopRaw("ChunksInWait");
         Profiler.PushRaw("ChunksBeingBuilt");
         //Chunks that are being built or just finished building
-        List<ChunkDrawObjectBuilding> chunksFinishedBuilding = new List<ChunkDrawObjectBuilding>();
+        List<ChunkDrawObjectBuilding> chunksFinishedBuilding = new();
         lock(chunksBuilding)
         {
             foreach(var chunk in chunksBuilding)
@@ -185,7 +183,7 @@ public sealed class ChunkRenderer
         }
         Profiler.PopRaw("ChunksBeingBuilt");
         Profiler.PushRaw("ChunksBeingUploaded");
-        List<ChunkDrawObjectUploading> chunksFinishedUploading = new List<ChunkDrawObjectUploading>();
+        List<ChunkDrawObjectUploading> chunksFinishedUploading = new();
         //Go through the chunks that are being uploaded or are done uploading
         //TODO: possibly split lock into two sections
         lock(chunksUploading)
@@ -212,7 +210,7 @@ public sealed class ChunkRenderer
         Profiler.PopRaw("ChunkRendererUpdate");
     }
 
-    private Chunk[]? GetAdjacentChunks(ChunkManager m, Vector3i pos)
+    private static Chunk[]? GetAdjacentChunks(ChunkManager m, Vector3i pos)
     {
         //If the chunk has not been built before (It's a new chunk)
         Chunk[] adjacentChunks = new Chunk[ChunkDrawObject.adjacencyList.Length];
@@ -227,7 +225,7 @@ public sealed class ChunkRenderer
         return adjacentChunks;
     }
 
-    public void Dispose()
-    {
-    }
+    // public void Dispose()
+    // {
+    // }
 }

@@ -18,8 +18,8 @@ public interface INBTElement
         int size = 4 + 1 + element.Name.Length+1 + valueBytes.Length; //4 (length) + 1(type) + name+1 (name + null) + NBT data
         byte[] outs = new byte[size];
         //check to make sure that this won't also dispose of the backing array.
-        MemoryStream stream = new MemoryStream(outs);
-        using(BinaryWriter writer = new BinaryWriter(stream, System.Text.Encoding.ASCII, false)){
+        MemoryStream stream = new(outs);
+        using(BinaryWriter writer = new(stream, System.Text.Encoding.ASCII, false)){
             writer.Write(size);
             writer.Write((byte)element.Type);
             writer.Write(ASCIIEncoding.ASCII.GetBytes(element.Name)); //ngl I prefer the Java version of this being in the String class, not it's own separate class somewhat hidden away
@@ -32,8 +32,8 @@ public interface INBTElement
         int size = 4 + 1 + element.Name.Length+1 + 4; //4 (length) + 1(type) + name+1 (name + null) + 4 (this method only applies to 32-bit types)
         byte[] outs = new byte[size];
         //check to make sure that this won't also dispose of the backing array.
-        MemoryStream stream = new MemoryStream(outs);
-        using(BinaryWriter writer = new BinaryWriter(stream, System.Text.Encoding.ASCII, false)){
+        MemoryStream stream = new(outs);
+        using(BinaryWriter writer = new(stream, System.Text.Encoding.ASCII, false)){
             writer.Write(size);
             writer.Write((byte)element.Type);
             writer.Write(ASCIIEncoding.ASCII.GetBytes(element.Name)); //ngl I prefer the Java version of this being in the String class, not it's own separate class somewhat hidden away

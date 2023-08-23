@@ -24,9 +24,9 @@ public struct ProfileSection : IDisposable
 }
 public static class Profiler
 {
-    private static DateTime start = DateTime.Now;
+    private static readonly DateTime start = DateTime.Now;
     #if USE_PROFILE 
-    private static ProfileReport report = new ProfileReport();
+    private static readonly ProfileReport report = new();
     #endif
     public static void PushRaw(string name)
     {

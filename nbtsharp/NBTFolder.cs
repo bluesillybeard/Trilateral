@@ -2,17 +2,24 @@ namespace nbtsharp;
 using System;
 using System.Text;
 using System.Collections.Generic;
+using System.Linq.Expressions;
+
 public class NBTFolder: INBTElement{
     public NBTFolder(string name, Dictionary<string, INBTElement> value){
-        _name = name;
+        Name = name;
         _value = value;
     }
     public NBTFolder(string name, INBTElement[] value){
-        _name = name;
+        Name = name;
         _value = new Dictionary<string, INBTElement>(value.Length);
         foreach(INBTElement element in value){
             _value.Add(element.Name, element);
         }
+    }
+
+    public NBTFolder(string name){
+        Name = name;
+        _value = new Dictionary<string, INBTElement>();
     }
     public NBTFolder(byte[] serializedData) {
         if(serializedData[4] != ((byte)ENBTType.Folder))
@@ -20,9 +27,9 @@ public class NBTFolder: INBTElement{
         int size = BitConverter.ToInt32(serializedData, 0);
         //check indices
         int index = Array.IndexOf<byte>(serializedData[5..size], 0);
-        _name = ASCIIEncoding.ASCII.GetString(serializedData[5..(index+5)]);
+        Name = ASCIIEncoding.ASCII.GetString(serializedData[5..(index+5)]);
         _value = new Dictionary<string, INBTElement>();
-        index = 6+_name.Length; //index represents what byte we are on.
+        index = 6+ Name.Length; //index represents what byte we are on.
         while(index < size) {
             int elementSize = BitConverter.ToInt32(serializedData, index);
             ENBTType elementType = (ENBTType)serializedData[index+4];
@@ -46,7 +53,7 @@ public class NBTFolder: INBTElement{
     }
     public ENBTType Type => ENBTType.Folder;
 
-    public string Name{get => _name;}
+    public string Name { get; }
     public object Contained{get => _value;}
 
     public NBTFolder Add(INBTElement element){
@@ -79,14 +86,14 @@ public class NBTFolder: INBTElement{
             element = castElement;
             return true;
         }
-        element = default(T);
+        element = default;
         return false;
     }
     public INBTElement GetOrDefault(string name, INBTElement def)
     {
-        if(_value.ContainsKey(name))
+        if(_value.TryGetValue(name, out var element))
         {
-            return _value[name];
+            return element;
         }
         return def;
     }
@@ -94,9 +101,8 @@ public class NBTFolder: INBTElement{
     public T GetOrDefault<T>(string name, T def)
     where T : INBTElement
     {
-        if(_value.ContainsKey(name))
+        if(_value.TryGetValue(name, out var val))
         {
-            var val = _value[name];
             if(val is T element)
             {
                 return element;
@@ -107,9 +113,9 @@ public class NBTFolder: INBTElement{
 
     public INBTElement GetOrDefault(string name, Func<INBTElement> defgen)
     {
-        if(_value.ContainsKey(name))
+        if(_value.TryGetValue(name, out var element))
         {
-            return _value[name];
+            return element;
         }
         return defgen();
     }
@@ -117,9 +123,8 @@ public class NBTFolder: INBTElement{
     public T GetOrDefault<T>(string name, Func<T> defgen)
     where T : INBTElement
     {
-        if(_value.ContainsKey(name))
+        if(_value.TryGetValue(name, out var val))
         {
-            var val = _value[name];
             if(val is T element)
             {
                 return element;
@@ -127,8 +132,6 @@ public class NBTFolder: INBTElement{
         }
         return defgen();
     }
-
-    
     public bool Remove(string name, out INBTElement value)
     {
         return _value.Remove(name, out value);
@@ -140,7 +143,7 @@ public class NBTFolder: INBTElement{
     }
     public byte[] Serialize()
     {
-        List<byte> data = new List<byte>(_value.Count * (9+5));
+        List<byte> data = new(_value.Count * (9+5));
         foreach(KeyValuePair<string, INBTElement> element in _value){
             data.AddRange(element.Value.Serialize());
         }
@@ -148,14 +151,13 @@ public class NBTFolder: INBTElement{
     }
     public override string ToString()
     {
-        StringBuilder b = new StringBuilder();
-        b.Append(_name.ToString()).Append(": {");
+        StringBuilder b = new();
+        b.Append(Name).Append(": {");
         foreach (KeyValuePair<string, INBTElement> element in _value){
             b.Append(element.Value.ToString()).Append(", ");
         }
-        b.Append("}");
+        b.Append('}');
         return b.ToString();
     }
-    private Dictionary<string, INBTElement> _value;
-    private string _name;
+    private readonly Dictionary<string, INBTElement> _value;
 }

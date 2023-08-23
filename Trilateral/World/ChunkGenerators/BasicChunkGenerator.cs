@@ -43,10 +43,7 @@ public class BasicChunkGenerator : IChunkGenerator
             }
         }
         //If none of the above work, as a last resort, just use void block since it's guaranteed to be registered
-        if(fillOrNone is null)
-        {
-            fillOrNone = Program.Game.AirBlock;
-        }
+        fillOrNone ??= Program.Game.AirBlock;
         fill = fillOrNone;
 
         int? seedOrNone = null;
@@ -55,10 +52,7 @@ public class BasicChunkGenerator : IChunkGenerator
         {
             seedOrNone = seedElement.ContainedInt;
         }
-        if(seedOrNone is null)
-        {
-            seedOrNone = Random.Shared.Next();
-        }
+        seedOrNone ??= Random.Shared.Next();
 
         //TODO: get noise from settings
         noise = new FastNoiseLite(seedOrNone.Value);
@@ -72,7 +66,7 @@ public class BasicChunkGenerator : IChunkGenerator
 
     public NBTFolder GetSettingsNBT(string folderName)
     {
-        return new NBTFolder(folderName, 
+        return new NBTFolder(folderName,
             new INBTElement[]{
                 new NBTString("fill", fill.UUID),
                 new NBTInt("seed", noise.GetSeed())
@@ -82,7 +76,7 @@ public class BasicChunkGenerator : IChunkGenerator
     public Chunk GenerateChunk(int cx, int cy, int cz)
     {
         var chunkWorldPos = MathBits.GetChunkWorldPosUncentered(cx, cy, cz);
-        Chunk c = new Chunk(new OpenTK.Mathematics.Vector3i(cx, cy, cz), Program.Game.AirBlock);
+        Chunk c = new(new OpenTK.Mathematics.Vector3i(cx, cy, cz), Program.Game.AirBlock);
         for(uint xp = 0; xp < Chunk.Size; xp++){
             for(uint zp = 0; zp < Chunk.Size; zp++){
                 var worldPos = MathBits.GetBlockWorldPosLegacy((int)xp, 0, (int)zp) + chunkWorldPos;
@@ -103,7 +97,7 @@ public class BasicChunkGenerator : IChunkGenerator
     public static ChunkGeneratorRegistryEntry CreateEntry()
     {
         return new ChunkGeneratorRegistryEntry(
-            (s)=>{return new BasicChunkGenerator(s);},
+            (s) => new BasicChunkGenerator(s),
             new (string, ENBTType)[]{("fill", ENBTType.String), ("seed", ENBTType.Int)},
             id
         );

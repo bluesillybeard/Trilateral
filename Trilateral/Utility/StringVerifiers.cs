@@ -1,3 +1,5 @@
+namespace Trilateral.Utility;
+
 public static class StringVerifiers
 {
     public static readonly string[] invalidPathStrings = new[]{

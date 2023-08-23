@@ -26,9 +26,9 @@ public sealed class ChunkSection : IDisposable
     public const int Size = 16;
     public const int NumberOfEntries = Size*Size*Size;
 
-    private string filePath;
-    private ChunkEntry[] entries;
-    private FileStream file;
+    private readonly string filePath;
+    private readonly ChunkEntry[] entries;
+    private readonly FileStream file;
 
     public ChunkSection(string filePath)
     {
@@ -37,13 +37,14 @@ public sealed class ChunkSection : IDisposable
         entries = new ChunkEntry[NumberOfEntries];
         if(file.Length >= NumberOfEntries * 8)
         {
-            BinaryReader r = new BinaryReader(file);
+            BinaryReader r = new(file);
             for(int index=0; index<NumberOfEntries; index++)
             {
-                ChunkEntry entry = new ChunkEntry();
-                entry.offset = r.ReadUInt32();
-                entry.length = r.ReadUInt32();
-                entries[index] = entry;
+                entries[index] = new ChunkEntry
+                {
+                    offset = r.ReadUInt32(),
+                    length = r.ReadUInt32()
+                };
             }
             //Check for any overlaps
             #if DEBUG
@@ -64,14 +65,16 @@ public sealed class ChunkSection : IDisposable
             }
             #endif
         }
-        else 
+        else
         {
-            BinaryWriter w = new BinaryWriter(file);
+            BinaryWriter w = new(file);
             for(int index=0; index<NumberOfEntries; index++)
             {
-                ChunkEntry entry = new ChunkEntry();
-                entry.offset = 0;
-                entry.length = 0;
+                ChunkEntry entry = new()
+                {
+                    offset = 0,
+                    length = 0
+                };
                 w.Write((uint)0);
                 w.Write((uint)0);
             }
@@ -88,7 +91,7 @@ public sealed class ChunkSection : IDisposable
             Vector3i pos = MathBits.Mod(c.pos, Size);
             int index = GetIndex(pos);
             //Serialize the chunk into RAM
-            MemoryStream stream = new MemoryStream(1024);
+            MemoryStream stream = new(1024);
             Profiler.PushRaw("Serialize");
             c.SerializeToStream(stream);
             stream.Seek(0, SeekOrigin.Begin);
@@ -144,7 +147,7 @@ public sealed class ChunkSection : IDisposable
             file.Seek(entry.offset, SeekOrigin.Begin);
             file.ReadExactly(chunkData, 0, (int)entry.length);
         }
-        using MemoryStream chunkDataStream = new MemoryStream(chunkData);
+        using MemoryStream chunkDataStream = new(chunkData);
         return new Chunk(absolutePos, chunkDataStream);
     }
 
@@ -153,7 +156,7 @@ public sealed class ChunkSection : IDisposable
         lock(file)
         {
             file.Seek(0, SeekOrigin.Begin);
-            BinaryWriter w = new BinaryWriter(file);
+            BinaryWriter w = new(file);
             for(int index=0; index<NumberOfEntries; index++)
             {
                 ChunkEntry entry = entries[index];
@@ -164,12 +167,7 @@ public sealed class ChunkSection : IDisposable
             file.Dispose();
         }
     }
-
-    private int GetIndex(int x, int y, int z)
-    {
-        return x + y*Size + z*Size*Size;
-    }
-    private int GetIndex(Vector3i pos)
+    private static int GetIndex(Vector3i pos)
     {
         return pos.X + pos.Y*Size + pos.Z*Size*Size;
     }
@@ -179,14 +177,14 @@ public sealed class ChunkSection : IDisposable
         //sort entries by their offset
         Span<ChunkEntry> sortedEntries = stackalloc ChunkEntry[NumberOfEntries];
         ((Span<ChunkEntry>)entries).CopyTo(sortedEntries);
-        sortedEntries.Sort((x, y) => {return (int)x.offset - (int)y.offset;});
+        sortedEntries.Sort((x, y) => (int)x.offset - (int)y.offset);
         //skip past all of the entries that aren't allocated
         int i=0;
         while(i<sortedEntries.Length && sortedEntries[i].offset == 0)
         {
             i++;
         }
-        sortedEntries = sortedEntries.Slice(i);
+        sortedEntries = sortedEntries[i..];
         if(sortedEntries.Length == 0)
         {
             //All of the entries are empty, so just return the start of the file's data area.
@@ -211,16 +209,6 @@ public sealed class ChunkSection : IDisposable
             i++;
         }
         //If there were no gaps big enough, then we just return the end of the file, since the file stream will automatically expand it
-        return sortedEntries[sortedEntries.Length-1].offset + sortedEntries[sortedEntries.Length-1].length;
-    }
-
-    private int GetOccupierIndex(uint offset)
-    {
-        for(int index = 0; index < NumberOfEntries; index++)
-        {
-            var e = entries[index];
-            if(e.offset <= offset && (e.offset + e.length) >= offset) return index;
-        }
-        return -1;
+        return sortedEntries[^1].offset + sortedEntries[^1].length;
     }
 }

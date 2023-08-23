@@ -4,7 +4,7 @@ using System.Text;
 using System.IO;
 public class NBTUIntArr: INBTElement{
     public NBTUIntArr(string name, uint[] value){
-        _name = name;
+        Name = name;
         _value = value;
     }
 
@@ -14,14 +14,14 @@ public class NBTUIntArr: INBTElement{
         int size = BitConverter.ToInt32(serializedData, 0);
         //check indices
         int index = Array.IndexOf<byte>(serializedData[5..size], 0)+5;
-        _name = ASCIIEncoding.ASCII.GetString(serializedData[5..index]);
+        Name = ASCIIEncoding.ASCII.GetString(serializedData[5..index]);
         _value = new uint[(size-index)/4];
         for(int i=0; i<_value.Length; i++){
             _value[i] = BitConverter.ToUInt32(serializedData, index+i*4+1);
         }
     }
 
-    public string Name{get => _name;}
+    public string Name { get; }
     public object Contained{get => _value;}
 
     public uint[] ContainedArray => _value;
@@ -40,16 +40,15 @@ public class NBTUIntArr: INBTElement{
         }
         return INBTElement.AddHeader(this, valueBytes);
     }
-    
 
     public override string ToString(){
-        StringBuilder b = new StringBuilder();
-        b.Append(_name.ToString()).Append(": {");
+        StringBuilder b = new();
+        b.Append(Name).Append(": {");
         foreach (uint element in _value){
             b.Append(element).Append(", ");
         }
-        b.Append("}");
-        return b.ToString();    } 
+        b.Append('}');
+        return b.ToString();
+    }
     private uint[] _value;
-    private string _name;
 }

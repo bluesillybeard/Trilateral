@@ -15,12 +15,12 @@ public static class MathBits
     //These modulus functions do an actual modulus instead of whatever nonsense C# has by default.
     public static int Mod(int num, int div)
     {
-        return num < 0 ? ((num+1)%div + div-1) : (num%div);
+        return num < 0 ? (((num+1)%div)+div-1) : (num % div);
     }
 
     public static uint Mod(int num, uint div)
     {
-        return (uint)(num < 0 ? ((num+1)%div + div-1) : (num%div));
+        return (uint)(num < 0 ? (((num+1)%div) + div-1) : (num%div));
     }
 
     public static Vector3i Mod(Vector3i num, int div)
@@ -30,7 +30,7 @@ public static class MathBits
 
     public static uint Mod(int num, ushort div)
     {
-        return (uint)(num < 0 ? ((num+1)%div + div-1) : (num%div));
+        return (uint)(num < 0 ? (((num+1)%div) + div-1) : (num%div));
     }
     //There is nothing wrong with C#'s division operator, in fact it does exactly what it needs to.
     // However, it is sometimes useful to floor instead of truncate the answer, and that is what this does.
@@ -40,12 +40,11 @@ public static class MathBits
         return (int)MathF.Floor((float)num/div);
     }
 
-
     public static Vector3i DivideFloor(Vector3i numerator, int denominator)
     {
         return new Vector3i(
-            (int)MathF.Floor(((float)numerator.X)/denominator), 
-            (int)MathF.Floor(((float)numerator.Y)/denominator), 
+            (int)MathF.Floor(((float)numerator.X)/denominator),
+            (int)MathF.Floor(((float)numerator.Y)/denominator),
             (int)MathF.Floor(((float)numerator.Z)/denominator));
     }
 
@@ -61,8 +60,8 @@ public static class MathBits
     public static Vector3i GetChunkPos(Vector3 worldPos)
     {
         return new Vector3i(
-            (int)MathF.Floor(worldPos.X/(Chunk.Size*XScale)), 
-            (int)MathF.Floor(worldPos.Y/(Chunk.Size*0.5f  )), 
+            (int)MathF.Floor(worldPos.X/(Chunk.Size*XScale)),
+            (int)MathF.Floor(worldPos.Y/(Chunk.Size*0.5f  )),
             (int)MathF.Floor(worldPos.Z/(Chunk.Size*0.25f ))
         );
     }
@@ -176,7 +175,7 @@ public static class MathBits
         bz -= chunkBlock.Z;
 
         var offset = new Vector3(
-            bx * XScale + XOffset,
+            (bx * XScale) + XOffset,
             by * 0.5f,
             bz * 0.25f
         );
@@ -195,7 +194,7 @@ public static class MathBits
             XOffset = 0.072f;
         }
         return new Vector3(
-            bx * XScale + XOffset,
+            (bx * XScale) + XOffset,
             by * 0.5f,
             bz * 0.25f
         );
@@ -261,7 +260,6 @@ public static class MathBits
                     break;
                 }
                 positionOffset += (uint)e %5;
-                
             }
             //for each triangle
             for(uint triangleIndex = 0; triangleIndex < mesh.indices.Length/3; triangleIndex++)
@@ -275,9 +273,9 @@ public static class MathBits
                 Span<float> v2s = mesh.GetVertex(v2i);
                 Span<float> v3s = mesh.GetVertex(v3i);
                 //extract the positions
-                Vector3 v1 = new Vector3(v1s[(int)positionOffset], v1s[(int)positionOffset+1], v1s[(int)positionOffset+2]);
-                Vector3 v2 = new Vector3(v2s[(int)positionOffset], v2s[(int)positionOffset+1], v2s[(int)positionOffset+2]);
-                Vector3 v3 = new Vector3(v3s[(int)positionOffset], v3s[(int)positionOffset+1], v3s[(int)positionOffset+2]);
+                Vector3 v1 = new(v1s[(int)positionOffset], v1s[(int)positionOffset+1], v1s[(int)positionOffset+2]);
+                Vector3 v2 = new(v2s[(int)positionOffset], v2s[(int)positionOffset+1], v2s[(int)positionOffset+2]);
+                Vector3 v3 = new(v3s[(int)positionOffset], v3s[(int)positionOffset+1], v3s[(int)positionOffset+2]);
                 //transform them by the matrix
                 v1 = Vector3.TransformPerspective(v1, transform);
                 v2 = Vector3.TransformPerspective(v2, transform);
@@ -316,17 +314,17 @@ public static class MathBits
     //I adapted it to fit my code better, and to fix a bug related to float precision
 
     public static float TriangleArea(Vector2 A, Vector2 B, Vector2 C) {
-        return MathF.Abs((A.X * (B.Y - C.Y) + B.X * (C.Y - A.Y) + C.X * (A.Y - B.Y)) / 2.0f);
+        return MathF.Abs(((A.X * (B.Y - C.Y)) + (B.X * (C.Y - A.Y)) + (C.X * (A.Y - B.Y))) / 2.0f);
              //Math. abs((p1x * (p2y - p3y) + p2x * (p3y - p1y) + p3x * (p1y - p2y)) / 2.0);
     }
 
     public static bool PointInTriangle(Vector2 A, Vector2 B, Vector2 C, Vector2 P) {
         float area = TriangleArea (A, B, C) + .0000177f;          ///area of triangle ABC //with a tiny bit of extra to avoid issues related to float precision errors
-        float area1 = TriangleArea (P, B, C);         ///area of PBC
-        float area2 = TriangleArea (A, P, C);         ///area of APC
-        float area3 = TriangleArea (A, B, P);        ///area of ABP
+        float area1 = TriangleArea (P, B, C);         //area of PBC
+        float area2 = TriangleArea (A, P, C);         //area of APC
+        float area3 = TriangleArea (A, B, P);        //area of ABP
 
-        return (area >= area1 + area2 + area3);        ///when three triangles are forming the whole triangle
+        return area >= area1 + area2 + area3;        //when three triangles are forming the whole triangle
         //I changed it to >= because floats cannot be trusted to hold perfectly accurate data,
     }
 
@@ -337,12 +335,8 @@ public static class MathBits
         var angle = (MathF.PI/3)*parity;
         //TODO: calculate this offset to greater accuruacy
         var XOffset = 0.144f*parity;
-
-        (var sina, var cosa) = MathF.SinCos(angle);
-        Matrix4 blockTransform = Matrix4.Identity
+        return Matrix4.Identity
         * Matrix4.CreateRotationY(angle)
-        * Matrix4.CreateTranslation(blockPos.X * MathBits.XScale + XOffset, blockPos.Y * 0.5f, blockPos.Z * 0.25f);
-
-        return blockTransform;
+        * Matrix4.CreateTranslation((blockPos.X * MathBits.XScale) + XOffset, blockPos.Y * 0.5f, blockPos.Z * 0.25f);
     }
 }

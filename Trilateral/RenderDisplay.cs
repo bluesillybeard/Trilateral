@@ -25,7 +25,6 @@ It is frequently used for debug rendering.
 */
 public sealed class RenderDisplay : IDisplay
 {
-
     public RenderDisplay(IRenderTexture defaultFontTexture)
     {
         this.defaultFont = defaultFontTexture;
@@ -73,8 +72,8 @@ public sealed class RenderDisplay : IDisplay
     }
     //default font for text rendering
     public IRenderTexture defaultFont;
-    private MeshBuilder mesh;
-    private IRenderShader shader;
+    private readonly MeshBuilder mesh;
+    private readonly IRenderShader shader;
     public void BeginFrame()
     {
         mesh.Clear();
@@ -125,6 +124,7 @@ public sealed class RenderDisplay : IDisplay
     }
     public void DrawLineWithThickness(int x1, int y1, int x2, int y2, uint rgb, float thickness, byte depth = 0)
     {
+        _ = depth;
         var size = VRenderLib.VRender.Render.WindowSize();
         (var glX0, var glY0) = PixelToGL(x1, y1);
         (var glXf, var glYf) = PixelToGL(x2, y2);
@@ -162,7 +162,6 @@ public sealed class RenderDisplay : IDisplay
         DrawLineWithThickness(x1, y1, x2, y2, rgb, 2, depth);
     }
 
-
     public void DrawVerticalLine(int x, int y1, int y2, uint rgb, byte depth = 0)
     {
         DrawLine(x, y1, x, y2, rgb, depth);
@@ -179,7 +178,6 @@ public sealed class RenderDisplay : IDisplay
     //This method is no joke.
     public void DrawImage(object image, int x, int y, int width, int height, int srcx, int srcy, int srcwidth, int srcheight, byte depth = 0)
     {
-
     }
     //Draw using a default font
     public void DrawText(int fontSize, string text, NodeBounds bounds, uint rgba, byte depth)
@@ -194,7 +192,7 @@ public sealed class RenderDisplay : IDisplay
     }
     public void DrawText(object font, int fontSize, string text, NodeBounds bounds, uint rgba, byte depth)
     {
-        if(font is not IRenderTexture texture)
+        if(font is not IRenderTexture)
         {
             //TODO: handle error more gracefully
             throw new Exception("Font is not a render texture!");
@@ -204,10 +202,7 @@ public sealed class RenderDisplay : IDisplay
         VRenderLib.VRender.ColorFromRGBA(out var r, out byte g, out byte b, out byte a, rgba);
         //Don't worry about re-generating the mesh every time.
         // the mesh generator has a cache so it will reuse them if it can.
-        var nullableMesh = VRenderLib.Utility.MeshGenerators.BasicText(text, false, false, out var err);
-        //TODO: handle error more gracefully
-        if(nullableMesh is null)throw new Exception(err);
-        var tmesh = nullableMesh.Value;
+        var tmesh = VRenderLib.Utility.MeshGenerators.BasicText(text, false, false, out var err) ?? throw new Exception(err);
         uint attributes = tmesh.attributes.TotalAttributes();
         float[] vertices = tmesh.vertices;
         Vector2i screenSize = VRenderLib.VRender.Render.WindowSize();
@@ -220,7 +215,6 @@ public sealed class RenderDisplay : IDisplay
             //float zp = vertices[index*attributes+2]
             float xt = vertices[index*attributes+3];
             float yt = vertices[index*attributes+4];
-            
             //We need to transform this vertex into where it belongs
             //scale
             xp *= scale.X;
@@ -238,12 +232,10 @@ public sealed class RenderDisplay : IDisplay
     {
         //For the time being, Voxelesque's text rendering is extremely simplistic - every character is a square.
         // The rendered size of text in pixels is fairly simple to compute.
-        
         // This only works for text elements that are one line.
         //width = text.Length*fontSize;
         //height = fontSize;
         width = 0;
-        height = 0;
         string[] lines = text.Split('\n');
         height = lines.Length*fontSize;
         foreach(string line in lines)
@@ -270,7 +262,6 @@ try{
                     break;
                 }
                 positionOffset += (uint)e %5;
-                
             }
             //for each triangle
             for(uint triangleIndex = 0; triangleIndex < mesh.indices.Length/3; triangleIndex++)
@@ -284,9 +275,9 @@ try{
                 Span<float> v2s = mesh.GetVertex(v2i);
                 Span<float> v3s = mesh.GetVertex(v3i);
                 //extract the positions
-                Vector3 v1 = new Vector3(v1s[(int)positionOffset], v1s[(int)positionOffset+1], v1s[(int)positionOffset+2]);
-                Vector3 v2 = new Vector3(v2s[(int)positionOffset], v2s[(int)positionOffset+1], v2s[(int)positionOffset+2]);
-                Vector3 v3 = new Vector3(v3s[(int)positionOffset], v3s[(int)positionOffset+1], v3s[(int)positionOffset+2]);
+                Vector3 v1 = new(v1s[(int)positionOffset], v1s[(int)positionOffset+1], v1s[(int)positionOffset+2]);
+                Vector3 v2 = new(v2s[(int)positionOffset], v2s[(int)positionOffset+1], v2s[(int)positionOffset+2]);
+                Vector3 v3 = new(v3s[(int)positionOffset], v3s[(int)positionOffset+1], v3s[(int)positionOffset+2]);
                 //transform them by the matrix
                 v1 = Vector3.TransformPerspective(v1, transform);
                 v2 = Vector3.TransformPerspective(v2, transform);
@@ -334,66 +325,54 @@ try{
     {
         var keyboard = IRender.CurrentRender.Keyboard();
         //special cases for ctrl, shift, and alt.
-        switch(key)
+        return key switch
         {
-            case KeyCode.shift:
-                return keyboard.IsKeyDown(Keys.LeftShift) || keyboard.IsKeyDown(Keys.RightShift);
-            case KeyCode.ctrl:
-                return keyboard.IsKeyDown(Keys.LeftControl) || keyboard.IsKeyDown(Keys.RightControl);
-            case KeyCode.alt:
-                return keyboard.IsKeyDown(Keys.LeftAlt) || keyboard.IsKeyDown(Keys.RightAlt);
-        }
-        return keyboard.IsKeyDown(KeyCodeToKeys(key));
+            KeyCode.shift => keyboard.IsKeyDown(Keys.LeftShift) || keyboard.IsKeyDown(Keys.RightShift),
+            KeyCode.ctrl => keyboard.IsKeyDown(Keys.LeftControl) || keyboard.IsKeyDown(Keys.RightControl),
+            KeyCode.alt => keyboard.IsKeyDown(Keys.LeftAlt) || keyboard.IsKeyDown(Keys.RightAlt),
+            _ => keyboard.IsKeyDown(KeyCodeToKeys(key)),
+        };
     }
     public IEnumerable<KeyCode> DownKeys()
     {
-        var keyboard = IRender.CurrentRender.Keyboard();
         foreach(KeyCode code in Enum.GetValues(typeof(KeyCode)))
         {
             if(KeyDown(code))yield return code;
         }
     }
-    public bool keyPressed(KeyCode key)
+    public bool KeyPressed(KeyCode key)
     {
         var keyboard = IRender.CurrentRender.Keyboard();
         //special cases for ctrl, shift, and alt.
-        switch(key)
+        return key switch
         {
-            case KeyCode.shift:
-                return keyboard.IsKeyPressed(Keys.LeftShift) || keyboard.IsKeyPressed(Keys.RightShift);
-            case KeyCode.ctrl:
-                return keyboard.IsKeyPressed(Keys.LeftControl) || keyboard.IsKeyPressed(Keys.RightControl);
-            case KeyCode.alt:
-                return keyboard.IsKeyPressed(Keys.LeftAlt) || keyboard.IsKeyPressed(Keys.RightAlt);
-        }
-        return keyboard.IsKeyPressed(KeyCodeToKeys(key));
+            KeyCode.shift => keyboard.IsKeyPressed(Keys.LeftShift) || keyboard.IsKeyPressed(Keys.RightShift),
+            KeyCode.ctrl => keyboard.IsKeyPressed(Keys.LeftControl) || keyboard.IsKeyPressed(Keys.RightControl),
+            KeyCode.alt => keyboard.IsKeyPressed(Keys.LeftAlt) || keyboard.IsKeyPressed(Keys.RightAlt),
+            _ => keyboard.IsKeyPressed(KeyCodeToKeys(key)),
+        };
     }
     public IEnumerable<KeyCode> PressedKeys()
     {
-        var keyboard = IRender.CurrentRender.Keyboard();
         foreach(KeyCode code in Enum.GetValues(typeof(KeyCode)))
         {
-            if(keyPressed(code))yield return code;
+            if(KeyPressed(code))yield return code;
         }
     }
     public bool KeyReleased(KeyCode key)
     {
         var keyboard = IRender.CurrentRender.Keyboard();
         //special cases for ctrl, shift, and alt.
-        switch(key)
+        return key switch
         {
-            case KeyCode.shift:
-                return keyboard.IsKeyReleased(Keys.LeftShift) || keyboard.IsKeyReleased(Keys.RightShift);
-            case KeyCode.ctrl:
-                return keyboard.IsKeyReleased(Keys.LeftControl) || keyboard.IsKeyReleased(Keys.RightControl);
-            case KeyCode.alt:
-                return keyboard.IsKeyReleased(Keys.LeftAlt) || keyboard.IsKeyReleased(Keys.RightAlt);
-        }
-        return keyboard.IsKeyReleased(KeyCodeToKeys(key));
+            KeyCode.shift => keyboard.IsKeyReleased(Keys.LeftShift) || keyboard.IsKeyReleased(Keys.RightShift),
+            KeyCode.ctrl => keyboard.IsKeyReleased(Keys.LeftControl) || keyboard.IsKeyReleased(Keys.RightControl),
+            KeyCode.alt => keyboard.IsKeyReleased(Keys.LeftAlt) || keyboard.IsKeyReleased(Keys.RightAlt),
+            _ => keyboard.IsKeyReleased(KeyCodeToKeys(key)),
+        };
     }
     public IEnumerable<KeyCode> ReleasedKeys()
     {
-        var keyboard = IRender.CurrentRender.Keyboard();
         foreach(KeyCode code in Enum.GetValues(typeof(KeyCode)))
         {
             if(KeyReleased(code))yield return code;
@@ -442,121 +421,121 @@ try{
     public static (int, int) GLToPixel(float glx, float gly)
     {
         Vector2 size = VRenderLib.VRender.Render.WindowSize();
-        int pxX = (int)(((glx + 1)*(size.X/2f)));
-        int pxY = (int)(((-gly + 1)*(size.Y/2f)));
+        int pxX = (int)((glx + 1)*(size.X/2f));
+        int pxY = (int)((-gly + 1)*(size.Y/2f));
         return (pxX, pxY);
     }
-    private Keys KeyCodeToKeys(KeyCode key)
+    private static Keys KeyCodeToKeys(KeyCode key)
     {
-        switch(key)
+        return key switch
         {
-            case KeyCode.backspace: return Keys.Backspace;
-            case KeyCode.tab: return Keys.Tab;
-            case KeyCode.enter: return Keys.Enter;
-            case KeyCode.shift: return Keys.LeftShift;
-            case KeyCode.ctrl: return Keys.LeftControl;
-            case KeyCode.alt: return Keys.LeftAlt;
-            case KeyCode.pauseBreak: return Keys.Pause;
-            case KeyCode.caps: return Keys.CapsLock;
-            case KeyCode.escape: return Keys.Escape;
-            case KeyCode.space: return Keys.Space;
-            case KeyCode.pageUp: return Keys.PageUp;
-            case KeyCode.pageDown: return Keys.PageDown;
-            case KeyCode.end: return Keys.End;
-            case KeyCode.home: return Keys.Home;
-            case KeyCode.left: return Keys.Left;
-            case KeyCode.up: return Keys.Up;
-            case KeyCode.right: return Keys.Right;
-            case KeyCode.down: return Keys.Down;
-            case KeyCode.printScreen: return Keys.PrintScreen;
-            case KeyCode.insert: return Keys.Insert;
-            case KeyCode.delete: return Keys.Delete;
-            case KeyCode.zero: return Keys.D0;
-            case KeyCode.one: return Keys.D1;
-            case KeyCode.two: return Keys.D2;
-            case KeyCode.three: return Keys.D3;
-            case KeyCode.four: return Keys.D4;
-            case KeyCode.five: return Keys.D5;
-            case KeyCode.six: return Keys.D6;
-            case KeyCode.seven: return Keys.D7;
-            case KeyCode.eight: return Keys.D8;
-            case KeyCode.nine: return Keys.D9;
-            case KeyCode.a: return Keys.A;
-            case KeyCode.b: return Keys.B;
-            case KeyCode.c: return Keys.C;
-            case KeyCode.d: return Keys.D;
-            case KeyCode.e: return Keys.E;
-            case KeyCode.f: return Keys.F;
-            case KeyCode.g: return Keys.G;
-            case KeyCode.h: return Keys.H;
-            case KeyCode.i: return Keys.I;
-            case KeyCode.j: return Keys.J;
-            case KeyCode.k: return Keys.K;
-            case KeyCode.l: return Keys.L;
-            case KeyCode.m: return Keys.M;
-            case KeyCode.n: return Keys.N;
-            case KeyCode.o: return Keys.O;
-            case KeyCode.p: return Keys.P;
-            case KeyCode.q: return Keys.Q;
-            case KeyCode.r: return Keys.R;
-            case KeyCode.s: return Keys.S;
-            case KeyCode.t: return Keys.T;
-            case KeyCode.u: return Keys.U;
-            case KeyCode.v: return Keys.V;
-            case KeyCode.w: return Keys.W;
-            case KeyCode.x: return Keys.X;
-            case KeyCode.y: return Keys.Y;
-            case KeyCode.z: return Keys.Z;
-            case KeyCode.superLeft: return Keys.LeftSuper;
-            case KeyCode.superRight: return Keys.RightSuper;
+            KeyCode.backspace => Keys.Backspace,
+            KeyCode.tab => Keys.Tab,
+            KeyCode.enter => Keys.Enter,
+            KeyCode.shift => Keys.LeftShift,
+            KeyCode.ctrl => Keys.LeftControl,
+            KeyCode.alt => Keys.LeftAlt,
+            KeyCode.pauseBreak => Keys.Pause,
+            KeyCode.caps => Keys.CapsLock,
+            KeyCode.escape => Keys.Escape,
+            KeyCode.space => Keys.Space,
+            KeyCode.pageUp => Keys.PageUp,
+            KeyCode.pageDown => Keys.PageDown,
+            KeyCode.end => Keys.End,
+            KeyCode.home => Keys.Home,
+            KeyCode.left => Keys.Left,
+            KeyCode.up => Keys.Up,
+            KeyCode.right => Keys.Right,
+            KeyCode.down => Keys.Down,
+            KeyCode.printScreen => Keys.PrintScreen,
+            KeyCode.insert => Keys.Insert,
+            KeyCode.delete => Keys.Delete,
+            KeyCode.zero => Keys.D0,
+            KeyCode.one => Keys.D1,
+            KeyCode.two => Keys.D2,
+            KeyCode.three => Keys.D3,
+            KeyCode.four => Keys.D4,
+            KeyCode.five => Keys.D5,
+            KeyCode.six => Keys.D6,
+            KeyCode.seven => Keys.D7,
+            KeyCode.eight => Keys.D8,
+            KeyCode.nine => Keys.D9,
+            KeyCode.a => Keys.A,
+            KeyCode.b => Keys.B,
+            KeyCode.c => Keys.C,
+            KeyCode.d => Keys.D,
+            KeyCode.e => Keys.E,
+            KeyCode.f => Keys.F,
+            KeyCode.g => Keys.G,
+            KeyCode.h => Keys.H,
+            KeyCode.i => Keys.I,
+            KeyCode.j => Keys.J,
+            KeyCode.k => Keys.K,
+            KeyCode.l => Keys.L,
+            KeyCode.m => Keys.M,
+            KeyCode.n => Keys.N,
+            KeyCode.o => Keys.O,
+            KeyCode.p => Keys.P,
+            KeyCode.q => Keys.Q,
+            KeyCode.r => Keys.R,
+            KeyCode.s => Keys.S,
+            KeyCode.t => Keys.T,
+            KeyCode.u => Keys.U,
+            KeyCode.v => Keys.V,
+            KeyCode.w => Keys.W,
+            KeyCode.x => Keys.X,
+            KeyCode.y => Keys.Y,
+            KeyCode.z => Keys.Z,
+            KeyCode.superLeft => Keys.LeftSuper,
+            KeyCode.superRight => Keys.RightSuper,
             //case KeyCode.select: return Keys.se
-            case KeyCode.num0: return Keys.KeyPad0;
-            case KeyCode.num1: return Keys.KeyPad1;
-            case KeyCode.num2: return Keys.KeyPad2;
-            case KeyCode.num3: return Keys.KeyPad3;
-            case KeyCode.num4: return Keys.KeyPad4;
-            case KeyCode.num5: return Keys.KeyPad5;
-            case KeyCode.num6: return Keys.KeyPad6;
-            case KeyCode.num7: return Keys.KeyPad7;
-            case KeyCode.num8: return Keys.KeyPad8;
-            case KeyCode.num9: return Keys.KeyPad9;
-            case KeyCode.multiply: return Keys.KeyPadMultiply;
-            case KeyCode.add: return Keys.KeyPadAdd;
-            case KeyCode.subtract: return Keys.KeyPadSubtract;
-            case KeyCode.decimalPoint: return Keys.KeyPadDecimal;
-            case KeyCode.divide: return Keys.KeyPadDivide;
-            case KeyCode.f1: return Keys.F1;
-            case KeyCode.f2: return Keys.F2;
-            case KeyCode.f3: return Keys.F3;
-            case KeyCode.f4: return Keys.F4;
-            case KeyCode.f5: return Keys.F5;
-            case KeyCode.f6: return Keys.F6;
-            case KeyCode.f7: return Keys.F7;
-            case KeyCode.f8: return Keys.F8;
-            case KeyCode.f9: return Keys.F9;
-            case KeyCode.f10: return Keys.F10;
-            case KeyCode.f11: return Keys.F11;
-            case KeyCode.f12: return Keys.F12;
-            case KeyCode.numLock: return Keys.NumLock;
-            case KeyCode.scrollLock: return Keys.ScrollLock;
+            KeyCode.num0 => Keys.KeyPad0,
+            KeyCode.num1 => Keys.KeyPad1,
+            KeyCode.num2 => Keys.KeyPad2,
+            KeyCode.num3 => Keys.KeyPad3,
+            KeyCode.num4 => Keys.KeyPad4,
+            KeyCode.num5 => Keys.KeyPad5,
+            KeyCode.num6 => Keys.KeyPad6,
+            KeyCode.num7 => Keys.KeyPad7,
+            KeyCode.num8 => Keys.KeyPad8,
+            KeyCode.num9 => Keys.KeyPad9,
+            KeyCode.multiply => Keys.KeyPadMultiply,
+            KeyCode.add => Keys.KeyPadAdd,
+            KeyCode.subtract => Keys.KeyPadSubtract,
+            KeyCode.decimalPoint => Keys.KeyPadDecimal,
+            KeyCode.divide => Keys.KeyPadDivide,
+            KeyCode.f1 => Keys.F1,
+            KeyCode.f2 => Keys.F2,
+            KeyCode.f3 => Keys.F3,
+            KeyCode.f4 => Keys.F4,
+            KeyCode.f5 => Keys.F5,
+            KeyCode.f6 => Keys.F6,
+            KeyCode.f7 => Keys.F7,
+            KeyCode.f8 => Keys.F8,
+            KeyCode.f9 => Keys.F9,
+            KeyCode.f10 => Keys.F10,
+            KeyCode.f11 => Keys.F11,
+            KeyCode.f12 => Keys.F12,
+            KeyCode.numLock => Keys.NumLock,
+            KeyCode.scrollLock => Keys.ScrollLock,
             //case KeyCode.mute: return Keys.
             //case KeyCode.audioDown: return Keys.
             //case KeyCode.audioUp
             //case KeyCode.media: return Keys.
             //case KeyCode.app1: return Keys.
             //case KeyCode.app2
-            case KeyCode.semicolon: return Keys.Semicolon;
-            case KeyCode.equals: return Keys.Equal;
-            case KeyCode.comma: return Keys.Comma;
-            case KeyCode.dash: return Keys.Minus;
-            case KeyCode.period: return Keys.Period;
-            case KeyCode.slash: return Keys.Slash;
-            case KeyCode.grave: return Keys.GraveAccent;
-            case KeyCode.bracketLeft: return Keys.LeftBracket;
-            case KeyCode.backSlash: return Keys.Backslash;
-            case KeyCode.bracketRight: return Keys.RightBracket;
-            case KeyCode.quote: return Keys.Apostrophe;
-            default: return 0; //I would return Keys.Unknown, however OpenTK doesn't handle that case.
-        }
+            KeyCode.semicolon => Keys.Semicolon,
+            KeyCode.equals => Keys.Equal,
+            KeyCode.comma => Keys.Comma,
+            KeyCode.dash => Keys.Minus,
+            KeyCode.period => Keys.Period,
+            KeyCode.slash => Keys.Slash,
+            KeyCode.grave => Keys.GraveAccent,
+            KeyCode.bracketLeft => Keys.LeftBracket,
+            KeyCode.backSlash => Keys.Backslash,
+            KeyCode.bracketRight => Keys.RightBracket,
+            KeyCode.quote => Keys.Apostrophe,
+            _ => 0,//I would return Keys.Unknown, however OpenTK doesn't handle that case.
+        };
     }
 }

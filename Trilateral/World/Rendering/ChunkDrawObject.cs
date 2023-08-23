@@ -36,13 +36,13 @@ class ChunkDrawObjectBuilding
                         continue;
                     }
                     int buildObjectHash = ChunkBuildObject.HashCodeOf(block.Texture, block.Shader);
-                    var index = builds.FindIndex((obj) => {return obj.GetHashCode() == buildObjectHash;});
+                    var index = builds.FindIndex((obj) => obj.GetHashCode() == buildObjectHash);
                     if(index == -1){
                         index = builds.Count;
                         builds.Add(new ChunkBuildObject(block.Texture, block.Shader, block.Model.texture));
                     }
                     var buildObject = builds[index];
-                    if(!buildObject.AddBlock(x, y, z, block, pos, chunks))
+                    if(!buildObject.AddBlock(x, y, z, block, chunks))
                     {
                         //If adding the block failed (for whatever reason), cancel building this chunk.
                         return;
@@ -91,15 +91,14 @@ class ChunkDrawObjectUploading
                 InProgress = false;
                 if(Cancelled)
                 {
-                    foreach(var d in drawables)
+                    foreach(var (model, shader) in drawables)
                     {
-                        d.model.mesh.Dispose();
+                        model.mesh.Dispose();
                     }
                 }
                 Profiler.PopRaw("UploadChunk");
             }, "UploadMesh" + pos
         );
-
     }
 }
 
@@ -118,9 +117,9 @@ class ChunkDrawObject
 
     public void Dispose()
     {
-        foreach(var drawable in drawables)
+        foreach(var (model, _) in drawables)
         {
-            drawable.model.mesh.Dispose();
+            model.mesh.Dispose();
         }
     }
     public void Draw(Matrix4 cameraTransform, Vector3i playerChunk, IDrawCommandQueue drawCommandQueue)
@@ -136,13 +135,12 @@ class ChunkDrawObject
             new KeyValuePair<string, object>("camera", cameraTransform)
         };
         if(drawables is null)return;
-        foreach(var drawable in drawables)
+        foreach(var (model, shader) in drawables)
         {
             drawCommandQueue.Draw(
-                drawable.model.texture, drawable.model.mesh,
-                drawable.shader, uniforms, true
+                model.texture, model.mesh,
+                shader, uniforms, true
             );
-            
         }
     }
 

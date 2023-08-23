@@ -19,20 +19,18 @@ using VRenderLib.Utility;
 
 public sealed class MainGameScreen : IScreen
 {
-    TextElement debug;
-    GameWorld world;
+    readonly TextElement debug;
+    readonly GameWorld world;
     public MainGameScreen(BasicGUIPlane gui, string worldPath, string worldName)
     {
+        _ = worldName;
         var font = Program.Game.MainFont;
         var staticProperties = Program.Game.StaticProperties;
         var settings  = Program.Game.Settings;
-        var blockRegistry =  Program.Game.BlockRegistry;
-        var render = IRender.CurrentRender;
         debug = new TextElement(new LayoutContainer(gui.GetRoot(), VAllign.top, HAllign.left), 0xFFFFFFFF, 10, "", font, gui.GetDisplay(), 0);
         world = new GameWorld(
             staticProperties.pathToConfig + "/saves/" + worldPath,
-            "trilateral:simple"
-        , settings.renderThreadsMultiplier, settings.worldThreadsMultiplier);
+            "trilateral:simple");
     }
     public IScreen? Update(TimeSpan delta, BasicGUIPlane gui)
     {
@@ -66,6 +64,7 @@ public sealed class MainGameScreen : IScreen
     Vector3i selectedBlock;
     void UpdatePlayer(TimeSpan delta)
     {
+        _ = delta;
         KeyboardState keyboard = VRender.Render.Keyboard();
         MouseState mouse = VRender.Render.Mouse();
         //Place a block if the player preses a button
@@ -77,7 +76,7 @@ public sealed class MainGameScreen : IScreen
         {
             VRender.Render.CursorState = VRender.Render.CursorState == CursorState.Grabbed ? CursorState.Hidden : CursorState.Grabbed;
         }
-        Vector3 cameraInc = new Vector3();
+        Vector3 cameraInc = new();
         if (keyboard.IsKeyDown(Keys.W)) {
             cameraInc.Z = -1;
         } else if (keyboard.IsKeyDown(Keys.S)) {
@@ -98,21 +97,21 @@ public sealed class MainGameScreen : IScreen
         if(keyboard.IsKeyDown(Keys.LeftShift)) movementSpeed = 5f;
         if(keyboard.IsKeyDown(Keys.LeftAlt)) movementSpeed = 1f/10f;
         var movement = cameraInc * movementSpeed;
-        WorldPos movement3d = new WorldPos();
+        WorldPos movement3d = new();
         if (movement.Z != 0) {
-            movement3d.offset.X = -MathF.Sin(world.playerRotation.Y * Camera.degToRad) * movement.Z;
-            movement3d.offset.Z += MathF.Cos(world.playerRotation.Y * Camera.degToRad) * movement.Z;
+            movement3d.offset.X = -MathF.Sin(world.PlayerRotation.Y * Camera.degToRad) * movement.Z;
+            movement3d.offset.Z += MathF.Cos(world.PlayerRotation.Y * Camera.degToRad) * movement.Z;
         }
         if (movement.X != 0) {
-            movement3d.offset.X += MathF.Cos(world.playerRotation.Y * Camera.degToRad) * movement.X;
-            movement3d.offset.Z += MathF.Sin(world.playerRotation.Y * Camera.degToRad) * movement.X;
+            movement3d.offset.X += MathF.Cos(world.PlayerRotation.Y * Camera.degToRad) * movement.X;
+            movement3d.offset.Z += MathF.Sin(world.PlayerRotation.Y * Camera.degToRad) * movement.X;
         }
         movement3d.offset.Y = movement.Y;
         world.playerPos += movement3d;
         // Update rotation based on mouse
-        float sensitivity = 0.5f;
+        const float sensitivity = 0.5f;
         if (VRender.Render.CursorState == CursorState.Grabbed || mouse.IsButtonDown(MouseButton.Middle)) {
-            world.playerRotation += new Vector3((mouse.Y - mouse.PreviousY) * sensitivity, (mouse.X - mouse.PreviousX) * sensitivity, 0);
+            world.PlayerRotation += new Vector3((mouse.Y - mouse.PreviousY) * sensitivity, (mouse.X - mouse.PreviousX) * sensitivity, 0);
         }
         bool left = mouse.IsButtonPressed(MouseButton.Left);
         bool right = mouse.IsButtonPressed(MouseButton.Right);
@@ -128,8 +127,6 @@ public sealed class MainGameScreen : IScreen
                 world.chunkManager.TrySetBlock(blockToPlace, placePos.Value);
             }
         }
-        
-
     }
 
     public void GetSelectedBlock(float range, WorldPos playerPos, out Vector3i blockSelected, out Vector3i? placePos)
@@ -144,7 +141,7 @@ public sealed class MainGameScreen : IScreen
         Vector3i playerOffsetBlockPos = MathBits.GetBlockPos(playerPos.offset);
         Vector3i playerBaseBlockPos = playerBlockPos - playerOffsetBlockPos;
         blockSelected = playerBlockPos;
-        PriorityQueue<Vector3i, float> blocksInRay = new PriorityQueue<Vector3i, float>();
+        PriorityQueue<Vector3i, float> blocksInRay = new();
         for(int dbx = -blockRange.X; dbx < blockRange.X; dbx++ )
         {
             for(int dby = -blockRange.Y; dby < blockRange.Y; dby++ )
@@ -215,11 +212,11 @@ public sealed class MainGameScreen : IScreen
     {
         world.Draw(drawCommandQueue);
         var block = world.chunkManager.GetBlock(selectedBlock);
-        if(block is not null && block.Draw)
+        if(block?.Draw == true)
         {
             var blockTransform = MathBits.GetBlockTransformMatrix(selectedBlock - MathBits.GetChunkBlockPos(world.playerPos.chunk));
             var cameraTransform = world.camera.GetTransform();
-            Program.Game.renderDisplay.DrawMeshLines(block.Model.mesh, blockTransform * cameraTransform, 0x443355FF, 5, out var e);
+            Program.Game.renderDisplay.DrawMeshLines(block.Model.mesh, blockTransform * cameraTransform, 0x443355FF, 5, out _);
             //TODO: handle e
         }
     }

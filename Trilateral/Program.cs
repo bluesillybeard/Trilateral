@@ -32,7 +32,6 @@ namespace Trilateral
             };
             VRenderLib.VRender.InitRender(renderSettings);
             VRenderLib.VRender.Render.OnStart += Start;
-           
             VRenderLib.VRender.Render.Run();
             Utility.Profiler.Dispose();
         }
@@ -60,8 +59,8 @@ namespace Trilateral
             this.back = back;
             this.color = color;
         }
-        private TextWriter back;
-        private ConsoleColor color;
+        private readonly TextWriter back;
+        private readonly ConsoleColor color;
         public override Encoding Encoding {
             get => Encoding.UTF8;
         }
@@ -70,7 +69,7 @@ namespace Trilateral
         {
             System.Console.ForegroundColor = color;
             string? name = Thread.CurrentThread.Name;
-            var id = Thread.CurrentThread.ManagedThreadId;
+            var id = Environment.CurrentManagedThreadId;
             back.Write($"[thread {id} {name}]");
         }
         public override void Write(ReadOnlySpan<char> buffer)

@@ -12,14 +12,15 @@ using VRenderLib;
 using VRenderLib.Interface;
 using VRenderLib.Utility;
 
+namespace Trilateral.World;
 public sealed class GameWorld : IDisposable
 {
-    string pathToSaveFolder;
+    readonly string pathToSaveFolder;
     public readonly ChunkManager chunkManager;
     public WorldPos playerPos;
     public Camera camera;
-    public Vector3 playerRotation{get => camera.Rotation; set => camera.Rotation = value;}
-    public GameWorld(string pathToSaveFolder, string defaultGeneratorId, float renderThreadsMultiplier, float worldThreadsMultiplier)
+    public Vector3 PlayerRotation{get => camera.Rotation; set => camera.Rotation = value;}
+    public GameWorld(string pathToSaveFolder, string defaultGeneratorId)
     {
         this.pathToSaveFolder = pathToSaveFolder;
         NBTFolder? saveData = null;
@@ -36,15 +37,15 @@ public sealed class GameWorld : IDisposable
         NBTString generatorElement;
         if(saveData is null)
         {
-            NBTFloatArr pos = new NBTFloatArr("pos", new float[]{0, 0, 0});
-            NBTFloatArr rotation = new NBTFloatArr("rotation", new float[]{0, 0, 0});
-            NBTIntArr chunk = new NBTIntArr("chunk", new int[]{0, 2, 0});
+            NBTFloatArr pos = new("pos", new float[]{0, 0, 0});
+            NBTFloatArr rotation = new("rotation", new float[]{0, 0, 0});
+            NBTIntArr chunk = new("chunk", new int[]{0, 2, 0});
             generatorElement = new NBTString("generator", defaultGeneratorId);
             //We don't create the generator settings here since those are initialized by the chunk generator itself.
             saveData = new NBTFolder("save", new INBTElement[]{pos, chunk, rotation, generatorElement});
         }
         //get the generator settings if they exist
-        NBTFolder generatorSettings = saveData.GetOrDefault<NBTFolder>("generatorSettings", new NBTFolder("generatorSettings", new INBTElement[0]));
+        NBTFolder generatorSettings = saveData.GetOrDefault<NBTFolder>("generatorSettings", new NBTFolder("generatorSettings"));
         //Override the generator passed into the constructor with the one already in the save file
         generatorElement = saveData.GetOrDefault<NBTString>("generator", new NBTString("generator", defaultGeneratorId));
         var saveGeneratorId = generatorElement.ContainedString;
@@ -61,20 +62,15 @@ public sealed class GameWorld : IDisposable
                 generator = generatorEntry.Instantiate(generatorSettings);
         }
         //still couldn't find it, try just making a simple one
-        if(generator is null)
-        {
-            generator = new BasicChunkGenerator(generatorSettings);
-        }
-        chunkManager = new ChunkManager(generator, pathToSaveFolder, renderThreadsMultiplier, worldThreadsMultiplier);
+        generator ??= new BasicChunkGenerator(generatorSettings);
+        chunkManager = new ChunkManager(generator, pathToSaveFolder);
         var size = VRender.Render.WindowSize();
         var posArr = saveData.GetOrDefault<NBTFloatArr>("pos", new NBTFloatArr("pos", new float[]{0, 0, 0})).ContainedArray;
         var rotArr = saveData.GetOrDefault<NBTFloatArr>("rotation", new NBTFloatArr("rotation", new float[]{0, 0, 0})).ContainedArray;
         var chunkArr = saveData.GetOrDefault<NBTIntArr>("chunk", new NBTIntArr("chunk", new int[]{0, 2, 0})).ContainedArray;
         playerPos = new WorldPos(new Vector3i(chunkArr[0], chunkArr[1], chunkArr[2]), new Vector3(posArr[0], posArr[1], posArr[2]));
         camera = new Camera(playerPos.offset, new Vector3(rotArr[0], rotArr[1], rotArr[2]), Program.Game.Settings.fieldOfView, size);
-
     }
-    
     public void Dispose()
     {
         var pos = new NBTFloatArr("pos", new float[]{playerPos.offset.X, playerPos.offset.Y, playerPos.offset.Z});

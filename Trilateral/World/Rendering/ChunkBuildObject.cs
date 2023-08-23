@@ -12,7 +12,7 @@ using StbImageSharp;
 // At the very least, it's bearably slow.
 // TODO: a dev with lots of optimization experience, be it future me or others, make this code as fast as possible.
 // Chunk building is a pretty big bottleneck in the world loading process.
-struct ChunkBuildObject{
+readonly struct ChunkBuildObject{
     public static int HashCodeOf(IRenderTexture texture, IRenderShader shader)
     {
         int a = texture.GetHashCode();
@@ -32,9 +32,9 @@ struct ChunkBuildObject{
         mesh = new MeshBuilder(ChunkRenderer.chunkAttributes);
     }
 
-    public bool AddBlock(uint bx, uint by, uint bz, IBlock block, Vector3i chunkPos, Chunk[] adjacent)
+    public bool AddBlock(uint bx, uint by, uint bz, IBlock block, Chunk[] adjacent)
     {
-        var blockedFaces = GetBlockedFaces(bx, by, bz, chunkPos, adjacent);
+        var blockedFaces = GetBlockedFaces(bx, by, bz, adjacent);
         //skip surrounded blocks
         if((~blockedFaces & 0b11111) == 0){
             return true;
@@ -77,7 +77,7 @@ struct ChunkBuildObject{
         return true;
     }
 
-    private byte GetBlockedFaces(uint bx, uint by, uint bz, Vector3i chunkPos, Chunk[] adjacent)
+    private static byte GetBlockedFaces(uint bx, uint by, uint bz, Chunk[] adjacent)
     {
         /*
         bit 1 :top (+y)
@@ -123,7 +123,7 @@ struct ChunkBuildObject{
             xm += (int)bx;
             ym += (int)by;
             zm += (int)bz;
-            Vector3i chunkOffset = new Vector3i(
+            Vector3i chunkOffset = new(
                 (int)MathF.Floor(((float)xm)/Chunk.Size),
                 (int)MathF.Floor(((float)ym)/Chunk.Size),
                 (int)MathF.Floor(((float)zm)/Chunk.Size)
@@ -131,12 +131,11 @@ struct ChunkBuildObject{
             int index = ChunkDrawObject.GetAdjacencyIndex(chunkOffset);
             var adjacentChunk = adjacent[index];
             var adjacentBlock = adjacentChunk.GetBlock(MathBits.Mod(xm, Chunk.Size),MathBits.Mod(ym, Chunk.Size),MathBits.Mod(zm, Chunk.Size));
-            byte adjacentOpaque = 0;
-            if(adjacentBlock is null)
+            if (adjacentBlock is null)
             {
                 continue;
             }
-            adjacentOpaque = adjacentBlock.Model.opaqueFaces ?? 0;
+            byte adjacentOpaque = adjacentBlock.Model.opaqueFaces ?? 0;
             blockedFaces |= (byte)(adjacentOpaque & (1<<i));
         }
         return blockedFaces;

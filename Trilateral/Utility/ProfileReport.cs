@@ -6,13 +6,13 @@ using System.Threading;
 
 public class ProfileReport
 {
-    Dictionary<int, ProfileInProgress> profiles;
+    readonly Dictionary<int, ProfileInProgress> profiles;
     //This is because, despite the appearance, push and pop are thread-safe
     // However toString is not thread safe
     // I don't want push and pop to wait for each other
     // But ToString has to wait until there are no push or pop operations in progress.
     uint numberOfPushOrPopOperations;
-    object numberOfPushOrPopOperationsMutex;
+    readonly object numberOfPushOrPopOperationsMutex;
 
     public ProfileReport()
     {
@@ -27,8 +27,10 @@ public class ProfileReport
         if(!profiles.TryGetValue(thread, out var pair))
         {
             //If it doesn't, add it
-            ProfileNode root = new ProfileNode("thread" + thread);
-            root.calls = 1;
+            ProfileNode root = new("thread" + thread)
+            {
+                calls = 1
+            };
             pair = new ProfileInProgress(root, root);
             lock(profiles) profiles.Add(thread, pair);
         }
@@ -66,7 +68,7 @@ public class ProfileReport
             current.smallestDelta = delta;
         }
         current.calls++;
-        
+
         //And Then move back to the parent, since this node is finished.
         if(current.parent is null){
             lock(numberOfPushOrPopOperationsMutex)numberOfPushOrPopOperations--;
@@ -81,7 +83,7 @@ public class ProfileReport
         while(numberOfPushOrPopOperations > 0){}
         lock(numberOfPushOrPopOperationsMutex)
         {
-            StringBuilder b = new StringBuilder();
+            StringBuilder b = new();
             foreach(KeyValuePair<int, ProfileInProgress> profile in profiles)
             {
                 profile.Value.root.Print(b, 0);
@@ -143,7 +145,7 @@ class ProfileNode
 
     public void Add(ProfileNode child)
     {
-        if(children is null) children = new List<ProfileNode>();
+        children ??= new List<ProfileNode>();
         children.Add(child);
         child.parent = this;
     }
@@ -162,11 +164,11 @@ class ProfileNode
         //add indent
         for(uint i=0; i<indent; i++)
         {
-            text.Append("\t");
+            text.Append('\t');
         }
         if(calls == 0) calls = 1;
         text.Append(name)
-        .Append(" avg:").Append((totalDelta.Ticks / calls)/(double)TimeSpan.TicksPerSecond)
+        .Append(" avg:").Append(totalDelta.Ticks / calls / (double)TimeSpan.TicksPerSecond)
         .Append(" min:").Append((smallestDelta.Ticks)/(double)TimeSpan.TicksPerSecond)
         .Append(" max:").Append((largestDelta.Ticks)/(double)TimeSpan.TicksPerSecond)
         .Append(" n:").Append(calls)
@@ -179,10 +181,9 @@ class ProfileNode
             }
             for(uint i=0; i<indent; i++)
             {
-                text.Append("\t");
+                text.Append('\t');
             }
             text.Append("END ").Append(name).Append('\n');
         }
     }
 }
-

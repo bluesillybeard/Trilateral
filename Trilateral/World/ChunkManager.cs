@@ -20,16 +20,16 @@ public sealed class ChunkManager
     public readonly ChunkRenderer renderer;
     public readonly IChunkGenerator generator;
     //TODO: Figure out the best data structure for this.
-    private readonly HashSet<Vector3i> chunksBeingLoaded; 
+    private readonly HashSet<Vector3i> chunksBeingLoaded;
     private readonly List<Chunk> chunksFinishedLoading;
     private readonly HashSet<Chunk> modifiedChunks;
-    
+
     private readonly ChunkStorage storage;
-    public ChunkManager(IChunkGenerator generator, string pathToSaveFolder, float renderThreadsMultiplier, float worldThreadsMultiplier)
+    public ChunkManager(IChunkGenerator generator, string pathToSaveFolder)
     {
         this.generator = generator;
         chunks = new Dictionary<Vector3i, Chunk>();
-        renderer = new ChunkRenderer(renderThreadsMultiplier);
+        renderer = new ChunkRenderer();
         //pool = new LocalThreadPool(int.Max(1, (int)(Environment.ProcessorCount*worldThreadsMultiplier)));
         chunksBeingLoaded = new HashSet<Vector3i>();
         chunksFinishedLoading = new List<Chunk>();
@@ -71,7 +71,7 @@ public sealed class ChunkManager
         // NOT the actual exact position of the player
         Vector3 playerPos = MathBits.GetChunkWorldPosUncentered(playerChunk);
         Profiler.PushRaw("ChunkToUnload");
-        List<Vector3i> chunksToUnload = new List<Vector3i>();
+        List<Vector3i> chunksToUnload = new();
         var chunkDistanceFactor = new Vector3(1, horizontalLoadDistance/verticalLoadDistance, 1);
         lock(chunks)
         {
@@ -105,7 +105,6 @@ public sealed class ChunkManager
                         continue;
                     }
                 }
-
             }
             renderer.NotifyChunksAdded(chunksFinishedLoading);
             chunksFinishedLoading.Clear();
@@ -113,7 +112,7 @@ public sealed class ChunkManager
         Profiler.PopRaw("ChunksFinishedLoading");
         Profiler.PushRaw("ChunkLoadList");
         //It may be called a queue, but it's actually behaves more like a sorted bag.
-        PriorityQueue<Vector3i, float> chunkLoadList = new PriorityQueue<Vector3i, float>();
+        PriorityQueue<Vector3i, float> chunkLoadList = new();
         Vector3i chunkRange = MathBits.GetChunkPos(new Vector3(horizontalLoadDistance, verticalLoadDistance, horizontalLoadDistance));
         for(int cx=-chunkRange.X; cx<chunkRange.X; ++cx)
         {
@@ -123,7 +122,7 @@ public sealed class ChunkManager
                 {
                     var chunkPos = new Vector3i(cx, cy, cz) + playerChunk;
                     var chunkDistanceSquared =((playerPos - MathBits.GetChunkWorldPos(chunkPos)) * chunkDistanceFactor).LengthSquared;
-                    
+
                     if(
                         chunkDistanceSquared < horizontalLoadDistanceSquared &&
                         !chunksBeingLoaded.Contains(chunkPos) &&
@@ -140,9 +139,7 @@ public sealed class ChunkManager
         {
             var chunkPos = chunkLoadList.Dequeue();
             chunksBeingLoaded.Add(chunkPos);
-            Task.Run(() => {
-                LoadChunkTask(chunkPos);
-            });
+            Task.Run(() => LoadChunkTask(chunkPos));
         }
         Profiler.PopRaw("ChunkStartLoad");
         Profiler.PushRaw("SaveModifiedChunks");
@@ -150,9 +147,7 @@ public sealed class ChunkManager
         {
             foreach(var chunk in modifiedChunks)
             {
-                Task.Run(() => {
-                    SaveChunk(chunk);
-                });
+                Task.Run(() => SaveChunk(chunk));
             }
             modifiedChunks.Clear();
         }
@@ -235,7 +230,7 @@ public sealed class ChunkManager
     {
         //First, figure out which chunk the block is in
         // TODO: find an integer-only version of this
-        Vector3i chunkOffset = new Vector3i(
+        Vector3i chunkOffset = new(
             (int)MathF.Floor(((float)x)/Chunk.Size),
             (int)MathF.Floor(((float)y)/Chunk.Size),
             (int)MathF.Floor(((float)z)/Chunk.Size)
@@ -293,7 +288,7 @@ public sealed class ChunkManager
 
     public void Dispose()
     {
-        renderer.Dispose();
+        //renderer.Dispose();
         storage.Flush();
     }
 }

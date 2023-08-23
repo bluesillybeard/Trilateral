@@ -46,9 +46,8 @@ public sealed class TrilateralGame
     TimeSpan frameDelta;
     //the delta time of the last frame
     public TimeSpan FrameDelta {get => frameDelta;}
-    IRenderTexture ascii;
-    public IRenderTexture MainFont {get => ascii;}
-    BasicGUIPlane gui;
+    public IRenderTexture MainFont { get; }
+    readonly BasicGUIPlane gui;
     public readonly RenderDisplay renderDisplay;
     IScreen currentScreen;
 
@@ -58,16 +57,8 @@ public sealed class TrilateralGame
         this.Settings = settings;
         var render = VRender.Render;
         var size = render.WindowSize();
-        {
-            var asciiOrNull = render.LoadTexture("Resources/ASCII.png", out var exception);
-            if(asciiOrNull is null)
-            {
-                //This is so that we can keep the stack trace of the original exception
-                throw new Exception("Could not load font texture", exception);
-            }
-            ascii = asciiOrNull;
-        }
-        renderDisplay = new RenderDisplay(ascii);
+        MainFont = render.LoadTexture("Resources/ASCII.png", out var exception) ?? throw new Exception("Could not load font texture", exception);
+        renderDisplay = new RenderDisplay(MainFont);
         gui = new BasicGUIPlane(size.X, size.Y, renderDisplay);
         render.OnUpdate += Update;
         render.OnDraw += Render;
@@ -117,7 +108,7 @@ public sealed class TrilateralGame
         // (It would be really cool if an interface could have an unimplemented static method that all implementing classes must implement)
         var BasicChunkGeneratorEntry = BasicChunkGenerator.CreateEntry();
         ChunkGenerators.Add(BasicChunkGeneratorEntry.id, BasicChunkGeneratorEntry);
-        currentScreen = new MainMenuScreen(gui, ascii);
+        currentScreen = new MainMenuScreen(gui, MainFont);
         Start = DateTime.Now;
         time = DateTime.Now;
         VRender.Render.CursorState = CursorState.Hidden;
@@ -128,13 +119,7 @@ public sealed class TrilateralGame
         if(postFrameActive)Profiler.PopRaw("PostFrame");
         Profiler.PushRaw("Update");
         time += delta;
-        var nextScreen = currentScreen.Update(delta, gui);
-        if(nextScreen is null)
-        {
-            //TODO: close game
-            throw new NotImplementedException("LOL i haven't programmed a way programatically to close a VRender application");
-        }
-        currentScreen = nextScreen;
+        currentScreen = currentScreen.Update(delta, gui) ?? throw new NotImplementedException("LOL i haven't programmed a way programatically to close a VRender application");
         //the GUI is iterated on updates so keyboard/mouse input timing actually make sense
         gui.Iterate();
         Profiler.PopRaw("Update");
@@ -145,7 +130,6 @@ public sealed class TrilateralGame
     bool postFrameActive = false;
     bool postUpdateActive = false;
     void Render(TimeSpan delta, IDrawCommandQueue drawCommandQueue){
-        double deltaSeconds = delta.Ticks/(double)TimeSpan.TicksPerSecond;
         if(postFrameActive)Profiler.PopRaw("PostFrame");
         if(postUpdateActive)Profiler.PopRaw("PostUpdate");
         Profiler.PushRaw("Render");
@@ -170,7 +154,6 @@ public sealed class TrilateralGame
             renderDisplay.DrawLineWithThickness(mousePosPixels.X, mousePosPixels.Y, mousePosPixels.X+20, mousePosPixels.Y+20, 0xFFFFFFFF, 4);
             renderDisplay.DrawLineWithThickness(mousePosPixels.X, mousePosPixels.Y, mousePosPixels.X+15, mousePosPixels.Y+30, 0xFFFFFFFF, 4);
             renderDisplay.DrawLineWithThickness(mousePosPixels.X+20, mousePosPixels.Y+20, mousePosPixels.X+15, mousePosPixels.Y+30, 0xFFFFFFFF, 4);
-            
             renderDisplay.DrawToScreen(drawCommandQueue);
             Profiler.PopRaw("RenderGUI");
             frameDelta = delta;

@@ -31,7 +31,7 @@ public class Chunk
     public Vector3i pos;
     private ushort[]? blocks;
     List<IBlock>? uidToBlock;
-    private IBlock fill;
+    private readonly IBlock fill;
     private Dictionary<string, ushort>? blockToUid;
     public bool IsFill()
     {
@@ -68,8 +68,7 @@ public class Chunk
         {
             return id;
         }
-        id = Add(block);
-        return id;
+        return Add(block);
     }
 
     private ushort Add(IBlock block)
@@ -85,7 +84,7 @@ public class Chunk
             uidToBlock.Add(block);
             return id;
         }
-        else 
+        else
         {
             System.Console.WriteLine("WARNING: Tried to add duplicate blockToUid mapping for block \"" + block.Name + "\" in chunk " + pos);
             return 0;
@@ -101,39 +100,21 @@ public class Chunk
         this.fill = fill;
     }
 
-    private Chunk(IBlock[] initBlocks, Vector3i pos, IBlock fill)
-    {
-        this.pos = pos;
-        if(initBlocks.Length != Length)
-        {
-            throw new Exception("Cannot create a chunk with the incorrect length!");
-        }
-        this.blocks = new ushort[Length];
-        for(uint index = 0; index<Length; index++)
-        {
-            IBlock? block = initBlocks[index];
-            ushort id;
-            id = GetOrAdd(block);
-            this.blocks[index] = id;
-        }
-        this.fill = fill;
-    }
-
     public Chunk(Vector3i pos, Stream streamIn)
     {
         this.pos = pos;
-        using GZipStream zipStream = new GZipStream(streamIn, CompressionMode.Decompress, true);
+        using GZipStream zipStream = new(streamIn, CompressionMode.Decompress, true);
         // BinaryReader doesn't really work with GZipStream, because the BinaryReader finds the end of the stream doesn't work.
         // So, we copy the entire thing into a MemoryStream first, since it can easily check if it's at the end or not.
-        using MemoryStream stream = new MemoryStream();
+        using MemoryStream stream = new();
         zipStream.CopyTo(stream);
         stream.Seek(0, SeekOrigin.Begin);
-        BinaryReader reader = new BinaryReader(stream);
+        BinaryReader reader = new(stream);
         ChunkSerializationFlag flag = (ChunkSerializationFlag)reader.ReadUInt32();
         if(flag == ChunkSerializationFlag.filled)
         {
             //The chunk is just a singular block "mapping"
-            StringBuilder b = new StringBuilder();
+            StringBuilder b = new();
             while(reader.PeekChar() != -1 && reader.PeekChar() != 0)
             {
                 var character = reader.ReadChar();
@@ -156,13 +137,13 @@ public class Chunk
             //Read in block data
             for(int i=0; i<Length; ++i)
             {
-                var block = reader.ReadUInt16(); 
+                var block = reader.ReadUInt16();
                 blocks[i] = block;
             }
             //read in block mappings
             uidToBlock = new List<IBlock>();
             blockToUid = new Dictionary<string, ushort>();
-            StringBuilder b = new StringBuilder();
+            StringBuilder b = new();
             while(reader.PeekChar() != -1)
             {
                 var character = reader.ReadChar();
@@ -224,7 +205,7 @@ public class Chunk
     //Serialzes the chunk appending it to a stream
     public void SerializeToStream(Stream streamOut)
     {
-        using GZipStream stream = new GZipStream(streamOut, CompressionMode.Compress, true);
+        using GZipStream stream = new(streamOut, CompressionMode.Compress, true);
         //filled chunks are basically just a single block mapping
         if(IsFill() || blocks is null || uidToBlock is null)
         {
@@ -251,7 +232,7 @@ public class Chunk
                 System.Console.WriteLine("WARNING: Replaced block with local id " + i + " with 'void'");
                 id = "trilateral:void";
             }
-            else 
+            else
             {
                 id = block.UUID;
             }

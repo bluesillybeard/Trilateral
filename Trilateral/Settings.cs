@@ -10,18 +10,19 @@ public struct Settings
 {
     public Settings(StaticProperties properties)
     {
-        if(File.Exists(properties.pathToConfig + "config"))
-        {
-            //If the file exists, read it in.
-            // We'll take advantage of a method that VModel uses, since what we're reading has the same syntax.
-            string file = File.ReadAllText(properties.pathToConfig + "config");
-            Dictionary<string, string> items = VModelUtils.ParseListMap(file, out var errors);
-            if(errors is not null)
-            {
-                System.Console.Error.WriteLine("Errors encountered loading settings:" + string.Join(", ", errors));
-            }
-            //TODO: add all of the settings here
-        }
+        _ = properties;
+        // if(File.Exists(properties.pathToConfig + "config"))
+        // {
+        //     //If the file exists, read it in.
+        //     // We'll take advantage of a method that VModel uses, since what we're reading has the same syntax.
+        //     string file = File.ReadAllText(properties.pathToConfig + "config");
+        //     Dictionary<string, string> items = VModelUtils.ParseListMap(file, out var errors);
+        //     if(errors is not null)
+        //     {
+        //         System.Console.Error.WriteLine("Errors encountered loading settings:" + string.Join(", ", errors));
+        //     }
+        //     //TODO: add all of the settings here
+        // }
     }
     //Multiplied by the number of threads on the system to get the actual number of threads to use
     // Requires restart to take effect

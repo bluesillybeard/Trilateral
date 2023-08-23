@@ -9,8 +9,8 @@ using System.Threading.Tasks;
 
 sealed class ChunkStorage
 {
-    private string pathToSaveFolder;
-    private Dictionary<Vector3i, ChunkSection> sections;
+    private readonly string pathToSaveFolder;
+    private readonly Dictionary<Vector3i, ChunkSection> sections;
     // Save chunks periodically rather than whenever they change
     private HashSet<Chunk> chunksToSave;
     // A second list that is swapped with the main one
@@ -91,7 +91,6 @@ sealed class ChunkStorage
             Profiler.PopRaw("LoadChunk");
             return null;
         }
-        
     }
 
     public int NumberOfCachedSections
@@ -112,11 +111,9 @@ sealed class ChunkStorage
         //swap chunksToSave and otherChunksToSave
         lock(chunksToSave)
         {
-            var temp = otherChunksToSave;
-            otherChunksToSave = chunksToSave;
-            chunksToSave =  temp;
+            (chunksToSave, otherChunksToSave) = (otherChunksToSave, chunksToSave);
         }
-        await Parallel.ForEachAsync(otherChunksToSave, (chunk, token) =>         {
+        await Parallel.ForEachAsync(otherChunksToSave, (chunk, _) =>         {
             // It is worth noting that because chunks are references,
             // It is possible for a chunk to be modified while it's being serialized.
             // However, I doubt that will be an issue.

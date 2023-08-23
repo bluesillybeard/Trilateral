@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using nbtsharp;
 using Trilateral.World;
-using Trilateral.World.ChunkGenerators;
 
-public struct ChunkGeneratorRegistryEntry
+namespace Trilateral.World.ChunkGenerators;
+public readonly struct ChunkGeneratorRegistryEntry
 {
     public ChunkGeneratorRegistryEntry(Func<NBTFolder, IChunkGenerator> inst, IEnumerable<(string, ENBTType)> arg, string id)
     {

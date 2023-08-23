@@ -44,11 +44,9 @@ public class StaticProperties
             // but many apps ignore that meaning and put their data wherever the heck they want to.
         }
         //TODO: support more different systems, like legacy operating systems or weird niche ones.
-        else 
+        else
         {
             throw new System.Exception("SYSTEM IS NOT SUPPORTED");
         }
     }
-
-
 }
