@@ -1,14 +1,3 @@
-# BRANCH PROJECT:
-### Replace 'Java style' async code with the (not so new) C# async+await syntax.
-## IMPORTANT NOTES:
-- Async by itself does not spawn new threads- it simply uses interrupts to create efficient context switching within a single thread.
-## IMPORTANT GOALS
-- Remove usage of VRender thread pools. [DONE]
-- make rendering and updating asynchronous
-- - In addition, make the GUI and camera update with the framerate, while gameplay-important items update with the 30 UPS clock [GUI done, camera not]
-- - interpolation to make future things smoother, although nothing in the current engine can even use interpolation
-- Make chunk building process less long-winded, and possibly optimize it a bit, although that's a lower priority
-- - might be worth doing anyway in order to shorten how long the delay is from queuing a task and it actually completing
 # Trilateral
 Minecraft, except triangular
 
