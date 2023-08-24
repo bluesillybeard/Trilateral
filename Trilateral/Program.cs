@@ -18,9 +18,9 @@ namespace Trilateral
         private static void Main()
         {
             //Some things for logging purposes
-            System.Threading.Thread.CurrentThread.Name = "Main";
-            System.Console.SetOut(new CustomOutTextWriter(System.Console.Out, ConsoleColor.White));
-            System.Console.SetError(new CustomOutTextWriter(System.Console.Error, ConsoleColor.Red));
+            Thread.CurrentThread.Name = "Main";
+            Console.SetOut(new CustomOutTextWriter(Console.Out, ConsoleColor.White));
+            Console.SetError(new CustomOutTextWriter(Console.Error, ConsoleColor.Red));
             properties = new StaticProperties();
             settings = new Settings(properties);
             var renderSettings = new RenderSettings(){
@@ -33,7 +33,8 @@ namespace Trilateral
             VRenderLib.VRender.InitRender(renderSettings);
             VRenderLib.VRender.Render.OnStart += Start;
             VRenderLib.VRender.Render.Run();
-            Utility.Profiler.Dispose();
+            settings.Flush();
+            Profiler.Dispose();
         }
         public static TrilateralGame Game {
             get {

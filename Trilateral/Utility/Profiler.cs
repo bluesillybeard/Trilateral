@@ -2,10 +2,7 @@
 
 namespace Trilateral.Utility;
 
-using System.IO;
 using System;
-using System.Text;
-using System.Threading;
 public struct ProfileSection : IDisposable
 {
     public ProfileSection(string name)

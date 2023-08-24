@@ -7,6 +7,7 @@ using System.Threading;
 public sealed class ProfileReport
 {
     readonly Dictionary<int, ProfileInProgress> profiles;
+
     //This is because, despite the appearance, push and pop are thread-safe
     // However toString is not thread safe
     // I don't want push and pop to wait for each other
@@ -27,7 +28,7 @@ public sealed class ProfileReport
         if(!profiles.TryGetValue(thread, out var pair))
         {
             //If it doesn't, add it
-            ProfileNode root = new("thread" + thread)
+            ProfileNode root = new("thread " + thread)
             {
                 calls = 1
             };

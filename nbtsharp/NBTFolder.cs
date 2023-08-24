@@ -27,7 +27,7 @@ public class NBTFolder: INBTElement{
         int size = BitConverter.ToInt32(serializedData, 0);
         //check indices
         int index = Array.IndexOf<byte>(serializedData[5..size], 0);
-        Name = ASCIIEncoding.ASCII.GetString(serializedData[5..(index+5)]);
+        Name = Encoding.ASCII.GetString(serializedData[5..(index+5)]);
         _value = new Dictionary<string, INBTElement>();
         index = 6+ Name.Length; //index represents what byte we are on.
         while(index < size) {
@@ -61,20 +61,26 @@ public class NBTFolder: INBTElement{
         return this;
     }
 
-    public INBTElement Get(string name)
+    public INBTElement? Get(string name)
     {
         return _value[name];
     }
 
-    public T Get<T>(string name)
+    public T? Get<T>(string name)
     where T : INBTElement
     {
-        return (T)_value[name];
+        if(_value.TryGetValue(name, out var value) && value is T element)
+        {
+            return element;
+        }
+        return default;
     }
 
     public bool TryGet(string name, out INBTElement element)
     {
+        #nullable disable
         return _value.TryGetValue(name, out element);
+        #nullable restore
     }
 
     public bool TryGet<T>(string name, out T element)
@@ -86,7 +92,9 @@ public class NBTFolder: INBTElement{
             element = castElement;
             return true;
         }
+        #nullable disable
         element = default;
+        #nullable restore
         return false;
     }
     public INBTElement GetOrDefault(string name, INBTElement def)
@@ -101,12 +109,9 @@ public class NBTFolder: INBTElement{
     public T GetOrDefault<T>(string name, T def)
     where T : INBTElement
     {
-        if(_value.TryGetValue(name, out var val))
+        if(_value.TryGetValue(name, out var val) && val is T element)
         {
-            if(val is T element)
-            {
-                return element;
-            }
+            return element;
         }
         return def;
     }
@@ -123,16 +128,13 @@ public class NBTFolder: INBTElement{
     public T GetOrDefault<T>(string name, Func<T> defgen)
     where T : INBTElement
     {
-        if(_value.TryGetValue(name, out var val))
+        if(_value.TryGetValue(name, out var val) && val is T element)
         {
-            if(val is T element)
-            {
-                return element;
-            }
+            return element;
         }
         return defgen();
     }
-    public bool Remove(string name, out INBTElement value)
+    public bool Remove(string name, out INBTElement? value)
     {
         return _value.Remove(name, out value);
     }
