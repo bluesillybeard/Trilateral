@@ -63,7 +63,7 @@ namespace Trilateral
         private readonly TextWriter back;
         private readonly ConsoleColor color;
         public override Encoding Encoding {
-            get => Encoding.UTF8;
+            get => back.Encoding;
         }
 
         private void WritePrefix()

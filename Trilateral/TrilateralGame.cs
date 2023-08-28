@@ -23,6 +23,7 @@ using System.Runtime.CompilerServices;
 using Trilateral.Game.Screen;
 using OpenTK.Windowing.Common;
 using System.IO;
+using Trilateral.Physics;
 
 public sealed class TrilateralGame
 {
@@ -49,6 +50,7 @@ public sealed class TrilateralGame
     public IRenderTexture MainFont { get; }
     readonly BasicGUIPlane gui;
     public readonly RenderDisplay renderDisplay;
+    public readonly PhysicsManager physics;
     IScreen currentScreen;
 
     public TrilateralGame(StaticProperties properties, Settings settings)
@@ -112,6 +114,8 @@ public sealed class TrilateralGame
         Start = DateTime.Now;
         time = DateTime.Now;
         VRender.Render.CursorState = CursorState.Hidden;
+
+        physics = new PhysicsManager();
     }
     void Update(TimeSpan delta)
     {
