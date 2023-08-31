@@ -15,6 +15,7 @@ public sealed class PhysicsManager: IDisposable
         Sim = Simulation.Create(pool, new TrilateralNarrowPhaseCallbacks(), new TrilateralPoseIntegratorCallbacks(), new SolveDescription(1, 1));
         Sim.Deterministic = false;
     }
+    //TODO: it's probably better to add more functionality to PhysicsManager than using the bepuphysics object directly
     public Simulation Sim {get; private set;}
 
     public void RunPhysics(TimeSpan delta)

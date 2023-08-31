@@ -108,17 +108,18 @@ public sealed class TrilateralGame
         //TODO: use Reflection to get every class that extends IChunkGenerator?
         // Add a method to IChunkGenerator to get an instance of its registry so the reflection idea is even plausible.
         // (It would be really cool if an interface could have an unimplemented static method that all implementing classes must implement)
+        physics = new PhysicsManager();
         var BasicChunkGeneratorEntry = BasicChunkGenerator.CreateEntry();
         ChunkGenerators.Add(BasicChunkGeneratorEntry.id, BasicChunkGeneratorEntry);
-        currentScreen = new MainMenuScreen(gui, MainFont);
+        currentScreen = new PhysicsTestScreen(physics.Sim);//new MainMenuScreen(gui, MainFont);
         Start = DateTime.Now;
         time = DateTime.Now;
         VRender.Render.CursorState = CursorState.Hidden;
-
-        physics = new PhysicsManager();
     }
     void Update(TimeSpan delta)
     {
+        //TODO: get the static delta from somewhere else
+        physics.RunPhysics(TimeSpan.FromTicks((long)(TimeSpan.TicksPerSecond * 1f/30f)));
         if(postUpdateActive)Profiler.PopRaw("PostUpdate");
         if(postFrameActive)Profiler.PopRaw("PostFrame");
         Profiler.PushRaw("Update");
