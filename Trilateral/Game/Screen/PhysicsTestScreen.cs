@@ -8,6 +8,7 @@ using BepuPhysics.Collidables;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.GraphicsLibraryFramework;
+using Trilateral.Physics;
 using Trilateral.Utility;
 using vmodel;
 using VRenderLib;
@@ -31,6 +32,7 @@ public class PhysicsTestScreen : IScreen
         // TODO: actually handle this error
         unitCube = VRender.Render.LoadModel("Resources/models/unitCube/model.vmf", out _) ?? throw new Exception("ayo?");
         Console.WriteLine(unitCube.mesh.GetAttributes());
+        // TODO: maybe not assume the shader and model have the same vertex attributes
         shader = VRender.Render.GetShader(File.ReadAllText("Resources/shaders/ChunkShader/vertex.glsl"), File.ReadAllText("Resources/shaders/ChunkShader/fragment.glsl"), unitCube.mesh.GetAttributes());
         camera = new Camera(Vector3.Zero, Vector3.Zero, 90, VRender.Render.WindowSize());
     }
@@ -41,12 +43,12 @@ public class PhysicsTestScreen : IScreen
         var boxBodyDesc = BodyDescription.CreateDynamic(RigidPose.Identity, boxShape.ComputeInertia(1), sim.Shapes.Add(boxShape), 1e-2f);
         boxBodyDesc.Pose.Position = pos;
         boxBodyDesc.Velocity.Linear = new(0, 0, 0);
-        boxes.Add(sim.Bodies.Add(boxBodyDesc));
+        var box = sim.Bodies.Add(boxBodyDesc);
+        boxes.Add(box);
     }
     public void Draw(TimeSpan delta, IDrawCommandQueue drawCommandQueue)
     {
         //First, draw the ground.
-        // It is at 0,0,0 and no rotation so it only needs to be scaled
         drawCommandQueue.Draw(unitCube.texture, unitCube.mesh, shader, new KeyValuePair<string, object>[]{
             new KeyValuePair<string, object>("model", Matrix4.CreateTranslation(0, -15, 0) * Matrix4.CreateScale(2500, 30, 2500)),
             new KeyValuePair<string, object>("camera", camera.GetTransform())
@@ -123,12 +125,17 @@ public class PhysicsTestScreen : IScreen
         if (VRender.Render.CursorState == CursorState.Grabbed || mouse.IsButtonDown(MouseButton.Middle)) {
             camera.Rotation += new OpenTK.Mathematics.Vector3((mouse.Y - mouse.PreviousY) * sensitivity, (mouse.X - mouse.PreviousX) * sensitivity, 0);
         }
-
+        var sim = Program.Game.physics.Sim;
         if(keyboard.IsKeyReleased(Keys.E))
         {
             //Spawn new boxes on a key press
             const float distance = -10;
             SpawnBox(Program.Game.physics.Sim, new(camera.Position.X - MathF.Sin(camera.Rotation.Y * Camera.degToRad) * distance, camera.Position.Y, camera.Position.Z + MathF.Cos(camera.Rotation.Y * Camera.degToRad) * distance));
+        }
+        //apply gravity.
+        foreach(var box in boxes)
+        {
+            sim.Bodies[box].ApplyLinearImpulse(new System.Numerics.Vector3(0, -9.8f, 0) * delta.Ticks / TimeSpan.TicksPerSecond);
         }
         return this;
     }

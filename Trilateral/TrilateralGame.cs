@@ -118,13 +118,14 @@ public sealed class TrilateralGame
     }
     void Update(TimeSpan delta)
     {
-        //TODO: get the static delta from somewhere else
-        physics.RunPhysics(TimeSpan.FromTicks((long)(TimeSpan.TicksPerSecond * 1f/30f)));
         if(postUpdateActive)Profiler.PopRaw("PostUpdate");
         if(postFrameActive)Profiler.PopRaw("PostFrame");
         Profiler.PushRaw("Update");
         time += delta;
         currentScreen = currentScreen.Update(delta, gui) ?? throw new NotImplementedException("LOL i haven't programmed a way programatically to close a VRender application");
+        
+        //TODO: get the static delta from somewhere else
+        physics.RunPhysics(TimeSpan.FromTicks((long)(TimeSpan.TicksPerSecond * 1f/30f)));
         //the GUI is iterated on updates so keyboard/mouse input timing actually make sense
         gui.Iterate();
         Profiler.PopRaw("Update");

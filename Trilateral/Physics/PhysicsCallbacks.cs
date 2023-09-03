@@ -1,6 +1,7 @@
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 using BepuPhysics;
 using BepuPhysics.Collidables;
 using BepuPhysics.CollisionDetection;
@@ -10,8 +11,7 @@ using BepuUtilities;
 namespace Trilateral.Physics;
 
 //Bepuphysics demends a handful of callback things.
-// I would generally prefer just having Actions in the method itself,
-// But I completely understand why this is nessesary
+// These are generally quite useful, although I haven't really made good use of them.
 public unsafe struct TrilateralNarrowPhaseCallbacks : INarrowPhaseCallbacks
 {
     public readonly void Initialize(Simulation simulation)
@@ -36,9 +36,11 @@ public unsafe struct TrilateralNarrowPhaseCallbacks : INarrowPhaseCallbacks
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public readonly bool ConfigureContactManifold<TManifold>(int workerIndex, CollidablePair pair, ref TManifold manifold, out PairMaterialProperties pairMaterial) where TManifold : unmanaged, IContactManifold<TManifold>
     {
+        //TODO: store these somewhere actually useful
         pairMaterial.FrictionCoefficient = 1;
         pairMaterial.MaximumRecoveryVelocity = 200;
-        pairMaterial.SpringSettings = new SpringSettings(30, 1);
+        //TODO: find a way to get the frequency of the simulation and divide it by 3 instead of using magic numbers
+        pairMaterial.SpringSettings = new SpringSettings(10, 50);
         return true;
     }
 
@@ -53,16 +55,18 @@ public unsafe struct TrilateralNarrowPhaseCallbacks : INarrowPhaseCallbacks
     }
 }
 
-//Trilateral doesn't actually use any poses or anything
+
 public struct TrilateralPoseIntegratorCallbacks: IPoseIntegratorCallbacks
 {
     public readonly AngularIntegrationMode AngularIntegrationMode { get => AngularIntegrationMode.Nonconserving; }
     public readonly bool AllowSubstepsForUnconstrainedBodies { get => false; }
     public readonly bool IntegrateVelocityForKinematics { get => false; }
     public readonly void Initialize(Simulation simulation){}
-
-    public readonly void PrepareForIntegration(float dt){}
+    public readonly void PrepareForIntegration(float dt){
+    }
     public readonly void IntegrateVelocity(
         Vector<int> bodyIndices, Vector3Wide position, QuaternionWide orientation, BodyInertiaWide localInertia,
-        Vector<int> integrationMask, int workerIndex, Vector<float> dt, ref BodyVelocityWide velocity){}
+        Vector<int> integrationMask, int workerIndex, Vector<float> dt, ref BodyVelocityWide velocity)
+    {
+    }
 }
