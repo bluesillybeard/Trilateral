@@ -339,4 +339,35 @@ public static class MathBits
         * Matrix4.CreateRotationY(angle)
         * Matrix4.CreateTranslation((blockPos.X * MathBits.XScale) + XOffset, blockPos.Y * 0.5f, blockPos.Z * 0.25f);
     }
+
+    //For some reason, C# doesn't have this functionality built in.
+    // I got it from https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles#Quaternion_to_Euler_angles_(in_3-2-1_sequence)_conversion
+    // this implementation assumes normalized quaternion
+    // converts to Euler angles in 3-2-1 sequence
+    public static Vector3 ToEulerAngles(Quaternion q) {
+        q.Normalize();
+        Vector3 angles = new();
+
+        // roll (x-axis rotation)
+        float sinr_cosp = 2 * (q.W * q.X + q.Y * q.Z);
+        float cosr_cosp = 1 - 2 * (q.X * q.X + q.Y * q.Y);
+        angles.X = MathF.Atan2(sinr_cosp, cosr_cosp);
+
+        // pitch (y-axis rotation)
+        float sinp = MathF.Sqrt(1 + 2 * (q.W * q.Y - q.X * q.Z));
+        float cosp = MathF.Sqrt(1 - 2 * (q.W * q.Y - q.X * q.Z));
+        angles.Y = 2 * MathF.Atan2(sinp, cosp) - MathF.PI / 2;
+
+        // yaw (z-axis rotation)
+        float siny_cosp = 2 * (q.W * q.Z + q.X * q.Y);
+        float cosy_cosp = 1 - 2 * (q.Y * q.Y + q.Z * q.Z);
+        angles.Z = MathF.Atan2(siny_cosp, cosy_cosp);
+
+        return angles;
+    }
+
+    public static Vector3 ToEulerAngles(System.Numerics.Quaternion q)
+    {
+        return ToEulerAngles(new Quaternion(q.X, q.Y, q.Z, q.W));
+    }
 }

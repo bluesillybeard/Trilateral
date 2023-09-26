@@ -23,6 +23,7 @@ using System.Runtime.CompilerServices;
 using Trilateral.Game.Screen;
 using OpenTK.Windowing.Common;
 using System.IO;
+using Trilateral.Physics;
 
 public sealed class TrilateralGame
 {
@@ -49,6 +50,7 @@ public sealed class TrilateralGame
     public IRenderTexture MainFont { get; }
     readonly BasicGUIPlane gui;
     public readonly RenderDisplay renderDisplay;
+    public readonly PhysicsManager physics;
     IScreen currentScreen;
 
     public TrilateralGame(StaticProperties properties, Settings settings)
@@ -62,7 +64,7 @@ public sealed class TrilateralGame
         gui = new BasicGUIPlane(size.X, size.Y, renderDisplay);
         render.OnUpdate += Update;
         render.OnDraw += Render;
-        render.OnCleanup += Dispose;
+        //render.OnCleanup += Dispose;
         VModel grass;
         IRenderTexture grassTexture;
         {
@@ -106,8 +108,10 @@ public sealed class TrilateralGame
         //TODO: use Reflection to get every class that extends IChunkGenerator?
         // Add a method to IChunkGenerator to get an instance of its registry so the reflection idea is even plausible.
         // (It would be really cool if an interface could have an unimplemented static method that all implementing classes must implement)
+        physics = new PhysicsManager();
         var BasicChunkGeneratorEntry = BasicChunkGenerator.CreateEntry();
         ChunkGenerators.Add(BasicChunkGeneratorEntry.id, BasicChunkGeneratorEntry);
+        //currentScreen = new PhysicsTestScreen(physics.Sim);
         currentScreen = new MainMenuScreen(gui, MainFont);
         Start = DateTime.Now;
         time = DateTime.Now;
@@ -120,6 +124,9 @@ public sealed class TrilateralGame
         Profiler.PushRaw("Update");
         time += delta;
         currentScreen = currentScreen.Update(delta, gui) ?? throw new NotImplementedException("LOL i haven't programmed a way programatically to close a VRender application");
+        
+        //TODO: get the static delta from somewhere else
+        physics.RunPhysics(TimeSpan.FromTicks((long)(TimeSpan.TicksPerSecond * 1f/30f)));
         //the GUI is iterated on updates so keyboard/mouse input timing actually make sense
         gui.Iterate();
         Profiler.PopRaw("Update");
@@ -165,7 +172,7 @@ public sealed class TrilateralGame
         Profiler.PushRaw("PostFrame");
         postFrameActive = true;
     }
-    void Dispose()
+    public void Dispose()
     {
         System.Console.WriteLine("average fps:" + totalFrames/((time-Start).Ticks/(double)TimeSpan.TicksPerSecond));
         currentScreen.OnExit();

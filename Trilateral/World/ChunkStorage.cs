@@ -83,8 +83,9 @@ sealed class ChunkStorage
                     sections.Add(section, chunkSection);
                 }
             }
+            var chunk = chunkSection.LoadChunk(pos);
             Profiler.PopRaw("LoadChunk");
-            return chunkSection.LoadChunk(pos);
+            return chunk;
         } catch(Exception e)
         {
             System.Console.Error.WriteLine("Error loading chunk " + pos + ": " + e.Message + "\nStacktrace:" + e.StackTrace);
@@ -100,7 +101,7 @@ sealed class ChunkStorage
 
     private bool Flushing = false;
 
-    public async void Flush()
+    public async Task Flush()
     {
         if(Flushing){
             System.Console.WriteLine("Chunk flush is taking longer than " + Program.Game.Settings.chunkFlushPeriod + "; flush attempted to occur twice concurrently");
