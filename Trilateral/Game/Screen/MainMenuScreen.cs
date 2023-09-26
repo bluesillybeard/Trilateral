@@ -1,10 +1,7 @@
 
 using System;
 using BasicGUI;
-using OpenTK.Graphics.ES11;
-using OpenTK.Mathematics;
 using Trilateral.Utility;
-using VRenderLib;
 using VRenderLib.Interface;
 
 namespace Trilateral.Game.Screen;

@@ -27,7 +27,7 @@ public struct Settings
         verticalLoadDistance = settingsData.Get<NBTFloat>("verticalLoadDistance")?.ContainedFloat ?? 150;
         targetFPS = settingsData.Get<NBTUInt>("targetFPS")?.ContainedUint ?? 60;
         VSync = (settingsData.Get<NBTInt>("VSync")?.ContainedInt ?? 0) == 1;
-        fieldOfView = settingsData.Get<NBTFloat>("fieldOfView")?.ContainedFloat ?? 200;
+        fieldOfView = settingsData.Get<NBTFloat>("fieldOfView")?.ContainedFloat ?? 90;
         chunkFlushPeriod = TimeSpan.FromTicks(settingsData.Get<NBTUInt>("chunkFlushPeriod")?.ContainedUint ?? TimeSpan.TicksPerMinute*5);
     }
     public readonly void Flush()
