@@ -1,7 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
-  <!--My own custom library for representing, serializing, and deserializing NBT. The format is fundamentally different than Minecraft's system, although it takes heavy inspiration.-->
-</Project>
