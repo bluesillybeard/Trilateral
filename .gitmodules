@@ -10,3 +10,6 @@
 [submodule "bepuphysics2"]
 	path = bepuphysics2
 	url = https://github.com/bepu/bepuphysics2
+[submodule "nbtsharp"]
+	path = nbtsharp
+	url = https://github.com/bluesillybeard/nbtsharp
