@@ -33,6 +33,7 @@ namespace Trilateral
             VRenderLib.VRender.InitRender(renderSettings);
             VRenderLib.VRender.Render.OnStart += Start;
             VRenderLib.VRender.Render.Run();
+            Game.Dispose();
             settings.Flush();
             Profiler.Dispose();
         }

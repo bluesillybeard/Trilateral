@@ -139,7 +139,9 @@ public sealed class ChunkManager
         {
             var chunkPos = chunkLoadList.Dequeue();
             chunksBeingLoaded.Add(chunkPos);
-            Task.Run(() => LoadChunkTask(chunkPos));
+            // I DO NOT want to await this.
+            // Nor do I want it to run synchronously.
+            var task = Task.Run(() => LoadChunkTask(chunkPos));
         }
         Profiler.PopRaw("ChunkStartLoad");
         Profiler.PushRaw("SaveModifiedChunks");
@@ -156,7 +158,11 @@ public sealed class ChunkManager
         {
             Profiler.PushRaw("FlushStorage");
             LastStorageFlush = DateTime.Now;
-            storage.Flush();
+            // note: letting the task do nothing is intentional
+            // Normally I woud await it, but await causes a different thread to continue execution,
+            // which in most contexts is ok but in this case is not.
+            var task = storage.Flush();
+            System.Console.WriteLine("Post Flush Start");
             Profiler.PopRaw("FlushStorage");
         }
     }
@@ -289,6 +295,8 @@ public sealed class ChunkManager
     public void Dispose()
     {
         //renderer.Dispose();
-        storage.Flush();
+        System.Console.WriteLine("Flushing storage due to game closing");
+        storage.Flush().Wait();
+        System.Console.WriteLine("Finished flusing storage for game close");
     }
 }

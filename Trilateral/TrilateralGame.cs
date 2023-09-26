@@ -64,7 +64,7 @@ public sealed class TrilateralGame
         gui = new BasicGUIPlane(size.X, size.Y, renderDisplay);
         render.OnUpdate += Update;
         render.OnDraw += Render;
-        render.OnCleanup += Dispose;
+        //render.OnCleanup += Dispose;
         VModel grass;
         IRenderTexture grassTexture;
         {
@@ -111,7 +111,8 @@ public sealed class TrilateralGame
         physics = new PhysicsManager();
         var BasicChunkGeneratorEntry = BasicChunkGenerator.CreateEntry();
         ChunkGenerators.Add(BasicChunkGeneratorEntry.id, BasicChunkGeneratorEntry);
-        currentScreen = new PhysicsTestScreen(physics.Sim);//new MainMenuScreen(gui, MainFont);
+        //currentScreen = new PhysicsTestScreen(physics.Sim);
+        currentScreen = new MainMenuScreen(gui, MainFont);
         Start = DateTime.Now;
         time = DateTime.Now;
         VRender.Render.CursorState = CursorState.Hidden;
@@ -171,7 +172,7 @@ public sealed class TrilateralGame
         Profiler.PushRaw("PostFrame");
         postFrameActive = true;
     }
-    void Dispose()
+    public void Dispose()
     {
         System.Console.WriteLine("average fps:" + totalFrames/((time-Start).Ticks/(double)TimeSpan.TicksPerSecond));
         currentScreen.OnExit();

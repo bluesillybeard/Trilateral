@@ -22,7 +22,7 @@ public sealed class Chunk
 
     //Changing the value is not recomended. I tried to make the code adjust to different chunk sizes appropriately,
     // but it isn't a priority and may or may not be fully supported.
-    public const ushort Size = 40;
+    public const ushort Size = 32;
     // TODO: In the future I want chunks to be larger in the vertical direction, like 16x16x256, since the world generation works one column at a time,
     // And larger columns means the CPU works in larger blocks. However, that would require a lot of redesigning, which I really don't want to do right now.
 
@@ -57,7 +57,7 @@ public sealed class Chunk
             blockToUid = null;
         }
     }
-    private ushort GetOrAdd(IBlock block)
+    private ushort GetOrAdd(IBlock block, bool printError)
     {
         if(uidToBlock is null || blockToUid is null)
         {
@@ -68,10 +68,10 @@ public sealed class Chunk
         {
             return id;
         }
-        return Add(block);
+        return Add(block, printError);
     }
 
-    private ushort Add(IBlock block)
+    private ushort Add(IBlock block, bool printError)
     {
         if(uidToBlock is null || blockToUid is null)
         {
@@ -86,7 +86,8 @@ public sealed class Chunk
         }
         else
         {
-            Console.WriteLine("WARNING: Tried to add duplicate blockToUid mapping for block \"" + block.Name + "\" in chunk " + pos);
+            if(printError)
+                Console.WriteLine("WARNING: Tried to add duplicate blockToUid mapping for block \"" + block.Name + "\" in chunk " + pos);
             return 0;
         }
     }
@@ -102,6 +103,8 @@ public sealed class Chunk
 
     public Chunk(Vector3i pos, Stream streamIn)
     {
+        const uint errorsPerChunk = 0;
+        uint errors = 0;
         this.pos = pos;
         using GZipStream zipStream = new(streamIn, CompressionMode.Decompress, true);
         // BinaryReader doesn't really work with GZipStream, because the BinaryReader finds the end of the stream doesn't work.
@@ -125,7 +128,9 @@ public sealed class Chunk
             {
                 //the block ID doesn't exist, so we just use void
                 block = Program.Game.AirBlock;
-                System.Console.WriteLine("WARNING: block id \'" + blockid + "\' does not exist in the block registry");
+                if(errors < errorsPerChunk)
+                    System.Console.WriteLine("WARNING: block id \'" + blockid + "\' does not exist in the block registry");
+                errors++;
             }
             fill = block;
             return;
@@ -152,9 +157,11 @@ public sealed class Chunk
                     {
                         //the block ID doesn't exist, so we just use void
                         block = Program.Game.AirBlock;
-                        System.Console.WriteLine("WARNING: block id \'" + b.ToString() + "\' does not exist in the block registry. Chunk " + pos);
+                        if(errors < errorsPerChunk)
+                            System.Console.WriteLine("WARNING: block id \'" + b.ToString() + "\' does not exist in the block registry. Chunk " + pos);
+                        errors++;
                     }
-                    Add(block);
+                    Add(block, errors < errorsPerChunk);
                     //This is mostly useless, but fill is non-nullable and i need to keep the compiler happy.
                     fill = block;
                     b = new StringBuilder();
@@ -186,9 +193,9 @@ public sealed class Chunk
         if(this.blocks is null)
         {
             this.blocks = new ushort[Length];
-            Array.Fill<ushort>(this.blocks, GetOrAdd(fill));
+            Array.Fill<ushort>(this.blocks, GetOrAdd(fill, true));
         }
-        this.blocks[index] = GetOrAdd(block);
+        this.blocks[index] = GetOrAdd(block, true);
     }
     public void SetBlock(IBlock block, uint x, uint y, uint z)
     {
